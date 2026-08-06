@@ -1,0 +1,53 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="17">
+            <item index="0" class="java.lang.String" itemvalue="arrow" />
+            <item index="1" class="java.lang.String" itemvalue="mutagen" />
+            <item index="2" class="java.lang.String" itemvalue="zipstream" />
+            <item index="3" class="java.lang.String" itemvalue="inotify" />
+            <item index="4" class="java.lang.String" itemvalue="louie" />
+            <item index="5" class="java.lang.String" itemvalue="python-slugify" />
+            <item index="6" class="java.lang.String" itemvalue="PyGObject" />
+            <item index="7" class="java.lang.String" itemvalue="Requests" />
+            <item index="8" class="java.lang.String" itemvalue="pulsectl" />
+            <item index="9" class="java.lang.String" itemvalue="markupsafe" />
+            <item index="10" class="java.lang.String" itemvalue="natsort" />
+            <item index="11" class="java.lang.String" itemvalue="pyOpenSSL" />
+            <item index="12" class="java.lang.String" itemvalue="python_dateutil" />
+            <item index="13" class="java.lang.String" itemvalue="python-libdiscid" />
+            <item index="14" class="java.lang.String" itemvalue="ifaddr" />
+            <item index="15" class="java.lang.String" itemvalue="lxml" />
+            <item index="16" class="java.lang.String" itemvalue="pypandoc" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="E722" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyStubPackagesAdvertiser" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="PyGObject-stubs==2.17.0" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="src.upnpplayer.upnpplayer.utils" />
+          <option value="src.upnpplayer.upnpplayer.upnpclient" />
+          <option value="html.parser.HTMLParser.unescape" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

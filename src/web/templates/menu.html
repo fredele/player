@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Éditeur de Menu</title>
+  <link rel="stylesheet" href="/css/normalize.min.css">
+  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
+  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/browse.css">
+  
+  <script src="/js/server.js"></script>
+  <script src="/js/menueditor.js"></script>
+   <script src="/js/time.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/vars.js"></script>
+  <script src="/js/resizer.js"></script>
+  <link rel="stylesheet" href="/css/menu.css">
+
+<style>
+  body {
+    visibility: hidden;
+  }
+</style>
+</head>
+<body  onload="onload_menu()">
+
+
+<ul class="nav nav-pills justify-content-center">
+  <li ><a  id="browse_btn" class="to_translate" href="../">Browse</a></li>
+  <li ><a class="to_translate" href="config.html">Login</a></li>
+  <li ><a class="to_translate" href="database.html">Database</a></li>
+  <li class="active"><a class="to_translate" href="menu.html">Menu</a></li>
+  <li ><a class="to_translate"href="players.html">Players</a></li>
+  <li ><a class="to_translate" href="editvars.html">Display</a></li>
+  <li ><a class="to_translate" href="editsettings.html">Settings</a></li>
+  <li ><a class="to_translate" href="control.html">Control</a></li>
+</ul>
+
+  
+  <div id="main-container">
+    
+
+
+    <!-- Contenu principal divisé en deux colonnes -->
+    <div id="content">
+
+      <!-- Item  -->
+      <div id="item">
+        <div class="section-title-Items">Items</div>
+        <div id="item-list"></div>
+        <div class="section-footer">
+          <button class="add-button-item">+</button>
+        </div>
+      </div>
+
+      <!-- Redimensionneur vertical -->
+      <div id="vertical-resizer"></div>
+
+      <!-- Zone de droite : query (bleu) + levels (vert) -->
+      <div id="right-panel">
+
+        <div id="query">
+          <div class="section-title-Query">Query</div>
+          <div id="query-body" ></div>
+          <div class="section-footer">
+            <button class="add-button">+</button>
+          </div>
+        </div>
+
+        <!-- Redimensionneur horizontal -->
+        <div id="horizontal-resizer"></div>
+
+        <div id="levels">
+          <div class="section-title-Levels">Levels</div>
+          <div id="levels-body" ></div>
+          <div class="section-footer">
+            <button class="add-button">+</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- Fin Contenu principal divisé en deux colonnes -->
+
+    <!-- Menu  -->
+    <div id="menu">
+      <button onClick="saveMenuToServer('views')" type="button" class="to_translate mt-2 btn btn-primary btn-lg bc" onclick="save_vars()" onsubmit="return false">enregistrer</button>
+    </div>
+       
+  </div>
+
+  <script src="/js/menuresizer.js"></script>
+</body>
+
+
+</html>

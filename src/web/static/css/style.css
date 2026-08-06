@@ -1,0 +1,382 @@
+
+
+input:focus {
+   outline: 0 !important;
+}
+
+
+button:focus {
+   outline: 0 !important;
+}
+
+#search_select:focus {
+   outline: 0 !important;
+}
+
+.bc{
+  margin-top: 10px;
+  margin-left:5%;
+  width:90%;
+  font-size:18px;
+  /* padding-bottom:10px; */
+  /* padding-top:10px; */
+}
+
+.flex-container {
+  display: flex;
+  flex-direction: row;
+}
+
+#button_set_value{
+  margin-left: 0%;
+  width:100%	;
+}
+
+#editor1{
+  text-transform: capitalize;
+  margin-bottom: 20px;
+}
+
+#editor2{
+  text-transform: capitalize;
+}
+
+#search2{
+  text-transform: capitalize;
+}
+
+
+#search1{
+  text-transform: capitalize;
+}
+
+
+#containertemps {
+  display: flex;
+  justify-content: space-between;
+  background-color: white;
+}
+
+.aParent {
+  display: flex;
+  justify-content: space-between;
+}
+
+.import {
+  width: 50px;
+}
+
+#dbinfos {
+  margin-top: 10px;
+  margin-left: 0px;
+  color:#c2c2c2;
+  font-size: 18px;
+}
+
+#containertemps > div {
+  width: 100px;
+  height: 20px;
+}
+
+ul > li {
+text-transform:capitalize;
+}
+
+body{
+    height: 100%;
+    background-color: #565656;
+    font-size: 18px;
+    padding:0
+    color:white;
+}
+
+.nav-pills a{
+color:white;
+
+
+}
+
+
+/* Works on Firefox */
+* {
+  scrollbar-width: 10px;
+  scrollbar-color: #4646463b; #3131315c;
+}
+
+/* Works on Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #4646463b;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #3131315c;
+}
+
+a:link {
+  color: #ffffff7a;
+}
+
+/* visited link */
+a:visited {
+  color: white;
+}
+
+/* mouse over link */
+a:hover {
+  color: #6e6e6e;
+}
+
+/* selected link */
+a:active {
+  color: white;
+}
+
+p.capitalize {
+  text-transform: capitalize;
+}
+
+
+
+.description{
+ margin-top: 5px;
+ margin-bottom: 5px;
+ margin-left: 5%;
+ display:inline-block;
+ color:#c2c2c2;
+ text-transform: capitalize;
+ font-size: 100%;
+}
+
+
+.editinput{
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width:100%;
+  color:#ffffff;
+  font-style: normal;
+  font-size: 100%;
+  border-radius:5px;
+  border: 2px solid #727272;        /* Bordure blanche visible */
+  border-radius: 3px;
+  background-color: black; 
+}
+
+.extension{
+font-size: 80%;
+margin-bottom: 0px;
+padding-bottom: 0px;
+}
+
+.bitrate{
+font-size: 70%;
+margin-bottom: 2px;
+padding-bottom: 0px;
+text-transform:  none !important;
+}
+
+
+span.composer{
+  color:white;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+span.artist{
+  color:white;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+span.performer{
+  color:white;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+span.conductor{
+  color:white;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+span.album{
+  margin: 0 2px;
+  display: inline-block;
+}
+
+span.title {
+  display: inline-block;
+  white-space: nowrap;        /* empêche le passage à la ligne */
+  overflow: hidden;           /* masque le débordement */
+  text-overflow: ellipsis;    /* affiche "..." quand c'est trop long */
+  vertical-align: bottom;     /* ajuste l'alignement si besoin */
+  #max-width: 200px;           /* ou une largeur adaptée à ton design */
+}
+
+#TagEditorModal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 120px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  background-color: rgba(255, 255, 255, 0);
+}
+
+#SearchBoxModal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 120px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  background-color: rgba(255, 255, 255, 0);
+}
+
+
+.modal-content {
+  /*background-color: #6b6b6b;*/
+  background-color:black;
+  margin: auto;
+  padding: 20px;
+  width: 80%;
+  border:0;
+
+}
+
+
+
+/*
+#button_set_value{
+text-transform: capitalize;
+}
+#button_set_value[disabled]{
+  background-color: rgba(207, 207, 207, 0.11);
+}
+*/
+button_set_value{
+ border:0;
+ border-radius: 5px;
+ margin-top: 20px;
+}
+
+#edit_tag, textarea {
+
+  font-style: normal;
+  font-size: 110%;
+  padding-left: 5px;
+
+  background-color: black;  
+  color: white;
+  border: 2px solid #727272;       
+  cursor: pointer;
+  border-radius: 3px;
+
+}
+
+#edit_tag_value, textarea {
+  background-color : #4a4a4a;
+  border:0;
+  background-color: black;  
+  color: white;
+  border: 2px solid #727272;       
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.dropdown-item:focus, .dropdown-item:hover {
+    color: #ffffff!important;
+    text-decoration: none;
+    background-color: #222222;
+}
+
+.dropdown-item{
+	
+	text-transform: capitalize;
+	}
+
+.btn {
+	width: 90%;
+	display: inline-block;
+	text-transform: capitalize;
+	font-weight: 400;
+	font-size: 18px;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	border: 0px solid transparent;
+	padding: 5;
+	font-size: 1rem;
+	line-height: 1.5;
+	background-color :black;
+	transition:none;
+	color:white;
+	text-transform: capitalize;
+	border: 0px;
+	border: 2px solid #727272;        /* Bordure blanche visible */
+	border-radius: 3px;
+}
+
+.btn:hover {
+    background-color:#333;
+    transition: 0s;
+    border: 2px solid transparent;
+    color:white;
+    box-shadow:none;
+}
+
+.btn:active {
+  background-color: #1b54af;     /* fond pendant clic */
+  border-color: #1b54af;         /* bordure pendant clic */
+}
+
+.btn:focus {
+    background-color: #333;
+    transition: 0s;
+    border: 2px solid transparent;
+    color:white;
+    box-shadow:none;
+}
+
+
+.btn:focus-visible {
+  outline: 2px solid #ffa; /* ou ce que tu préfères comme indication */
+}
+
+.dropdown-menu {
+	border: 0px solid transparent;
+	max-height: 300%;
+  overflow-y: scroll; 
+}
+
+.tageditorlabel{
+ color:#ffffff;
+ font-style: normal;
+ font-size: 100%;
+ border: 0px;
+}
+
+
+#tageditormodal_error{
+  margin-top:10px;
+  color : #f8f8f8;
+  text-align:center;
+}
+
+body {
+    background-color: black;
+}
+
+

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <!-- DO NOT DELETE 'unsafe-inline' in meta below ... -->
+  <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src *">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+  <meta http-equiv='cache-control' content='no-cache, must-revalidate'>
+  <meta http-equiv='expires' content='0'>
+  <meta http-equiv='pragma' content='no-cache'>
+  <meta http-equiv="Expires" content="0" />
+  <meta charset="UTF-8">
+  <title>Player</title>
+  <link rel="stylesheet" href="/css/normalize.min.css">
+  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
+  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <script type="module" src="/js/zero-md.min.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/browse.css">
+  <link rel="stylesheet" href="/css/tageditor.css">
+  <link rel="stylesheet" href="/css/dspeditor.css">
+  <link rel="manifest" href="manifest.json">
+  <script src='/js/jquery.min.js'></script>
+  <script src='/js/bootstrap.min.js'></script>
+  <script src="js/resizer.js"></script>
+  <script src="js/server.js"></script>
+  <script src="js/loadplayer.js"></script>
+  <script src="js/time.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/tageditor.js"></script>
+  <script src="js/vars.js"></script>
+  <script src="js/spectrum.js"></script>
+  <script src="js/wsreconnect.js"></script>
+  <script src="js/long-press-event.js"></script>
+  <script src="js/yall.min.js"></script>
+  <script src="js/loadlazyload.js"></script>
+  <script src="js/jquery.min.js"></script>
+  <script src="js/drag-drop-touch.esm.min.js?autoload" type="module"></script>
+  
+  <link rel="icon" type="image/png" href="img/favicon.png" />
+  <!-- For iOS Fullscreen ... -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- For Android Fullscreen, Install app from chrome ... -->
+  <meta name="mobile-web-app-capable" content="yes">
+</head>
+
+<body style="visibility: hidden;">
+  <div id="header">
+    <div id="header_container" class="unselectable" onclick="menu_display()"></div>
+    <div id="search_div" class="to_translate"><span onclick="showsearch()" id="search_span" class="to_translate"> Search <span></div>
+  </div>
+  <div id="thumbs_container">
+    <div id="thumbs_container_2">
+      <div class="d-flex flex-wrap" id="thumbs_box">
+      </div>
+    </div>
+
+  </div>
+  <div id="playlist_container" onclick="hiderightpanel()">
+    <img id="playlist_background" loading="lazy" onerror="this.src='img/transparent.png'">
+    <div id="left_panel">
+      <img id="playlist_cover" loading="lazy" class="cover" onerror="this.src='img/cd.png'" src="img/transparent.png" onclick="showbigcover()">
+      <div id="time_display">
+        <div id="time_elapsed" class="time_elapsed" onclick="flipflopelapsed()"></div>
+        <div id="time_spacer"> </div>
+        <div id="time_total" class="time_total" onclick="flipflopelapsed()"></div>
+      </div>
+      <div id="cti" class="current_track_infos"> Track infos </div>
+    </div> <!--End left panel -->
+    <div id="right_panel">
+      <div id="playlist" class=""></div>
+    </div>
+    <img id="back_btn" src="img/transparent.png"> <!--onclick="Goto_Browse()"-->
+  </div> <!-- End playlist_container -->
+  <!-- footer -->
+  <div id="footer-div" class="footer_height">
+    <!-- background cover -->
+    <img id="cover-bckg" class="cover-bckg" alt="..." />
+    <div class=" cover footer_height">
+    </div>
+    <!-- cover -->
+    <img id="coverimg" loading="lazy" class="cover slideright" src="img/cd.png" onclick="showbigcover()" onerror="this.src='img/cd.png'">
+    <!-- bouttons -->
+    <img id="previous_btn" class="previous_btn footer_height" src="img/previous.png" onclick="Previous()">
+    <img id="play_btn" class="play_btn footer_btn footer_height" src="img/play.png" onclick="Play()">
+    <img id="next_btn" class="next_btn footer_btn footer_height" src="img/next.png" onclick="Next()">
+    <img id="volume_btn" class="vol_btn footer_btn footer_height" src="img/volume.png" onclick="volume_show()">
+
+    <!-- titres -->
+    <div id="display_strs" class="footer_height">
+      <div class="display_str" onclick="move_panels()"></div> <!-- -->
+    </div>
+    <canvas id="spectrum" width="300" height="100"></canvas>
+    <canvas id="level" width="14" height="40"></canvas>
+    <img id="scanning_img" class="footer_height" src="img/import.png" onclick="move_panels()">
+
+    <!-- end footer -->
+  </div>
+  <div id="query_container">
+    <div id="back_btn_2" src="img/transparent.png" onclick="Goto_Browse()">
+      <img id="back_btn" src="img/back.png" ><!-- -->
+    </div>
+    <img id="query_background" loading="lazy" onerror="this.src='img/transparent.png'">
+    <div id="query_topheader">
+      <img id="query_cover" loading="lazy" class="query_cover" onerror="this.src='img/cd.png'" onclick="showbigquerycover(this.src)">
+      <div id="query_titles">
+        <div id="title1" class="query_title"></div>
+      </div>
+      <img id="query_queue_btn" loading="lazy" src="img/queue.png" onclick=query_queue(); onerror="this.src='img/cd.png'">
+      <img id="query_play_btn" loading="lazy" src="img/play.png" onclick=query_play(); onerror="this.src='img/cd.png'">
+    </div>
+    <div id="query_all">
+      <div id="query_overview" class="d-flex flex-wrap" onmouseover="query_overview_mouse_over()" onmouseout="query_overview_mouse_out()">
+      </div>
+      <div id="query_tracklist">
+      </div>
+      <div id="query_text">
+      </div>
+      <div id="query_images">
+      </div>
+      <div id="query_image">
+        <div id="query_image_btn_previous"></div>
+        <img class="yall_lazy" id="query_image_img" src="">
+        <div id="query_image_btn_next"></div>
+      </div>
+      <div id="query_overview_hidden" class="row" onclick="display_hidden_buttons()">
+      </div>
+    </div>
+    <img id="back_btn" src="img/transparent.png" "> <!--onclick=" Goto_Browse()-->
+  </div> <!-- End query_container -->
+  <img id="playlist_item_delete_img" class="playlist_item_delete" src="img/playlist_delete.png">
+  <!-- volume -->
+  <div id="volume_background">
+    <div id="volume_background_bottom"></div>
+    <div id="volume_container">
+      <div id="volume-progress-bar-background" aria-valuemin="0" aria-valuemax="100">
+        <div id="volume-progress-bar" aria-valuemin="0" aria-valuemax="100" onclick="setVolume()"></div>
+      </div>
+      <div id="volume_background_top" onclick="volume_hide()"></div>
+    </div>
+  </div>
+  <div id="menu_container">
+    <div id="menu_all">
+      <img id="library_btn" src="img/library.png" onclick="goto_library()">
+      <img id="podcast_btn" src="img/podcast.png" onclick="goto_podcast()">
+      <img id="radio_btn" src="img/radio.png" onclick="goto_radio()">
+      <img id="param_btn" src="img/param.png" onclick="goto_database()">
+    </div>
+    <div class="scrollable-element" id="menu_items"></div>
+    <div id="menu_hide" onclick=menu_hide()></div>
+  </div>
+  <div id="cover_big_container" onclick="hidebigcover()">
+    <img id="bigcoverimg" loading="lazy" class="cover" src="img/cd.png" onerror="this.src='img/cd.png'">
+  </div>
+  <div id="query_cover_big_container" onclick="hidebigcover()">
+    <img id="query_bigcoverimg" loading="lazy" src="img/cd.png" onerror="this.src='img/cd.png'">
+  </div>
+  <!--<iframe id="doc" title="" frameBorder="0" onload="iframeclick()" ></iframe>-->
+  </div>
+  <!-- Search Box -->
+  <div id="SearchBoxModal" class="modal">
+    <!-- Modal content -->
+    <div class="modal-content">
+      <label id="search1" class="tageditorlabel to_translate" style="width:20%;">search :</label>
+      <input type="text"  id="search_txt" class="tageditorlabel" >
+      <label id="search2" class="tageditorlabel" style="width:20%;">field :</label>
+      <input class="form-select search_select" value="album" id="search_select" aria-label="Default select example"  list="mylist">
+      <datalist id="mylist">
+        <option selected>album</option>
+        <option value="artist">artist</option>
+        <option value="title">title</option>
+      </datalist>
+      &nbsp; <input type="button" id="search_btn" class="btn to_translate" onclick="Search_value()" value="Search"> &nbsp;
+    </div>
+  </div>
+  <!-- Tag Editor -->
+  <div id="TagEditorModal" class="modal">
+    <!-- Modal content -->
+    <div class="modal-content">
+      <div><label id="editor1" class="tageditorlabel" style="width:20%;">Tag</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag"></div>
+      <div><label id="editor2" class="tageditorlabel" style="width:20%;">Value</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag_value" oninput="edit_tag_value_changed();"></div> &nbsp; <input type="button" id="button_set_value" class="btn" onclick="Set_tag_value()" disabled>
+      <label id="tageditormodal_error"></label>
+    </div>
+  </div>
+  <!-- Output -->
+  <div id="OutputModal" class="modal">
+    <div id="mainmodal" class="modal-content">
+      <label class="modaloutput to_translate" id="output_label">Choose a Player</label>
+      <div class="dropdown">
+        <button style="width:100%;" id="playerdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdownplayerButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+        <div style="width:100%;" id="playerdrop" class="dropdown-menu" type="button" aria-labelledby="playerOutputButton">
+        </div>
+      </div>
+      <label style="width:100%;" id="status">status: ?</label>
+      
+      <div id="chooseoutput">
+        <label class="modaloutput to_translate" id="output_label">Choose an Output</label>
+        <div class="dropdown" id="output_dropdown">
+          <button style="width:100%;" id="outputgstdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdowngstOutputButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Output </button>
+          <div style="width:100%;" id="outputgstdrop" class="dropdown-menu" aria-labelledby="dropdowngstOutputButton"></div>
+        </div>
+        <label class="modaloutput" id="current_pipeline"></label>
+        <label class="modaloutput" id="current_hw_params"></label>
+      </div>
+      
+      <div id="choosestreaming">
+        
+        <div  id="streaming_container">
+          <input type="checkbox" id="activate_streaming" onclick="toggleStreaming()">
+          <!-- <label class="modaloutput to_translate" id="streaming_label">Activate streaming</label> -->
+
+          <select id="streaming_quality" onchange="handleQualityChange()">
+            <option value="320" selected>MP3 320kbit/s</option>
+            <option value="256" selected>MP3 256 kbit/s</option>
+            <option value="128">MP3 128 kbit/s</option>
+          </select>
+          
+        </div>
+        <label class="modaloutput" id="current_pipeline"></label>
+        <label class="modaloutput" id="current_hw_params"></label>
+      </div>
+      
+    </div>
+    
+  </div>
+  <!-- End OutputModal-->
+  
+  <!--  
+<script src='/js/jquery.min.js'></script>
+<script src='/js/bootstrap.min.js'></script>
+<script src="/js/bootstrap.bundle.min.js"></script>
+-->
+</body>
+
+</html>

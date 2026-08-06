@@ -1,0 +1,8 @@
+services:
+  mongo:
+    user: "${HOST_UID}:${HOST_GID}"
+    image: mongo:3.6
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /mnt/Disque_1/DB_Player/database:/data/db

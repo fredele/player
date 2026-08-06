@@ -1,0 +1,47 @@
+
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-size: 18px;
+}
+
+body {
+  /* display: flex; */
+  /* flex-direction: column; */
+}
+
+
+textarea{
+ margin-left: 5%;
+ width:90%;
+ font-size:18px;
+ border:0px;
+ font-style: normal;
+ font-size: 100%;
+ margin-left: 5%;
+ color:#ffffff;
+ font-size:18px;
+ border: 2px solid #727272;        /* Bordure blanche visible */
+ border-radius: 3px;
+ background-color: black;
+ flex-shrink: 0;
+ resize: none;
+}
+
+
+#main-container {
+  flex: 1 1 auto;         /* prend tout l'espace restant */
+  overflow-y: scroll;       /* permet le scroll vertical */
+  display: flex;
+  flex-direction: column; /* si besoin */
+}
+
+#menu {
+  height: 60px;
+  background-color: black;
+  flex-shrink: 0;
+  margin-right:9px;
+  margin-bottom:10px;
+}
+

@@ -1,0 +1,54 @@
+
+
+#OutputModal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 5%; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  background-color: rgba(255, 255, 255, 0);
+}
+
+#mainmodal{
+  padding-top: 0px;
+  padding-bottom: 0px;
+  #height:400px;
+}
+
+#dsptitle{
+  padding-top:10px;
+  text-align:center;
+  color:white;
+  font-style:normal;
+  font-weight: bold;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:18px;
+  font-stretch:100%;
+}
+
+#current_pipeline{
+  color:white;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:14px;
+  font-stretch:100%;
+  font-style:normal;
+  font-weight:normal;
+  text-align:center;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#current_hw_params{
+  color:white;
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:14px;
+  font-stretch:100%;
+  font-style:normal;
+  font-weight:normal;
+  text-align:center;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}

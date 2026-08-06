@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Player</title>
+
+  <link rel="stylesheet" href="/css/normalize.min.css">
+  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
+  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <script type="text/javascript" src="https://livejs.com/live.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/browse.css">
+  <script src="/js/server.js"></script>
+  <script src="/js/vars.js"></script>
+  <script src="/js/browse.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/vars.js"></script>
+ <script src="/js/resizer.js"></script>
+  <link rel="icon"  type="image/png" href="/assets/favicon.png" />
+<style>
+  body {
+    visibility: hidden;
+  }
+</style>
+</head>
+
+<body onLoad="onload_server()">
+<ul class="nav nav-pills justify-content-center">
+  <li ><a id="browse_btn" class="to_translate" href="../">Browse</a></li>
+  <li ><a class="to_translate" href="config.html">Login</a></li>
+  <li  class="active" ><a class="to_translate" href="database.html">Database</a></li>
+  <li ><a class="to_translate" href="menu.html">Menu</a></li>
+  <li ><a class="to_translate"href="players.html">Players</a></li>
+  <li ><a class="to_translate" href="editvars.html">Display</a></li>
+  <li ><a class="to_translate" href="editsettings.html">Settings</a></li>
+  <li ><a class="to_translate" href="control.html">Control</a></li>
+</ul>
+</br>
+<div class="maincontainer" style="width:95%;padding-left:5%">
+
+
+<button id = "scan_btn" type="button"  class="to_translate mt-2 btn btn-primary btn-lg"     style="width:100%;" onclick="Server_LibraryScanFolders()">Scan Folders</button>
+</br>
+<!--
+<button id = "backup_btn" type="button" class="to_translate mt-2 btn btn-primary btn-lg"  style="width:100%;" onclick="Server_LibraryBackup()">Backup Library</button>
+</br>
+<button id = "restore_btn" type="button" class="to_translate mt-2 btn btn-primary btn-lg"  style="width:100%;" onclick="Server_LibraryRestore()">Restore Library</button>
+</br>
+-->
+<button id = "ClearQueries_btn" type="button"  class="to_translate mt-2 btn btn-primary btn-lg"  style="width:100%;" onclick="Server_ClearQueries()">Clear Queries</button>
+
+
+<div  id="dbinfos" ></div>
+
+</div>
+
+
+
+</div>
+
+
+<script src='/js/jquery.min.js'></script>
+<script src='/js/bootstrap.min.js'></script>
+
+</body>
+</html>

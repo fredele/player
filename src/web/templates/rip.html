@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Player</title>
+  <link rel="stylesheet" href="/css/normalize.min.css">
+  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
+  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <link rel='stylesheet' href='/css/bootstrap-toggle.min.css'>
+  <script type="text/javascript" ></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/browse.css">
+  <link rel="stylesheet" href="/css/player.css">
+    <link rel="stylesheet" href="/css/output.css">
+  <script src="/js/server.js"></script>
+  <script src="/js/rip.js"></script>
+  <script src="/js/time.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/vars.js"></script>
+  <script src="/js/resizer.js"></script>
+  <link rel="icon"  type="image/png" href="/assets/favicon.png" />
+<style>
+  body {
+    visibility: hidden;
+  }
+</style>
+</head>
+
+<body onload="onload_rip()"">
+
+<ul class="nav nav-pills justify-content-center">
+  <li ><a  id="browse_btn" class="to_translate" href="../">Browse</a></li>
+  <li ><a class="to_translate" href="config.html">Login</a></li>
+  <li ><a class="to_translate" href="database.html">Database</a></li>
+  <li ><a class="to_translate" href="menu.html">Menu</a></li>
+  <li class="active"><a class="to_translate"  href="players.html">Players</a></li>
+  <li ><a class="to_translate" href="editvars.html">Display</a></li>
+  <li ><a class="to_translate" href="editsettings.html">Settings</a></li>
+  <li ><a class="to_translate" href="control.html">Control</a></li>
+</ul>
+</br>
+
+
+
+
+
+<div id="maincontainer">
+
+
+<span class="Rip CD"><br>Player</span>
+<div class="dropdown">
+  <button style="width:100%;" id="playerdropbtn" class="mt-2 btn btn-primary btn-lg " type="button" onclick="Server_Rip()" id="ripcdbtn">
+ Rip
+  </button>
+</div>
+</div>
+
+
+
+
+
+
+<script src='/js/jquery.min.js'></script>
+<script src='/js/bootstrap.min.js'></script>
+
+</body>
+</html>

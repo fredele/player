@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Edit variables</title>
+  <link rel="stylesheet" href="/css/normalize.min.css">
+  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
+  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/browse.css">
+  <link rel="stylesheet" href="/css/editvars.css">
+  <script src="/js/server.js"></script>
+  <script src="/js/editvars.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/vars.js"></script>
+  <script src="/js/resizer.js"></script>
+  <link rel="icon"  type="image/png" href="/assets/favicon.png" />
+<style>
+  body {
+    visibility: hidden;
+  }
+</style>
+</head>
+
+<body onload="onload()">
+
+<ul class="nav nav-pills justify-content-center">
+  <li ><a  id="browse_btn" class="to_translate"href="../">Browse</a></li>
+  <li ><a class="to_translate" href="config.html">Login</a></li>
+  <li ><a class="to_translate" href="database.html">Database</a></li>
+  <li ><a class="to_translate" href="menu.html">Menu</a></li>
+  <li ><a class="to_translate" href="players.html">Players</a></li>
+  <li  class="active"><a class="to_translate" href="editvars.html">Display</a></li>
+  <li ><a class="to_translate" href="editsettings.html">Settings</a></li>
+  <li ><a class="to_translate" href="control.html">Control</a></li>
+</ul>
+
+<div id="main-container">
+
+  <h4 class="to_translate">Images</h4>
+  <span class="to_translate description">cover numbers per request</span>
+  <input class="edit_var" class="auto_height"type="number" id="thumb_nbrs" value="1500"  min="100" max="5000" >
+  <span class="to_translate description">main window thumbnail size</span>
+  <input class="edit_var" class="auto_height"type="number" id="thumb_width">
+  <span class="to_translate description">artwork images display resolution</span>
+  <input rows="1" class="auto_height" type = "text" class="edit_var" id="sideimage_width">
+  <!--
+  <h4 class="to_translate">Fonts</h4>
+  <span class="to_translate description">Font size</span>
+  <input rows="1" class="auto_height" type = "text" class="edit_var" id="font_size">
+  -->
+  <h4 class="to_translate">tags</h4>
+  <span class="to_translate description">tags to query</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="query_tags"></textarea>
+  <span class="to_translate description">single value tags</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="singlevalue"></textarea>
+  <span class="to_translate description">non editable tags in the query view</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="noneditable"></textarea>
+  <h4 class="to_translate">view</h4>
+  <h5 class="to_translate">main view</h5>
+  <span class="to_translate description">track info in the player bar</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="current_track_info"></textarea>
+  <span class="to_translate description">individual track info in the query View</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="query_track_info"></textarea>
+  <h5 class="to_translate">query view</h5>
+  <span class="to_translate description">query info at the top of the query view</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="query_album_info"></textarea>
+  <h5 class="to_translate">queue view</h5>
+  <span class="to_translate description">individual track info in the queue view</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="queue_track_info"></textarea>
+  <span class="to_translate description">track info in the queue view</span>
+  <textarea rows="1" class="auto_height" type = "text" class="edit_var" id="track_info_1"></textarea>
+
+  <h4 class="to_translate">translation</h4>
+
+  <span class="to_translate description">interface translation</span>
+
+  <pre  contenteditable="true" class="edit_var" id="translations"></pre>
+
+  <button type="button" class="to_translate mt-2 btn btn-primary btn-lg bc"   onclick="Get_translation()" onsubmit="return false">download from server</button>
+
+  <span class="to_translate description" id="alert_error_span"></span>
+</div>
+
+<div id="menu">
+<button type="button" class="to_translate mt-2 btn btn-primary btn-lg bc"     onclick="save_vars()" onsubmit="return false">save</button>
+</div>
+
+
+<script src='/js/jquery.min.js'></script>
+<script src='/js/bootstrap.min.js'></script>
+
+</body>
+</html>

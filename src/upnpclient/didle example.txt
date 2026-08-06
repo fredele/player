@@ -1,0 +1,10 @@
+Utiliser mon server UPNP avec hificast et gmediarender avec gmediarender --logfile=stdout pour imprimer cela ...
+
+# Exemples:
+
+##mp3 :
+
+<CurrentTrackURI val="http://192.168.1.14:8001/Music/Disque%201/Jazz/Winton%20Marsalis/The%20Democracy%20Suite/02-sloganize_patronize_realize_revolutionize_%28black_lives_matters%29-dgn.mp3"></CurrentTrackURI>
+<CurrentTrackMetaData val="&lt;DIDL-Lite xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot; xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot;&gt;&lt;item id=&quot;1691281811560&quot; parentID=&quot;0&quot; restricted=&quot;0&quot;&gt;&lt;upnp:class&gt;object.item.audioItem.musicTrack&lt;/upnp:class&gt;&lt;dc:title&gt;Sloganize, Patronize, Realize, Revolutionize (Black Lives Matters)&lt;/dc:title&gt;&lt;dc:creator&gt;Wynton Marsalis&lt;/dc:creator&gt;&lt;upnp:album&gt;The Democracy! Suite&lt;/upnp:album&gt;&lt;upnp:artist&gt;Wynton Marsalis&lt;/upnp:artist&gt;&lt;upnp:albumArtURI&gt;http://192.168.1.14:8001/v1/Covers/3215598993.jpg?thumbnail=800&lt;/upnp:albumArtURI&gt;&lt;res protocolInfo=&quot;http-get:*:audio/mpeg:DLNA.ORG_OP=01;DLNA.ORG_FLAGS=01700000000000000000000000000000&quot; duration=&quot;00:06:57&quot; size=&quot;16719666&quot;&gt;http://192.168.1.14:8001/Music/Disque%201/Jazz/Winton%20Marsalis/The%20Democracy%20Suite/02-sloganize_patronize_realize_revolutionize_%28black_lives_matters%29-dgn.mp3&lt;/res&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;"></CurrentTrackMetaData>
+
+##FLAC :

@@ -1,0 +1,33 @@
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# IDE / éditeurs
+.vscode/
+.idea/
+.cursor/
+
+
+# Builds / artefacts web
+dist/
+build/
+
+# Fichiers inutiles système
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires
+*.tmp
+*.swp
+
+
+

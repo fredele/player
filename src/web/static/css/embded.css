@@ -1,0 +1,38 @@
+body{
+    background-color:#242424cc;
+}
+
+#embded_cover{
+  position: absolute;
+  width: 150px;
+  top: 50px;
+  left:10px;
+}
+
+#embded_tracklist{
+  position: absolute;
+  width: 500px;
+  top: 55px;
+  left:180px;
+  color:white;
+  white-space: pre-line;
+}
+
+
+#embded_album{
+  position: absolute;
+  width: 500px;
+  top: 25px;
+  left:10px;
+  color:white;
+  white-space: pre-line;
+  font-weight: bold;
+}
+
+#play_btn{
+  position: absolute;
+  width:70px;
+  height:70px;
+  top: 145px;
+  left:105px;
+ }   

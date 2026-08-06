@@ -1,0 +1,15 @@
+name: player
+services:
+  myplayer:
+    container_name: myplayer
+    image: myplayer
+    build:
+      context: /home/fredele/MyPlayer
+      dockerfile: /home/fredele/MyPlayer/player/Dockerfile
+    network_mode: host
+
+    environment:
+      PULSE_SERVER: ${XDG_RUNTIME_DIR}/pulse/native
+
+    group_add:
+      - "${AUDIO_GID}"

@@ -1,5 +1,6 @@
 services:
   myplayer:
+    user: "${HOST_UID}:${HOST_GID}"
     image: myplayer
     network_mode: host
     volumes:
@@ -9,6 +10,7 @@ services:
       # Set your music drives here...
       - /mnt/Disque_1:/mnt/Disque_1
       - /mnt/Disque_2:/mnt/Disque_2
+
 
     environment:
       PULSE_SERVER: ${XDG_RUNTIME_DIR}/pulse/native

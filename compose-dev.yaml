@@ -1,22 +1,17 @@
-name: player
 services:
-  myplayer:
-    container_name: myplayer
-    image: myplayer
-    build:
-      context: /home/fredele/MyPlayer
-      dockerfile: /home/fredele/MyPlayer/player/Dockerfile
+  myplayer-dev:
+    user: "${HOST_UID}:${HOST_GID}"
+    image: myplayer-dev
     network_mode: host
-
     volumes:
+      - /home/fredele/MyPlayer/player/src/:/home/player/MyPlayer/player/src/
       - ${HOME}/.Player:/home/player/.Player
       - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
       - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
       # Set your music drives here...
       - /mnt/Disque_1:/mnt/Disque_1
       - /mnt/Disque_2:/mnt/Disque_2
-      # Set your database folder here...
-      - /mnt/Disque_1/DB_Player/database:/data/db
+
 
     environment:
       PULSE_SERVER: ${XDG_RUNTIME_DIR}/pulse/native
@@ -29,4 +24,5 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
+      # Set your database folder here...
       - /mnt/Disque_1/DB_Player/database:/data/db

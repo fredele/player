@@ -1,0 +1,88 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker-compose-up",
+      "type": "shell",
+      "command": "docker compose -f compose.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-down",
+      "type": "shell",
+      "command": "docker compose -f compose.yaml down",
+      "problemMatcher": []
+    },
+        {
+      "label": "docker-compose-dev-up",
+      "type": "shell",
+      "command": "docker compose -f compose-dev.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-dev-down",
+      "type": "shell",
+      "command": "docker compose -f compose-dev.yaml down",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-mongodb-up",
+      "type": "shell",
+      "command": "docker compose -f mongodb.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-mongodb-down",
+      "type": "shell",
+      "command": "docker compose -f mongodb.yaml down",
+      "problemMatcher": []
+    },
+        {
+      "label": "chown-database",
+      "type": "shell",
+      "command": "sudo chown -R fredele:fredele ~/.Player/database",
+      "problemMatcher": []
+    },
+    {
+      "label": "prepare-environment",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "docker-compose-mongodb-up",
+        "chown-database"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "chown-database",
+      "type": "shell",
+      "command": "sudo chown -R fredele:fredele ~/.Player/database",
+      "problemMatcher": []
+    },
+    {
+      "label": "chown-database",
+      "type": "shell",
+      "command": "sudo chown -R fredele:fredele ~/.Player/database",
+      "problemMatcher": []
+    },
+    {
+      "label": "activate venv",
+      "type": "shell",
+      "command": "source ../venv/bin/activate",
+      "problemMatcher": []
+    },
+    {
+      "label": "build myplayer",
+      "type": "shell",
+      "command": "docker compose -f player-build.yaml build",
+      "problemMatcher": []
+    },
+    {
+      "label": "build myplayer-dev",
+      "type": "shell",
+      "command": "docker compose -f player-dev-build.yaml build",
+      "problemMatcher": []
+    }
+
+    
+  ]
+}

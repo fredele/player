@@ -1,11 +1,14 @@
 name: player-dev
+
 services:
   myplayer:
-    container_name: myplayer-dev
+    container_name: myplayer
     image: myplayer-dev
     build:
       context: /home/fredele/MyPlayer
-      dockerfile: /home/fredele/MyPlayer/player/Dockerfile-dev
+      dockerfile: /home/fredele/MyPlayer/player/Dockerfile
+      target: debug
+
     network_mode: host
 
     environment:

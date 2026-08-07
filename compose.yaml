@@ -18,7 +18,7 @@ services:
     group_add:
       - "${AUDIO_GID}"
   mongo:
-    user: "${HOST_UID}:${HOST_GID}"
+    user: "mongodb:mongodb"
     image: mongo:3.6
     restart: unless-stopped
     network_mode: host

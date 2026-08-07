@@ -6,7 +6,7 @@
   "configurations": [
     
    {
-      "name": "Debug Python MongoDB Docker",
+      "name": "Debug local with mongodb docker image",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/src/main.py",
@@ -16,7 +16,7 @@
       "postDebugTask": "docker-compose-mongodb-down"
     },
     {
-      "name": "Debug MyPlayer container",
+      "name": "Debug with myplayer-dev docker image",
       "type": "debugpy",
       "request": "attach",
       "connect": {

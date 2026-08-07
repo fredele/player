@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:18.04 AS base
 
 WORKDIR /home/player/MyPlayer
 
@@ -26,36 +26,44 @@ RUN apt-get update && apt-get install -y \
     libfribidi-dev libxcb1-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Création de l'utilisateur pour correspondre à ton environnement
+# Création de l'utilisateur
 RUN useradd -m -u 1000 player && \
     mkdir -p /home/player/MyPlayer
 
-# Copie du venv
+# Environnement Python
 COPY venv /opt/venv
-
-# Copie du code en respectant la structure originale
-COPY player/src/ /home/player/MyPlayer/player/src/
-#COPY player/mongodb/ /home/player/MyPlayer/player/mongodb/
-COPY player/init_config_docker/ /home/player/MyPlayer/player/init_config_docker/
-
-# Copie des libs si vraiment nécessaire
-COPY player/libs /usr/lib/x86_64-linux-gnu/
-
-# Environnement
 ENV PATH="/opt/venv/bin:$PATH"
 ENV HOME=/home/player
 
+# Configuration
+COPY player/init_config_docker/ /home/player/MyPlayer/player/init_config_docker/
+COPY player/libs /usr/lib/x86_64-linux-gnu/
 
-RUN mkdir -p /home/player/.Player/logs 
-RUN chown -R player:player /home/player
-RUN chmod -R 755 /home/player/.Player
-
-
+RUN mkdir -p /home/player/.Player/logs && \
+    chown -R player:player /home/player && \
+    chmod -R 755 /home/player/.Player
 
 USER player
 
 COPY --chmod=755 /player/entrypoint.sh /player/entrypoint.sh
-
 ENTRYPOINT ["/player/entrypoint.sh"]
 
-CMD ["/opt/venv/bin/python3", "/home/player/MyPlayer/player/src/main.py", "-c", "/home/player/.Player/config/config-docker.ini"]
+
+###############################################################################
+# Image de production
+###############################################################################
+
+FROM base AS release
+
+COPY player/src/ /home/player/MyPlayer/player/src/
+
+CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/player/src/main.py","-c","/home/player/.Player/config/config-docker.ini"]
+
+
+###############################################################################
+# Image de développement
+###############################################################################
+
+FROM base AS debug
+
+CMD ["/opt/venv/bin/python3","-m","debugpy","--listen","0.0.0.0:5678","--wait-for-client","/home/player/MyPlayer/player/src/main.py","-c","/home/player/.Player/config/config-docker.ini"]

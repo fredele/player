@@ -1,0 +1,27 @@
+services:
+  myplayer:
+    user: "${HOST_UID}:${HOST_GID}"
+    image: myplayer
+    network_mode: host
+    volumes:
+      - ${HOME}/.Player:/home/player/.Player
+      - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
+      - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
+      # Set your music drives here...
+      - /mnt/Disque_1:/mnt/Disque_1
+      - /mnt/Disque_2:/mnt/Disque_2
+
+    group_add:
+      - "${AUDIO_GID}"
+      
+    devices:
+      - "/dev/snd:/dev/snd"
+
+  mongo:
+    user: "mongodb:mongodb"
+    image: mongo:3.6
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      # Set your database folder here...
+      - /mnt/Disque_1/DB_Player/database:/data/db

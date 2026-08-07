@@ -5,8 +5,8 @@ services:
     container_name: myplayer
     image: myplayer
     build:
-      context: /home/fredele/MyPlayer
-      dockerfile: /home/fredele/MyPlayer/player/Dockerfile
+      context: ..
+      dockerfile: ./player/Dockerfile
       target: release
 
     network_mode: host
@@ -17,5 +17,3 @@ services:
     group_add:
       - "${AUDIO_GID}"
 
-    ports:
-      - "5678:5678"  # Expose debugpy port

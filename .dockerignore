@@ -29,5 +29,11 @@ Thumbs.db
 *.tmp
 *.swp
 
+venv
+.git
+*.log
+player/libs
+.DS_Store
+
 
 

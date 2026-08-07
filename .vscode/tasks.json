@@ -25,6 +25,18 @@
       "command": "docker compose -f compose-dev.yaml down",
       "problemMatcher": []
     },
+        {
+      "label": "docker-compose-alsa-up",
+      "type": "shell",
+      "command": "docker compose -f compose-alsa.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-alsa-down",
+      "type": "shell",
+      "command": "docker compose -f compose-alsa.yaml down",
+      "problemMatcher": []
+    },
     {
       "label": "docker-compose-mongodb-up",
       "type": "shell",
@@ -48,29 +60,12 @@
       "type": "shell",
       "command": "docker compose -f player-dev-build.yaml build",
       "problemMatcher": []
-    },
-    
-    {
-     "label": "chown-database",
-      "type": "shell",
-      "command": "sudo chown -R fredele:fredele ~/.Player/database",
-      "problemMatcher": []
-    },
-    {
-      "label": "prepare-environment",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "docker-compose-mongodb-up"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "activate venv",
-      "type": "shell",
-      "command": "source ../venv/bin/activate",
-      "problemMatcher": []
     }
 
+
+
     
+
+
   ]
 }

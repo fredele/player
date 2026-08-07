@@ -3,16 +3,19 @@ FROM ubuntu:18.04 AS base
 WORKDIR /home/player/MyPlayer
 
 # Installation des paquets système
-RUN apt-get update && apt-get install -y \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     python3.8 \
     python3-pip \
     python3-gi \
     python3-gi-cairo \
-    gir1.2-gtk-3.0 \
+    #gir1.2-gtk-3.0 \
     gir1.2-gstreamer-1.0 \
     gstreamer1.0-tools \
     gstreamer1.0-plugins-base \
     gir1.2-gst-plugins-base-1.0 \
+    gstreamer1.0-libav \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-ugly \
@@ -21,10 +24,13 @@ RUN apt-get update && apt-get install -y \
     alsa-utils \
     libpulse0 \
     gstreamer1.0-pulseaudio \
-    zlib1g-dev libtiff5-dev libjpeg8-dev libopenjp2-7-dev \
-    libfreetype6-dev liblcms2-dev libwebp-dev libharfbuzz-dev \
-    libfribidi-dev libxcb1-dev \
-    && rm -rf /var/lib/apt/lists/*
+    #zlib1g-dev libtiff5-dev libjpeg8-dev libopenjp2-7-dev \
+    #libfreetype6-dev liblcms2-dev libwebp-dev libharfbuzz-dev \
+    #libfribidi-dev libxcb1-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get autoremove -y \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Création de l'utilisateur
 RUN useradd -m -u 1000 player && \
@@ -50,7 +56,7 @@ ENTRYPOINT ["/player/entrypoint.sh"]
 
 
 ###############################################################################
-# Image de production
+# Production Image
 ###############################################################################
 
 FROM base AS release
@@ -61,7 +67,7 @@ CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/player/src/main.py","-c","/h
 
 
 ###############################################################################
-# Image de développement
+# Dev. Image
 ###############################################################################
 
 FROM base AS debug

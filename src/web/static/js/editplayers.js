@@ -159,7 +159,12 @@ function renderUpnpPlayers(players) {
 function after_Get_Players(){
 
  const data = JSON.parse(this.response) ;
- current_player_id = data.player.id;
+ try {
+  current_player_id = data.player.id; 
+ } catch (error) {
+   
+ } 
+ 
  let upnpPlayers = (data.players || []).filter(p => p.type === 'upnp');
   renderUpnpPlayers(upnpPlayers);
   

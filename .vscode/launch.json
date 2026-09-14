@@ -12,7 +12,7 @@
       "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal",
       "python": "${workspaceFolder}/../venv/bin/python",
-      "preLaunchTask": "prepare-environment", 
+      "preLaunchTask": "docker-compose-mongodb-up", 
       "postDebugTask": "docker-compose-mongodb-down"
     },
     {

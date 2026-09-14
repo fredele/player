@@ -181,7 +181,7 @@ class UpnpPlayer:
             if current_state == "STOPPED":
                 self.state = "stopped"
                 if not self.Has_Next_AVTransport:
-                    if self.previous_state == "playing" and not self.is_changing_track and not self.bock_task:
+                    if self.previous_state == "playing" and not self.is_changing_track and not self.block_task:
                         if self.queue_position < len(self.queue) - 1:
                             logging.info("Piste terminée naturally (non-gapless). Passage à la suivante...")
                             self.set_next()

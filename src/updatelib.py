@@ -36,6 +36,33 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from utils.string import to_int ,naturalsort,IfExistsDic ,BoolStr,StrBool,BoolInt,RepresentsInt ,is_number, ReprInt
 from updatesavedqueries import Update_Queries
 
+
+def append_unique_shared(values, value, lock=None):
+    if lock is not None:
+        with lock:
+            if value not in values:
+                values.append(value)
+        return
+    if value not in values:
+        values.append(value)
+
+
+def register_txxx_key(owner, tag, shared_state_lock=None):
+    if tag in owner.txxx:
+        return
+
+    if shared_state_lock is not None:
+        with shared_state_lock:
+            if tag not in owner.txxx:
+                owner.txxx.append(tag)
+                EasyID3.RegisterTXXXKey(tag, tag)
+        return
+
+    if tag not in owner.txxx:
+        owner.txxx.append(tag)
+        EasyID3.RegisterTXXXKey(tag, tag)
+
+
 def get_cover_names(image_names,imageextension):
     n = []
     e = []
@@ -80,7 +107,8 @@ class Update_Folders(Thread):
                 self.owner.send_message("Library Updated")
                 louie.send("lib_updated", self)
 
-        except:
+        except Exception:
+            logging.exception("Update_Folders failed")
             if self.owner is not None:
                 self.owner.send_message("Library Updated")
                 louie.send("lib_updated", self)
@@ -127,11 +155,12 @@ class Update_Lib(Thread):
             if  self.owner is not None :
                 self.owner.send_message("Update Library")
                 self.owner.scan_lock = True
-            self.owner.plugins_action('before_server_update')
+            if self.owner is not None:
+                self.owner.plugins_action('before_server_update')
             def extension(f):
                 try :
                     return f.rsplit('.', 1)[1]
-                except:
+                except (AttributeError, IndexError):
                     return ''
 
             if  self.owner is not None :
@@ -151,18 +180,19 @@ class Update_Lib(Thread):
                 searchfolder = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles',self.folder)
             try:
                 max_threads = int(self.owner.scan_threads)
-            except:
+            except (AttributeError, TypeError, ValueError):
                 max_threads = 5
             if self.scanfolder == True:
                 try:
                     dirnames = self.db.mediafiles.find().distinct('dirname')
                     dirnames = [os.path.join(os.getenv("HOME"), '.Player', 'mediafiles',f) for f in dirnames]
-                except:
+                except Exception:
                     dirnames = []
 
             for root, dirs, files in os.walk(searchfolder,followlinks=True):
                 i=0
-                self.owner.current_scan_folder = root
+                if self.owner is not None:
+                    self.owner.current_scan_folder = root
 
                 if self.scanfolder == True:
                     # Check only new folders
@@ -207,8 +237,10 @@ class Update_Lib(Thread):
                                 future.result()
                             except Exception as e:
                                 logging.debug("Error importing file in %s: %s", root, e)
-        except:
-            self.owner.send_message("Error on Import")
+        except Exception:
+            logging.exception("Error on Import")
+            if self.owner is not None:
+                self.owner.send_message("Error on Import")
         if self.callback is not None:
             self.callback()
         try:
@@ -220,8 +252,10 @@ class Update_Lib(Thread):
                         if os.path.exists(dir) == False:
                             f = dir.replace(os.path.join(os.getenv("HOME"), '.Player', 'mediafiles'),'')[1:]
                             cursor = self.db.mediafiles.delete_many({'dirname': f})
-        except:
-            self.owner.send_message("Error on Import")
+        except Exception:
+            if self.owner is not None:
+                self.owner.send_message("Error on Import")
+            logging.exception("Error while cleaning missing directories")
 
         else:
             # Check missing files from DB
@@ -239,10 +273,10 @@ class Update_Lib(Thread):
                                     self.db.mediafiles.delete_one({'_id': i['_id']})
                                 if i["dirname"].split("/")[-1][0] == "." :
                                     self.db.mediafiles.delete_one({'_id': i['_id']})
-                            except:
+                            except (KeyError, TypeError, OSError):
                                 pass
-            except:
-                pass
+            except Exception:
+                logging.exception("Error during DB cleanup")
             cursor = self.db.mediafiles.delete_many({'dirname': {'$exists': False}})
         # Wait end of DB writings ...
         time.sleep(2)
@@ -265,7 +299,8 @@ class Update_Lib(Thread):
                     self.owner.update_queries.do_stop()
                 self.owner.update_queries =  Update_Queries(self.owner, self.owner.requestfind)
                 self.owner.update_queries.start()
-        except:
+        except Exception:
+            logging.exception("Final library update cleanup failed")
             if self.owner is not None:
                 self.owner.scan_lock = False
                 self.owner.updating = False
@@ -295,8 +330,8 @@ def thumbnailer(owner, img_path,dirhash,overwrite):
             owner.db.thumbnails.update_one({"dirhash": dirhash },{"$set": { "last_modified_epoch": round(time.time()),"dirhash": dirhash , "cover_256": thumb_encoded_string, "path": img_path}}, upsert=True)
             #reload ..
             owner.send_message_value('Cover changed', str(dirhash))
-    except:
-        pass
+    except Exception:
+        logging.exception("Thumbnail generation failed for %s", img_path)
 
 def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
     '''
@@ -310,10 +345,9 @@ def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
     if "/." in dirname:
         return  #Do not import files in hidden folders
     try:
-        found = db.mediafiles.find({"dirname": dirname, "filename": filename, "extension": file_extension[1:]})
-        fc = found.count()
-    except:
-        fc =0
+        fc = db.mediafiles.count_documents({"dirname": dirname, "filename": filename, "extension": file_extension[1:]})
+    except Exception:
+        fc = 0
 
     if fc == 0 or overwrite == True:  # File not found in DB, insert it !
 
@@ -327,13 +361,16 @@ def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
 
         if shared_state_lock is not None:
             with shared_state_lock:
-                owner.imported_dirhashs.append(dirhash)
-                owner.imported_dirhashs = list(set(owner.imported_dirhashs))
+                append_unique_shared(owner.imported_dirhashs, dirhash)
         else:
-            owner.imported_dirhashs.append(dirhash)
-            owner.imported_dirhashs = list(set(owner.imported_dirhashs))
+            append_unique_shared(owner.imported_dirhashs, dirhash)
         logging.debug("Update_Lib|run|File found:" + str(f))
-        si = mutagen.File(f).info
+
+        media_file = mutagen.File(f)
+        if media_file is None or media_file.info is None:
+            logging.warning("Skipping unreadable media file: %s", f)
+            return
+        si = media_file.info
         info = {"mediatype": "audio", "mediasubtype": "music", "last_modified_timestamp": Timestamp_modified(f),
                 "date_imported": Excel_Now()
             , "date_imported_timestamp": Timestamp_Now(), "dirname": dirname, "dirhash": dirhash,
@@ -374,33 +411,30 @@ def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
                         vkeys = EasyID3.valid_keys.keys()
                         vkeys = [f for f in vkeys if f not in ['catalognumber', 'performer']] # catalognumber IS in valid keys BUT not in the EasyMP3 results ?? must be REGISTERED !
                         if tag not in  vkeys:                    # DO NOT REMOVE THIS !
-                            if shared_state_lock is not None:
-                                with shared_state_lock:
-                                    if tag not in owner.txxx:
-                                        owner.txxx.append(tag)          # DO NOT REGISTER existing Valid tags as TXXX !
-                                        EasyID3.RegisterTXXXKey(tag, tag)
-                            else:
-                                if tag not in owner.txxx:
-                                    owner.txxx.append(tag)          # DO NOT REGISTER existing Valid tags as TXXX !
-                                    EasyID3.RegisterTXXXKey(tag, tag)
+                            register_txxx_key(owner, tag, shared_state_lock)
 
                     try:
-                        tags = eval(str(EasyMP3(f)))
-                    except:
-                        print("Error importing ..." + str(f))
+                        audio = EasyMP3(f)
+                        tags = audio
+                    except Exception as exc:
+                        logging.warning("Error importing MP3 tags for %s: %s", f, exc)
                         return
 
         elif file_extension[1:] == 'm4a':
             try:
-                tags = eval(str(EasyMP4(f)))
-            except:
-                print("Error importing ..." + str(f))
+                audio = EasyMP4(f)
+                tags = audio
+            except Exception as exc:
+                logging.warning("Error importing M4A tags for %s: %s", f, exc)
                 return
         else:
             try:
-                tags = mutagen.File(f)
-            except:
-                print("Error importing ..." + str(f))
+                audio = mutagen.File(f)
+                if audio is None:
+                    return
+                tags = audio
+            except Exception as exc:
+                logging.warning("Error importing tags for %s: %s", f, exc)
                 return
 
         dic = {**convert(tags), **convert(info)}
@@ -465,9 +499,11 @@ def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
             res =db.mediafiles.update_one({"dirname": dirname, "filename": filename, "extension": file_extension[1:]}, {"$set":dic},upsert=True)
             if shared_state_lock is not None:
                 with shared_state_lock:
-                    owner.imported_ids.append(res.upserted_id)
+                    if res.upserted_id is not None:
+                        append_unique_shared(owner.imported_ids, res.upserted_id)
             else:
-                owner.imported_ids.append(res.upserted_id)
+                if res.upserted_id is not None:
+                    append_unique_shared(owner.imported_ids, res.upserted_id)
 
             try:
                 md = db.mediadirs.find_one({"dirhash": dic['dirhash']}) #1416115518

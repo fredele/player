@@ -54,6 +54,30 @@ class UpnpPlayer:
         """Pause asynchrone qui ne bloque pas la boucle Twisted."""
         return task.deferLater(self.app.reactor, seconds, lambda: None)
 
+    def wait_for_transport_state(self, expected_states, timeout=5.0, interval=0.1):
+        def is_expected_state():
+            try:
+                info = self.AVTransport.GetTransportInfo(InstanceID=0)
+                current_state = info.get('CurrentTransportState')
+                return current_state in expected_states
+            except Exception:
+                return False
+
+        d = defer.Deferred()
+        deadline = self.app.reactor.seconds() + timeout
+
+        def poll():
+            if is_expected_state():
+                d.callback(None)
+                return
+            if self.app.reactor.seconds() >= deadline:
+                d.errback(TimeoutError(f"Transport state not reached: {expected_states}"))
+                return
+            self.app.reactor.callLater(interval, poll)
+
+        self.app.reactor.callLater(0.0, poll)
+        return d
+
     def set_device(self, id, device_xml_url, subscription_callback, gapless, reactor):
         self.queue = []
         self.queue_position = 0
@@ -157,7 +181,7 @@ class UpnpPlayer:
             if current_state == "STOPPED":
                 self.state = "stopped"
                 if not self.Has_Next_AVTransport:
-                    if self.previous_state == "playing" and not self.is_changing_track and not self.block_task:
+                    if self.previous_state == "playing" and not self.is_changing_track and not self.bock_task:
                         if self.queue_position < len(self.queue) - 1:
                             logging.info("Piste terminée naturally (non-gapless). Passage à la suivante...")
                             self.set_next()
@@ -253,10 +277,9 @@ class UpnpPlayer:
                 if state is not None:
                     self.on_state_change(state)
 
-    @defer.inlineCallbacks
     def set_uri(self, dic, position=None):
         if self.state == "paused":
-            return
+            return defer.succeed(None)
 
         file_path = dic.get("file", "") or dic.get("uri", "")
         if "file" in file_path:
@@ -270,63 +293,61 @@ class UpnpPlayer:
 
         meta = set_TrackMetaData(self.app, dic)
 
-        # Arrêt temporaire du sondage
         if self.ask_transport_task.running:
             try:
                 self.ask_transport_task.stop()
             except Exception:
                 pass
 
-        if position is not None:
-            self.queue_position = position
-            try:
-                self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
-            except Exception as e:
-                logging.error(f"Erreur SetAVTransportURI: {e}")
+        def set_current_uri():
+            if position is not None:
+                self.queue_position = position
+                try:
+                    return self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
+                except Exception as e:
+                    logging.error(f"Erreur SetAVTransportURI: {e}")
+                    return defer.succeed(None)
 
-            yield self.sleep_async(self.sleep_time)
-
-            try:
-                self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
-            except Exception:
-                pass
-
-            yield self.sleep_async(0.2)
-            logging.info(f"Set meta : {meta}")
-            logging.info(f"Set AVTransport : {dic['uri']}")
-            self.audio_changed(self.id)
-            self.next_position = position
-
-        else:
             self.block_task = True
             self.queue_position = 0
             self.next_position = 0
-
             try:
-                self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
+                return self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
             except Exception as e:
                 logging.error(f"Erreur SetAVTransportURI: {e}")
+                return defer.succeed(None)
 
-            yield self.sleep_async(self.sleep_time)
-
+        def set_next_uri(result):
             try:
-                self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
-                logging.info("Set NextAVTransport to ''")
+                return self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
             except Exception:
-                pass
+                return defer.succeed(None)
 
-            yield self.sleep_async(self.sleep_time)
+        def finalize(result):
+            if position is None:
+                self.block_task = False
             logging.info(f"Set meta : {meta}")
             logging.info(f"Set AVTransport : {dic['uri']}")
             self.audio_changed(self.id)
-            self.block_task = False
+            if position is not None:
+                self.next_position = position
+            return result
 
-        # Relance du sondage
-        if not self.ask_transport_task.running:
-            try:
-                self.ask_transport_task.start(10)
-            except Exception:
-                pass
+        def restart_polling(result):
+            if not self.ask_transport_task.running:
+                try:
+                    self.ask_transport_task.start(10)
+                except Exception:
+                    pass
+            return result
+
+        d = defer.maybeDeferred(set_current_uri)
+        d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED", "PLAYING", "PAUSED_PLAYBACK"]))
+        d.addCallback(set_next_uri)
+        d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"]))
+        d.addCallback(finalize)
+        d.addCallback(restart_polling)
+        return d
 
     @defer.inlineCallbacks
     def set_path(self, dic, position=None):

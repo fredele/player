@@ -249,7 +249,11 @@ class GPlayer():
         print(f"set_uri: {uri}")
         self.playbin.set_property("uri", uri)
         if self.transcode == True:
-            uri = self.app.webadr + "/v1/Transcode/" + dic["_id"] # A masquer
+            codec = getattr(self, 'transcode_codec', 'mp3')
+            bitrate = getattr(self, 'transcode_bitrate', 128)
+            source_path = str(dic.get('file', 'track'))
+            source_ext = os.path.splitext(os.path.basename(source_path))[1].lstrip('.') or 'mp3'
+            uri = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
         self.playbin.set_property("uri", uri)
 
     def set_uri(self,dic,position = None):
@@ -260,7 +264,11 @@ class GPlayer():
         uri = uri.replace(p, h)
         self.playbin.set_property("uri",uri)
         if self.transcode == True:
-            uri = self.app.webadr + "/v1/Transcode/" + dic["_id"] # A masquer
+            codec = getattr(self, 'transcode_codec', 'mp3')
+            bitrate = getattr(self, 'transcode_bitrate', 128)
+            source_path = str(dic.get('file', 'track'))
+            source_ext = os.path.splitext(os.path.basename(source_path))[1].lstrip('.') or 'mp3'
+            uri = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
         print(f"set_uri: {uri}")
         self.playbin.set_property("uri", uri)
 

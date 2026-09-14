@@ -447,19 +447,23 @@ def fname(s):
 def passer_titre():
     return dict(titre="Bienvenue !")
 
-@app.route("/v1/Transcode/<fileid>")
-def transcodedfile(fileid):
-    if 'codec' in request.args:
-        codec = request.args['codec']
-    else:
-        codec = 'mp3'
-    if 'bitrate' in request.args:
-        bitrate = request.args['bitrate']
-    else:
-        bitrate = '128'
+@app.route("/v1/Transcode/<string:codec>/<int:bitrate>/<path:filename>")
+def transcodedfile(codec, bitrate, filename):
+    fileid = os.path.splitext(filename)[0]
+    fileid = fileid.split("?", 1)[0]
     range_header = request.headers.get('Range', None)
     print(f"range_header:{range_header}")
-    return send_audio_file(app,fileid,codec,bitrate,range_header)
+    return send_audio_file(app, fileid, codec, bitrate, range_header)
+
+@app.route("/v1/Transcode/<path:fileid>")
+def transcodedfile_query_legacy(fileid):
+    fileid = fileid.split("?", 1)[0]
+    fileid = os.path.splitext(fileid)[0]
+    codec = request.args.get('codec', 'mp3')
+    bitrate = request.args.get('bitrate', '128')
+    range_header = request.headers.get('Range', None)
+    print(f"range_header:{range_header}")
+    return send_audio_file(app, fileid, codec, bitrate, range_header)
 
 
 
@@ -708,6 +712,9 @@ def get_players():
             "name": p["name"],
             "volume_control": p["volume_control"] if "volume_control" in p else "without",
             "gapless": p["gapless"] if "gapeless" in p else "without",
+            "transcode": p.get("transcode", False),
+            "codec": p.get("codec", "mp3"),
+            "bitrate": int(p.get("bitrate", 128)),
             "online": p["online"] if "online" in p else "without",
             "address": p.get("address","none"),
             "player": "Objet",
@@ -812,8 +819,12 @@ def set_player(app,id):
             if online == True :
                 player["player"] = UpnpPlayer(app, state_changed, audio_changed)
                 player["player"].id = id
+                player["player"].transcode = bool(player.get("transcode", False))
+                player["player"].transcode_codec = str(player.get("codec", "mp3")).lower()
+                player["player"].transcode_bitrate = int(player.get("bitrate", 128))
                 gapless = player.get("gapless",True)
-                if player["player"].set_device(id,addr, app.subscription_callback,gapless, reactor) == False :
+                subscription_callback = getattr(app, 'subscription_callback', '')
+                if player["player"].set_device(id, addr, subscription_callback, gapless, reactor) == False :
                     player["player"].id = player["id"]
                     player["player"].name = player["name"]
                     player["player"].loaded = False
@@ -1189,9 +1200,36 @@ def save_players():
         # for leftover in existing_map.values():
         #     new_list.append(leftover)
 
+        old_players_by_id = {
+            str(p.get("id")): p for p in getattr(app, "players", [])
+            if isinstance(p, dict) and "id" in p
+        }
+
+        for player in new_list:
+            old_player = old_players_by_id.get(str(player.get("id")))
+            if old_player and "player" in old_player:
+                player["player"] = old_player["player"]
+                player["saved"] = "yes"
+
         app.players = new_list
 
-        #TODO: Mettre à jour les player dans app.player ...
+        for p in app.players:
+            if p.get("type") == "upnp" and "player" in p and hasattr(p["player"], "transcode"):
+                p["player"].transcode = bool(p.get("transcode", False))
+                p["player"].transcode_codec = str(p.get("codec", "mp3")).lower()
+                p["player"].transcode_bitrate = int(p.get("bitrate", 128))
+
+        if hasattr(app, "player_id") and app.player_id:
+            current_player = next((p for p in app.players if str(p.get("id")) == str(app.player_id)), None)
+            if current_player is not None:
+                if "player" not in current_player or current_player["player"] is None:
+                    set_player(app, current_player["id"])
+                app.player = next((p.get("player") for p in app.players if str(p.get("id")) == str(app.player_id)), None)
+            else:
+                app.player = None
+        else:
+            app.player = None
+
         return json_resp({"status": "OK", "saved_to": filepath})
 
     except Exception as e:
@@ -3526,8 +3564,26 @@ if __name__ == '__main__':
     for player in app.players:
         player["saved"]= "yes"
 
+    preferred_player_id = str(app._config.get("Player", "last", fallback="")).strip()
+    matched_player = None
+    if preferred_player_id:
+        matched_player = next((p for p in app.players if str(p.get("id")) == preferred_player_id), None)
+    if matched_player is None and app.players:
+        preferred_player_id = str(app.players[0].get("id", ""))
+        matched_player = app.players[0]
+
     app.webadr = "http://" + str(app.host) + ":" + str(app.httpport)
-    app.subscription_callback = app.http_server_adr+ '/upnp'
+    app.subscription_callback = app.http_server_adr + '/upnp'
+
+    if matched_player is not None:
+        app.player_id = preferred_player_id
+        if "player" not in matched_player:
+            set_player(app, preferred_player_id)
+        app.player = matched_player.get("player")
+    else:
+        app.player_id = ""
+        app.player = None
+
     reactor.callWhenRunning(set_upnp_config, config)
     app.auto_import = Autoimport(app)
     if app._config['AutoImport']['activate'] == "True":

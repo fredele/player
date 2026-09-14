@@ -21,6 +21,7 @@ class UpnpPlayer:
         self.transcode = False  # NOTE: Set to True to enable transcoding
         self.Has_Next_AVTransport = True
         self.app = app
+        self.reactor = None
         self.state_changed = state_changed
         self.audio_changed = audio_changed
         self.msg_count = 0
@@ -37,7 +38,7 @@ class UpnpPlayer:
         self.state = None
         self.next_position = None
         self.sleep_time = 0.3
-        self.block_task = False
+        self.bock_task = False
         self.is_worker_running = False
         self.upnp__keys_to_watch = [
             'AVTransportURI', 'NextAVTransportURI', 'TransportState'
@@ -54,34 +55,18 @@ class UpnpPlayer:
         """Pause asynchrone qui ne bloque pas la boucle Twisted."""
         return task.deferLater(self.app.reactor, seconds, lambda: None)
 
-    def wait_for_transport_state(self, expected_states, timeout=5.0, interval=0.1):
-        def is_expected_state():
-            try:
-                info = self.AVTransport.GetTransportInfo(InstanceID=0)
-                current_state = info.get('CurrentTransportState')
-                return current_state in expected_states
-            except Exception:
-                return False
-
-        d = defer.Deferred()
-        deadline = self.app.reactor.seconds() + timeout
-
-        def poll():
-            if is_expected_state():
-                d.callback(None)
-                return
-            if self.app.reactor.seconds() >= deadline:
-                d.errback(TimeoutError(f"Transport state not reached: {expected_states}"))
-                return
-            self.app.reactor.callLater(interval, poll)
-
-        self.app.reactor.callLater(0.0, poll)
-        return d
+    def _schedule_state_change(self, delay, state):
+        reactor = self.reactor or getattr(self.app, 'reactor', None)
+        if reactor is not None:
+            reactor.callLater(delay, self.state_changed, self.id, state)
+        else:
+            self.state_changed(self.id, state)
 
     def set_device(self, id, device_xml_url, subscription_callback, gapless, reactor):
         self.queue = []
         self.queue_position = 0
         self.app.set_device = True
+        self.reactor = reactor
 
         self.id = id
         try:
@@ -181,7 +166,7 @@ class UpnpPlayer:
             if current_state == "STOPPED":
                 self.state = "stopped"
                 if not self.Has_Next_AVTransport:
-                    if self.previous_state == "playing" and not self.is_changing_track and not self.block_task:
+                    if self.previous_state == "playing" and not self.is_changing_track and not self.bock_task:
                         if self.queue_position < len(self.queue) - 1:
                             logging.info("Piste terminée naturally (non-gapless). Passage à la suivante...")
                             self.set_next()
@@ -277,9 +262,10 @@ class UpnpPlayer:
                 if state is not None:
                     self.on_state_change(state)
 
+    @defer.inlineCallbacks
     def set_uri(self, dic, position=None):
         if self.state == "paused":
-            return defer.succeed(None)
+            return
 
         file_path = dic.get("file", "") or dic.get("uri", "")
         if "file" in file_path:
@@ -289,65 +275,71 @@ class UpnpPlayer:
             uri = self.app.webadr + uri
             dic['uri'] = uri
             if self.transcode:
-                dic["uri"] = f"{self.app.webadr}/v1/Transcode/{dic['_id']}"
+                codec = getattr(self, 'transcode_codec', 'mp3')
+                bitrate = getattr(self, 'transcode_bitrate', 128)
+                source_name = os.path.basename(dic.get('file', 'track'))
+                source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
+                dic["uri"] = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
 
         meta = set_TrackMetaData(self.app, dic)
 
+        # Arrêt temporaire du sondage
         if self.ask_transport_task.running:
             try:
                 self.ask_transport_task.stop()
             except Exception:
                 pass
 
-        def set_current_uri():
-            if position is not None:
-                self.queue_position = position
-                try:
-                    return self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
-                except Exception as e:
-                    logging.error(f"Erreur SetAVTransportURI: {e}")
-                    return defer.succeed(None)
-
-            self.block_task = True
-            self.queue_position = 0
-            self.next_position = 0
+        if position is not None:
+            self.queue_position = position
             try:
-                return self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
+                self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
             except Exception as e:
                 logging.error(f"Erreur SetAVTransportURI: {e}")
-                return defer.succeed(None)
 
-        def set_next_uri(result):
+            yield self.sleep_async(self.sleep_time)
+
             try:
-                return self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
+                self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
             except Exception:
-                return defer.succeed(None)
+                pass
 
-        def finalize(result):
-            if position is None:
-                self.block_task = False
+            yield self.sleep_async(0.2)
             logging.info(f"Set meta : {meta}")
             logging.info(f"Set AVTransport : {dic['uri']}")
             self.audio_changed(self.id)
-            if position is not None:
-                self.next_position = position
-            return result
+            self.next_position = position
 
-        def restart_polling(result):
-            if not self.ask_transport_task.running:
-                try:
-                    self.ask_transport_task.start(10)
-                except Exception:
-                    pass
-            return result
+        else:
+            self.bock_task = True
+            self.queue_position = 0
+            self.next_position = 0
 
-        d = defer.maybeDeferred(set_current_uri)
-        d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED", "PLAYING", "PAUSED_PLAYBACK"]))
-        d.addCallback(set_next_uri)
-        d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"]))
-        d.addCallback(finalize)
-        d.addCallback(restart_polling)
-        return d
+            try:
+                self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
+            except Exception as e:
+                logging.error(f"Erreur SetAVTransportURI: {e}")
+
+            yield self.sleep_async(self.sleep_time)
+
+            try:
+                self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
+                logging.info("Set NextAVTransport to ''")
+            except Exception:
+                pass
+
+            yield self.sleep_async(self.sleep_time)
+            logging.info(f"Set meta : {meta}")
+            logging.info(f"Set AVTransport : {dic['uri']}")
+            self.audio_changed(self.id)
+            self.bock_task = False
+
+        # Relance du sondage
+        if not self.ask_transport_task.running:
+            try:
+                self.ask_transport_task.start(10)
+            except Exception:
+                pass
 
     @defer.inlineCallbacks
     def set_path(self, dic, position=None):
@@ -357,7 +349,11 @@ class UpnpPlayer:
         uri = self.app.webadr + uri
         dic["uri"] = uri
         if self.transcode:
-            dic["uri"] = f"{self.app.webadr}/v1/Transcode/{dic['_id']}"
+            codec = getattr(self, 'transcode_codec', 'mp3')
+            bitrate = getattr(self, 'transcode_bitrate', 128)
+            source_name = os.path.basename(dic.get('file', 'track'))
+            source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
+            dic["uri"] = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
 
         yield self.set_uri(dic, position)
 
@@ -395,59 +391,34 @@ class UpnpPlayer:
 
     def set_play(self):
         try:
-            d = self.AVTransport.Play(InstanceID=0, Speed="1")
-            if d is not None:
-                d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING"], timeout=5.0))
-                d.addCallback(lambda _: self.on_state_change("playing"))
-                return d
+            self.AVTransport.Play(InstanceID=0, Speed="1")
         except Exception as e:
             logging.error(f"Erreur Play: {e}")
-
         self.state = "playing"
-        self.app.reactor.callLater(0.2, self.state_changed, self.id, self.state)
-        return defer.succeed(None)
+        self._schedule_state_change(0.2, self.state)
 
     def set_play_uri(self):
         try:
-            d = self.AVTransport.Play(InstanceID=0, Speed="1")
-            if d is not None:
-                d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING"], timeout=5.0))
-                d.addCallback(lambda _: self.on_state_change("playing"))
-                return d
+            self.AVTransport.Play(InstanceID=0, Speed="1")
         except Exception:
             logging.info("Error in AVTransport.Play")
-
-        self.state = "playing"
-        self.app.reactor.callLater(0.2, self.state_changed, self.id, self.state)
-        return defer.succeed(None)
+        self._schedule_state_change(0.5, self.state)
 
     def set_pause(self):
         try:
-            d = self.AVTransport.Pause(InstanceID=0)
-            if d is not None:
-                d.addCallback(lambda _: self.wait_for_transport_state(["PAUSED_PLAYBACK"], timeout=5.0))
-                d.addCallback(lambda _: self.on_state_change("paused"))
-                return d
+            self.AVTransport.Pause(InstanceID=0)
         except Exception:
             pass
-
         self.state = "paused"
-        self.app.reactor.callLater(0.2, self.state_changed, self.id, self.state)
-        return defer.succeed(None)
+        self._schedule_state_change(0.2, self.state)
 
     def set_stop(self):
         try:
-            d = self.AVTransport.Stop(InstanceID=0)
-            if d is not None:
-                d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED"], timeout=5.0))
-                d.addCallback(lambda _: self.on_state_change("stopped"))
-                return d
+            self.AVTransport.Stop(InstanceID=0)
         except Exception as e:
             logging.error(f"Erreur Stop: {e}")
-
         self.state = "stopped"
-        self.app.reactor.callLater(0.5, self.state_changed, self.id, self.state)
-        return defer.succeed(None)
+        self._schedule_state_change(0.5, self.state)
 
     def set_ready(self):
         pass
@@ -464,7 +435,7 @@ class UpnpPlayer:
 
     @defer.inlineCallbacks
     def on_AVTransportURI_Has_Next(self, current_uri):
-        if self.block_task or current_uri == "" or not self.queue:
+        if self.bock_task or current_uri == "" or not self.queue:
             return
 
         if self.next_position is None:
@@ -491,14 +462,16 @@ class UpnpPlayer:
             uri = f"{self.app.webadr}{uri}"
             dic['uri'] = uri
             if self.transcode:
-                dic['uri'] = f"{self.app.webadr}/v1/Transcode/{dic['_id']}"
+                codec = getattr(self, 'transcode_codec', 'mp3')
+                bitrate = getattr(self, 'transcode_bitrate', 128)
+                source_name = os.path.basename(dic.get('file', 'track'))
+                source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
+                dic['uri'] = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
 
         meta = set_TrackMetaData(self.app, dic)
         try:
-            d = self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI=dic['uri'], NextURIMetaData=meta)
-            if d is not None:
-                yield d
-                yield self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"], timeout=5.0)
+            self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI=dic['uri'], NextURIMetaData=meta)
+            yield self.sleep_async(0.8)
             logging.info(f"Set Next AVTransport : {dic['uri']}")
             if self.queue_position == self.next_position:
                 self.next_position += 1
@@ -520,92 +493,64 @@ class UpnpPlayer:
         except Exception:
             return []
 
+    @defer.inlineCallbacks
     def set_next(self):
-        if not int(self.queue_position) < int(len(self.queue) - 1):
-            return defer.succeed(None)
+        if int(self.queue_position) < int(len(self.queue) - 1):
+            self.is_changing_track = True
 
-        self.is_changing_track = True
+            if self.ask_transport_task.running:
+                self.ask_transport_task.stop()
 
-        if self.ask_transport_task.running:
-            self.ask_transport_task.stop()
+            self.set_stop()
+            yield self.sleep_async(self.sleep_time)
 
-        def continue_after_stop(_):
             self.queue_position += 1
             track = self.queue[self.queue_position]
 
             if 'file' in track:
-                return self.set_path(track, self.queue_position)
-            if 'uri' in track:
-                return self.set_uri(track, self.queue_position)
-            return defer.succeed(None)
+                yield self.set_path(track, self.queue_position)
+            elif 'uri' in track:
+                yield self.set_uri(track, self.queue_position)
 
-        def continue_after_load(_):
-            d = self.set_play()
-            if d is None:
-                d = defer.succeed(None)
-            return d
+            yield self.sleep_async(self.sleep_time)
 
-        def restart_polling(_):
+            self.set_play()
+
             if not self.ask_transport_task.running:
-                try:
-                    self.ask_transport_task.start(2)
-                except Exception:
-                    pass
-            self.app.reactor.callLater(1.0, self._release_track_lock)
-            return _
+                self.ask_transport_task.start(2)
 
-        d = self.set_stop()
-        d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED"], timeout=5.0))
-        d.addCallback(continue_after_stop)
-        d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"], timeout=5.0))
-        d.addCallback(continue_after_load)
-        d.addCallback(restart_polling)
-        return d
+            self.app.reactor.callLater(1.0, self._release_track_lock)
 
     def _release_track_lock(self):
         self.is_changing_track = False
 
+    @defer.inlineCallbacks
     def set_previous(self):
-        if not int(self.queue_position) > 0:
-            return defer.succeed(None)
+        if int(self.queue_position) > 0:
+            self.is_changing_track = True
 
-        self.is_changing_track = True
+            if self.ask_transport_task.running:
+                self.ask_transport_task.stop()
 
-        if self.ask_transport_task.running:
-            self.ask_transport_task.stop()
+            self.set_stop()
+            yield self.sleep_async(self.sleep_time)
 
-        def continue_after_stop(_):
             self.queue_position = int(self.queue_position) - 1
             track = self.queue[self.queue_position]
 
             if 'file' in track:
-                return self.set_path(track, self.queue_position)
-            if 'uri' in track:
-                return self.set_uri(track, self.queue_position)
-            return defer.succeed(None)
+                yield self.set_path(track, self.queue_position)
+            elif 'uri' in track:
+                yield self.set_uri(track, self.queue_position)
 
-        def continue_after_load(_):
-            d = self.set_play()
-            if d is None:
-                d = defer.succeed(None)
-            return d
+            yield self.sleep_async(self.sleep_time)
 
-        def restart_polling(_):
+            self.set_play()
+
             if not self.ask_transport_task.running:
-                try:
-                    self.ask_transport_task.start(2)
-                except Exception:
-                    pass
-            self.app.reactor.callLater(1.0, self._release_track_lock)
-            return _
+                self.ask_transport_task.start(2)
 
-        d = self.set_stop()
-        d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED"], timeout=5.0))
-        d.addCallback(continue_after_stop)
-        d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"], timeout=5.0))
-        d.addCallback(continue_after_load)
-        d.addCallback(restart_polling)
-        return d
+            self.app.reactor.callLater(1.0, self._release_track_lock)
 
     def quit(self):
         self.is_worker_running = False

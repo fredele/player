@@ -167,6 +167,9 @@ margin-bottom: 8px;
   .name-label { width: 120px; }
   .gapless-label { width: 80px; }
   .volume-label { width: 80px; }
+  .transcode-label { width: 90px; }
+  .codec-label { width: 60px; }
+  .bitrate-label { width: 80px; }
   .name-input-wrapper {
     flex: 1 1 auto;
     display: flex;
@@ -186,10 +189,23 @@ margin-bottom: 8px;
  background-color: black;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.checkbox-field input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #1b54af;
+  cursor: pointer;
+}
 
   select {
    
-  width: 80px;
+  width: 90px;
   position:relative;
   background-color:black;
   margin: 4px;
@@ -197,6 +213,11 @@ margin-bottom: 8px;
   border: 2px solid #727272;
   border-radius: 3px;
   color: white;
+  }
+
+  .codec-select,
+  .bitrate-select {
+    width: 110px;
   }
 
   .remove-btn {

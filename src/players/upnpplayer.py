@@ -395,34 +395,59 @@ class UpnpPlayer:
 
     def set_play(self):
         try:
-            self.AVTransport.Play(InstanceID=0, Speed="1")
+            d = self.AVTransport.Play(InstanceID=0, Speed="1")
+            if d is not None:
+                d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING"], timeout=5.0))
+                d.addCallback(lambda _: self.on_state_change("playing"))
+                return d
         except Exception as e:
             logging.error(f"Erreur Play: {e}")
+
         self.state = "playing"
         self.app.reactor.callLater(0.2, self.state_changed, self.id, self.state)
+        return defer.succeed(None)
 
     def set_play_uri(self):
         try:
-            self.AVTransport.Play(InstanceID=0, Speed="1")
+            d = self.AVTransport.Play(InstanceID=0, Speed="1")
+            if d is not None:
+                d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING"], timeout=5.0))
+                d.addCallback(lambda _: self.on_state_change("playing"))
+                return d
         except Exception:
             logging.info("Error in AVTransport.Play")
-        self.app.reactor.callLater(0.5, self.state_changed, self.id, self.state)
+
+        self.state = "playing"
+        self.app.reactor.callLater(0.2, self.state_changed, self.id, self.state)
+        return defer.succeed(None)
 
     def set_pause(self):
         try:
-            self.AVTransport.Pause(InstanceID=0)
+            d = self.AVTransport.Pause(InstanceID=0)
+            if d is not None:
+                d.addCallback(lambda _: self.wait_for_transport_state(["PAUSED_PLAYBACK"], timeout=5.0))
+                d.addCallback(lambda _: self.on_state_change("paused"))
+                return d
         except Exception:
             pass
+
         self.state = "paused"
         self.app.reactor.callLater(0.2, self.state_changed, self.id, self.state)
+        return defer.succeed(None)
 
     def set_stop(self):
         try:
-            self.AVTransport.Stop(InstanceID=0)
+            d = self.AVTransport.Stop(InstanceID=0)
+            if d is not None:
+                d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED"], timeout=5.0))
+                d.addCallback(lambda _: self.on_state_change("stopped"))
+                return d
         except Exception as e:
             logging.error(f"Erreur Stop: {e}")
+
         self.state = "stopped"
         self.app.reactor.callLater(0.5, self.state_changed, self.id, self.state)
+        return defer.succeed(None)
 
     def set_ready(self):
         pass
@@ -470,8 +495,10 @@ class UpnpPlayer:
 
         meta = set_TrackMetaData(self.app, dic)
         try:
-            self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI=dic['uri'], NextURIMetaData=meta)
-            yield self.sleep_async(0.8)
+            d = self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI=dic['uri'], NextURIMetaData=meta)
+            if d is not None:
+                yield d
+                yield self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"], timeout=5.0)
             logging.info(f"Set Next AVTransport : {dic['uri']}")
             if self.queue_position == self.next_position:
                 self.next_position += 1
@@ -493,64 +520,92 @@ class UpnpPlayer:
         except Exception:
             return []
 
-    @defer.inlineCallbacks
     def set_next(self):
-        if int(self.queue_position) < int(len(self.queue) - 1):
-            self.is_changing_track = True
+        if not int(self.queue_position) < int(len(self.queue) - 1):
+            return defer.succeed(None)
 
-            if self.ask_transport_task.running:
-                self.ask_transport_task.stop()
+        self.is_changing_track = True
 
-            self.set_stop()
-            yield self.sleep_async(self.sleep_time)
+        if self.ask_transport_task.running:
+            self.ask_transport_task.stop()
 
+        def continue_after_stop(_):
             self.queue_position += 1
             track = self.queue[self.queue_position]
 
             if 'file' in track:
-                yield self.set_path(track, self.queue_position)
-            elif 'uri' in track:
-                yield self.set_uri(track, self.queue_position)
+                return self.set_path(track, self.queue_position)
+            if 'uri' in track:
+                return self.set_uri(track, self.queue_position)
+            return defer.succeed(None)
 
-            yield self.sleep_async(self.sleep_time)
+        def continue_after_load(_):
+            d = self.set_play()
+            if d is None:
+                d = defer.succeed(None)
+            return d
 
-            self.set_play()
-
+        def restart_polling(_):
             if not self.ask_transport_task.running:
-                self.ask_transport_task.start(2)
-
+                try:
+                    self.ask_transport_task.start(2)
+                except Exception:
+                    pass
             self.app.reactor.callLater(1.0, self._release_track_lock)
+            return _
+
+        d = self.set_stop()
+        d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED"], timeout=5.0))
+        d.addCallback(continue_after_stop)
+        d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"], timeout=5.0))
+        d.addCallback(continue_after_load)
+        d.addCallback(restart_polling)
+        return d
 
     def _release_track_lock(self):
         self.is_changing_track = False
 
-    @defer.inlineCallbacks
     def set_previous(self):
-        if int(self.queue_position) > 0:
-            self.is_changing_track = True
+        if not int(self.queue_position) > 0:
+            return defer.succeed(None)
 
-            if self.ask_transport_task.running:
-                self.ask_transport_task.stop()
+        self.is_changing_track = True
 
-            self.set_stop()
-            yield self.sleep_async(self.sleep_time)
+        if self.ask_transport_task.running:
+            self.ask_transport_task.stop()
 
+        def continue_after_stop(_):
             self.queue_position = int(self.queue_position) - 1
             track = self.queue[self.queue_position]
 
             if 'file' in track:
-                yield self.set_path(track, self.queue_position)
-            elif 'uri' in track:
-                yield self.set_uri(track, self.queue_position)
+                return self.set_path(track, self.queue_position)
+            if 'uri' in track:
+                return self.set_uri(track, self.queue_position)
+            return defer.succeed(None)
 
-            yield self.sleep_async(self.sleep_time)
+        def continue_after_load(_):
+            d = self.set_play()
+            if d is None:
+                d = defer.succeed(None)
+            return d
 
-            self.set_play()
-
+        def restart_polling(_):
             if not self.ask_transport_task.running:
-                self.ask_transport_task.start(2)
-
+                try:
+                    self.ask_transport_task.start(2)
+                except Exception:
+                    pass
             self.app.reactor.callLater(1.0, self._release_track_lock)
+            return _
+
+        d = self.set_stop()
+        d.addCallback(lambda _: self.wait_for_transport_state(["STOPPED"], timeout=5.0))
+        d.addCallback(continue_after_stop)
+        d.addCallback(lambda _: self.wait_for_transport_state(["PLAYING", "PAUSED_PLAYBACK", "STOPPED"], timeout=5.0))
+        d.addCallback(continue_after_load)
+        d.addCallback(restart_polling)
+        return d
 
     def quit(self):
         self.is_worker_running = False

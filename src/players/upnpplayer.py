@@ -275,11 +275,10 @@ class UpnpPlayer:
             uri = self.app.webadr + uri
             dic['uri'] = uri
             if self.transcode:
-                codec = getattr(self, 'transcode_codec', 'mp3')
-                bitrate = getattr(self, 'transcode_bitrate', 128)
                 source_name = os.path.basename(dic.get('file', 'track'))
                 source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
-                dic["uri"] = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
+                player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
+                dic["uri"] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
 
         meta = set_TrackMetaData(self.app, dic)
 
@@ -349,11 +348,10 @@ class UpnpPlayer:
         uri = self.app.webadr + uri
         dic["uri"] = uri
         if self.transcode:
-            codec = getattr(self, 'transcode_codec', 'mp3')
-            bitrate = getattr(self, 'transcode_bitrate', 128)
             source_name = os.path.basename(dic.get('file', 'track'))
             source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
-            dic["uri"] = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
+            player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
+            dic["uri"] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
 
         yield self.set_uri(dic, position)
 
@@ -462,11 +460,10 @@ class UpnpPlayer:
             uri = f"{self.app.webadr}{uri}"
             dic['uri'] = uri
             if self.transcode:
-                codec = getattr(self, 'transcode_codec', 'mp3')
-                bitrate = getattr(self, 'transcode_bitrate', 128)
                 source_name = os.path.basename(dic.get('file', 'track'))
                 source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
-                dic['uri'] = f"{self.app.webadr}/v1/Transcode/{codec}/{bitrate}/{dic['_id']}.{source_ext}"
+                player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
+                dic['uri'] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
 
         meta = set_TrackMetaData(self.app, dic)
         try:

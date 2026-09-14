@@ -242,9 +242,12 @@ function set_addr(track) {
     web_transcode_active = localStorage.getItem("web_transcode_active") === "true";
   }
   if (web_transcode_active === true) {
-    // Route actuelle (compatibilité si besoin) : /v1/Transcode/<codec>/<bitrate>/<fileid>.<extension>
+    // Ancienne route (compatibilité) : /v1/Transcode/<codec>/<bitrate>/<fileid>.<extension>
+    // const trackExt = (track.extension || (track.file || "track.mp3").split('.').pop() || "mp3");
+    // track["file_addr"] = window.serverurl + "/v1/Transcode/" + web_codec + "/" + web_bitrate + "/" + track["_id"] + "." + trackExt;
+    const playerId = (window.current_player && window.current_player.id) ? window.current_player.id : 1;
     const trackExt = (track.extension || (track.file || "track.mp3").split('.').pop() || "mp3");
-    track["file_addr"] = window.serverurl + "/v1/Transcode/" + web_codec + "/" + web_bitrate + "/" + track["_id"] + "." + trackExt;
+    track["file_addr"] = window.serverurl + "/v1/Transcode/" + playerId + "/" + track["_id"] + "." + trackExt;
   }
   return track["file_addr"];
 }

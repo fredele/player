@@ -447,13 +447,27 @@ def fname(s):
 def passer_titre():
     return dict(titre="Bienvenue !")
 
-@app.route("/v1/Transcode/<string:codec>/<int:bitrate>/<path:filename>")
-def transcodedfile(codec, bitrate, filename):
+@app.route("/v1/Transcode/<string:player_id>/<path:filename>")
+def transcodedfile(player_id, filename):
     fileid = os.path.splitext(filename)[0]
     fileid = fileid.split("?", 1)[0]
     range_header = request.headers.get('Range', None)
+
+    codec = "mp3"
+    bitrate = 128
+    if hasattr(app, 'players'):
+        player = next((p for p in app.players if str(p.get('id')) == str(player_id)), None)
+        if player is not None:
+            codec = str(player.get('codec', getattr(getattr(app, 'player', None), 'transcode_codec', 'mp3'))).lower()
+            bitrate = int(player.get('bitrate', getattr(getattr(app, 'player', None), 'transcode_bitrate', 128)))
+    elif hasattr(app, 'player') and getattr(app, 'player', None) is not None:
+        codec = str(getattr(app.player, 'transcode_codec', 'mp3')).lower()
+        bitrate = int(getattr(app.player, 'transcode_bitrate', 128))
+
     print(f"range_header:{range_header}")
     return send_audio_file(app, fileid, codec, bitrate, range_header)
+
+
 
 @app.route("/v1/Transcode/<path:fileid>")
 def transcodedfile_query_legacy(fileid):

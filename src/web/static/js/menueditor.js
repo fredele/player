@@ -87,17 +87,40 @@ function after_Get_Menu_Library() {
 
     // "+" button for item
     document.querySelector("#item .add-button-item").addEventListener("click", () => {
-      if (!currentMenu || !Array.isArray(currentMenu.music)) return;
-      
-      // Ajouter un nouvel item vide
-      currentMenu.music.push({
-        name: "",
-        query: {},
-        levels: []
-      });
-    
-      renderItems(currentMenu);
-     
+      if (!currentMenu) return;
+
+      // Détermine le hub courant (par défaut 'music')
+      const hub = (window.current_hub || 'music');
+
+      if (hub === 'videos') {
+        // Assure l'existence du tableau videos
+        if (!Array.isArray(currentMenu.videos)) currentMenu.videos = [];
+        currentMenu.videos.push({ name: "", query: {}, levels: [] });
+        // renderItems attend un objet avec la clé 'music'
+        renderItems({ music: currentMenu.videos });
+        // sélectionner le nouvel item si présent
+        const idx = currentMenu.videos.length - 1;
+        if (idx >= 0) {
+          currentSelectedIndex = idx;
+          renderQuery(currentMenu.videos[idx]);
+          renderLevels(currentMenu.videos[idx]);
+          const entries = document.querySelectorAll(".item-entry");
+          if (entries[idx]) entries[idx].classList.add("selected");
+        }
+      } else {
+        // hub 'music' ou autre -> comportement historique
+        if (!Array.isArray(currentMenu.music)) currentMenu.music = [];
+        currentMenu.music.push({ name: "", query: {}, levels: [] });
+        renderItems(currentMenu);
+        const idx = currentMenu.music.length - 1;
+        if (idx >= 0) {
+          currentSelectedIndex = idx;
+          renderQuery(currentMenu.music[idx]);
+          renderLevels(currentMenu.music[idx]);
+          const entries = document.querySelectorAll(".item-entry");
+          if (entries[idx]) entries[idx].classList.add("selected");
+        }
+      }
     });
   } catch (e) {
     console.error("Erreur lors du parsing du menu JSON :", e);
@@ -525,13 +548,14 @@ function extractLevelsFromDOM() {
 
 
 function updateNamesInCurrentMenu() {
-  if (!currentMenu ||  !Array.isArray(currentMenu.music)) {
-    console.warn("currentMenu.music est invalide");
+  if (!currentMenu) {
+    console.warn("currentMenu est invalide");
     return;
   }
 
+  const hub = (window.current_hub || 'music');
   const itemEntries = document.querySelectorAll("#item-list .item-entry");
-  const items = currentMenu.music;
+  const items = Array.isArray(currentMenu[hub]) ? currentMenu[hub] : [];
 
   itemEntries.forEach((entry, index) => {
     const title = entry.querySelector(".item-title").value.trim();
@@ -551,10 +575,11 @@ function saveMenuToServer(filename) {
   if (!currentMenu) return;
   
   // Restaurer query/levels de l'item sélectionné
-  if (currentSelectedIndex !== null && currentMenu.music[currentSelectedIndex]) {
-    currentMenu.music[currentSelectedIndex].query = extractQueryFromDOM();
-    currentMenu.music[currentSelectedIndex].levels = extractLevelsFromDOM();
-    
+  var hubForSave = (window.current_hub || 'music');
+  var saveItems = Array.isArray(currentMenu[hubForSave]) ? currentMenu[hubForSave] : null;
+  if (currentSelectedIndex !== null && saveItems && saveItems[currentSelectedIndex]) {
+    saveItems[currentSelectedIndex].query = extractQueryFromDOM();
+    saveItems[currentSelectedIndex].levels = extractLevelsFromDOM();
   }
 
 
@@ -589,5 +614,67 @@ function saveMenuToServer(filename) {
 
 
 
+function change_hub(val) {
+  try {
+    var hubKey = (val === 'music') ? 'music' : (val === 'videos' ? 'videos' : val);
+    // Met à jour le flag global
+    window.current_hub = hubKey;
 
+    // Si le menu est chargé, déclenche le rendu des items correspondant au hub
+    if (typeof currentMenu !== 'undefined' && currentMenu !== null) {
+      if (hubKey === 'music') {
+        renderItems(currentMenu);
+        // sélectionner premier item si présent
+        if (currentMenu.music && currentMenu.music.length > 0) {
+          currentSelectedIndex = 0;
+          renderQuery(currentMenu.music[0]);
+          renderLevels(currentMenu.music[0]);
+          try {
+            const entries = document.querySelectorAll('.item-entry');
+            entries.forEach(e => e.classList.remove('selected'));
+            if (entries[0]) entries[0].classList.add('selected');
+          } catch (e) { console.log(e); }
+          
+        }
+        else {
+          // Si aucun item vidéos, vider les panneaux query et levels
+          try {
+            document.getElementById("query-body").innerHTML = "";
+            document.getElementById("levels-body").innerHTML = "";
+            currentSelectedIndex = null;
+          } catch (e) {
+            console.log(e);
+          }
+        }
+      } else if (hubKey === 'videos') {
+        // renderItems s'attend à un objet contenant la clé 'music'
+        renderItems({ music: currentMenu.videos || [] });
+        if (currentMenu.videos && currentMenu.videos.length > 0) {
+          currentSelectedIndex = 0;
+          renderQuery(currentMenu.videos[0]);
+          renderLevels(currentMenu.videos[0]);
+          try {
+            const entries = document.querySelectorAll('.item-entry');
+            entries.forEach(e => e.classList.remove('selected'));
+            if (entries[0]) entries[0].classList.add('selected');
+          } catch (e) { console.log(e); }
+        } else {
+          // Si aucun item vidéos, vider les panneaux query et levels
+          try {
+            document.getElementById("query-body").innerHTML = "";
+            document.getElementById("levels-body").innerHTML = "";
+            currentSelectedIndex = null;
+          } catch (e) {
+            console.log(e);
+          }
+        }
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('hubChanged', { detail: { hub: hubKey } }));
+    console.log('change_hub ->', hubKey);
+  } catch (e) {
+    console.log(e);
+  }
+}
 

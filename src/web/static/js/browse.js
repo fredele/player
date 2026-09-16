@@ -39,6 +39,7 @@ var lastdisplay = "";
 var playlist = [];
 var current_playing_position = 0;
 let player;
+var current_hub = "";
 var reimport_query = "";
 var req_thumb_cout = 1500;
 var level = 0;
@@ -85,7 +86,10 @@ try {
   document.getElementById('scanning_img').addEventListener('long-press', function (e) {
     e.preventDefault();
     if (document.getElementById('scanning_img').style.opacity == 0) {
-      Server_LibraryScanFolders();
+      // n'exécute le scan que si on est dans le hub "music library"
+      if (current_hub === 'music_library') {
+        Server_LibraryScanMusicFolders();
+      }
     }
 
   });
@@ -747,8 +751,9 @@ function goto_database() {
   document.getElementById("param_btn").style.backgroundColor = "#c9c9c94f";
 }
 
-function goto_library() {
+function goto_music_library() {
   level = 0;
+  current_hub = "music_library";
   browsemenu = 0;
   header_line = []
   header_line.push(translate("library"));
@@ -763,6 +768,7 @@ function goto_library() {
 
 function goto_podcast() {
   level = 0;
+  current_hub = "podcast";
   header_line = []
   header_line.push(translate("podcasts"));
   document.getElementById("header_container").innerHTML = header_line.join(' > ');
@@ -775,6 +781,7 @@ function goto_podcast() {
 
 function goto_radio() {
   level = 0;
+  current_hub = "radio";
   header_line = []
   header_line.push(translate("radios"));
   document.getElementById("header_container").innerHTML = header_line.join(' > ');

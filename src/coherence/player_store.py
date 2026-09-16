@@ -21,13 +21,15 @@ import glob
 from utils.xspfparser import parseFile
 from utils.omplparser import read_opml
 from utils.RSSparsers import Podcast
+from utils.web import get_adresse_ip_locale
 
 _config = configparser.ConfigParser()
 inifile = os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
 if os.path.isfile(inifile):
      _config.read(inifile)
      port = _config['Server']['httpport']
-     host = _config['HttpServer']['address']
+     #host = _config['HttpServer']['address']
+     host = get_adresse_ip_locale()
      http_server_addr = 'http://'+ host + ':' + port
      mongo_addr =  _config['MongoDB']['address']
 
@@ -224,6 +226,17 @@ def FindFiles(db,query,sorttags):
         i['_id'] = str(i['_id'])
     return cursor
 
+
+def clean_display_name(value):
+    if value is None:
+        return ""
+    text = str(value)
+    text = text.replace("\r", " ").replace("\n", " ")
+    text = re.sub(r"[\(\[].*?[\)\]]", " ", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return text.strip()
+
+
 def MsToMMSS(value):
     q, s = divmod(value/1000, 60)
     h, m = divmod(q, 60)
@@ -396,7 +409,7 @@ class Container(BackendItem):
         self.store = store
         self.id = id
         self.parent_id = parent_id
-        self.name = re.sub("[\(\[].*?[\)\]]", "", dic["display"])
+        self.name = clean_display_name(dic.get("display", ""))
         self.mimetype = 'directory'
         self.item = container_class(id, parent_id, self.name)
 
@@ -660,8 +673,7 @@ class PlayerStore(BackendStore):
 
             if len(item1.levels[level]) > 2:
                 display = item1.levels[level][2]
-                display = re.sub("[\(\[].*?[\)\]]", "", display)
-
+                display = clean_display_name(display)
 
             req = {"query" : query, "field": field ,"sorttag": sort, "display" : display, "full" : full}
 

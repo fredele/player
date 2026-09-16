@@ -2398,29 +2398,29 @@ def upload_file():
       res['response'] = 'OK'
       return json_resp(res)
 
-@app.route("/v1/Library/Scan/Update/Files")
+@app.route("/v1/Library/Scan/Music/Update/Files")
 @adminlogrequired
 @app.tokenauth.login_required
-def Library_Scan_Update_Files():
-    '''Add new files without altering what's there'''
+def Library_Scan_Music_Update_Files():
+    '''Add new music files without altering what's there'''
     if app.scan_lock == False:
         app.db.internals.update_one({"_id": app.internals["_id"]},{"$set":  {"last_scan": Timestamp_Now()}}, upsert=False)
-        Update_Lib( app.mongo_addr,callback= updated_clbk, owner= app, overwrite=False,scanfolder=False).start()
+        Update_Music_Lib( app.mongo_addr,callback= updated_clbk, owner= app, overwrite=False,scanfolder=False).start()
     else:
         pass
     res = {"result": "OK"}
     return json_resp(res)
 
-@app.route("/v1/Library/Scan/Update/Folders")
+@app.route("/v1/Library/Scan/Music/Update/Folders")
 @adminlogrequired
 @app.tokenauth.login_required
-def Library_Scan_Update_Folders():
-    '''Add new folder's files without altering what's there
+def Library_Scan_Music_Update_Folders():
+    '''Add new music folders without altering what's there
     Scan Folder button'''
 
     if app.scan_lock == False:
         #app.db.internals.update_one({"_id": app.internals["_id"]},{ "$set":{"last_scan": Timestamp_Now()}}, upsert=False)
-        Update_Lib( app.mongo_addr,callback= updated_clbk, owner= app, overwrite=False,scanfolder=True).start()
+        Update_Music_Lib( app.mongo_addr,callback= updated_clbk, owner= app, overwrite=False,scanfolder=True).start()
     else:
         pass
     res = {"result": "OK"}
@@ -2432,15 +2432,15 @@ def rescan_clbk():
     msg['id'] =app.player_id
     WSServerProtocol.broadcast_message(msg)
 
-@app.route("/v1/Library/Scan/Rebuild")
+@app.route("/v1/Library/Scan/Music/Rebuild")
 @app.tokenauth.login_required
 @adminlogrequired
-def Library_Scan_Rebuild():
-    '''Erase ALL and rebuild '''
+def Library_Scan_Music_Rebuild():
+    '''Erase all music and rebuild '''
 
     if not hasattr(app, 'up'):
         app.db.internals.update_one({"_id": app.internals["_id"]},{ "$set": {"last_scan": Timestamp_Now()}}, upsert=False)
-        Update_Lib(app.mongo_addr, callback= rescan_clbk , owner= app, overwrite=True, rebuild =True).start()
+        Update_Music_Lib(app.mongo_addr, callback= rescan_clbk , owner= app, overwrite=True, rebuild =True).start()
         res = {"Library": "Start rescanning"}
     return json_resp(res)
 
@@ -2910,7 +2910,7 @@ def Library_import():
     if 'folder' in request.args:
         f =urllib.parse.unquote(request.args["folder"])
         dirnames = f.split(";")
-        worker = Update_Folders(app.mongo_addr, dirnames, owner=app)
+        worker = Update_Music_Folders(app.mongo_addr, dirnames, owner=app)
         worker.start()
 
     if 'last' in request.args:
@@ -2920,7 +2920,7 @@ def Library_import():
         folders = subprocess.check_output(cmd).splitlines()
         folders = [f.decode("utf-8").replace("/artwork","") for f in folders]
         folders = ['Music' + f.split('/Music')[1] for f in folders ]
-        worker = Update_Folders(app.mongo_addr, folders, owner=app)
+        worker = Update_Music_Folders(app.mongo_addr, folders, owner=app)
         worker.start()
 
     return json_resp({'response': 'OK'})
@@ -2945,7 +2945,7 @@ def Library_Reimport():
         app.db.mediadirs.delete_many({"dirhash" : { "$in" : dirhashs}})
 
         time.sleep(1)
-        worker= Update_Folders(app.mongo_addr,dirnames, owner=app)
+        worker= Update_Music_Folders(app.mongo_addr,dirnames, owner=app)
         worker.start()
 
     return json_resp({'response': 'OK','dirhashs': dirhashs})
@@ -3400,10 +3400,11 @@ if __name__ == '__main__':
     app.send_message = send_message
     app.send_message_value = send_message_value
 
-    from updatelib import Update_Lib, Update_Folders
+    from updatelib import Update_Music_Lib, Update_Music_Folders
 
-    app.Update_Folders = Update_Folders
-    app.Update_Lib = Update_Lib
+    app.Update_Music_Folders = Update_Music_Folders
+    app.Update_Music_Lib = Update_Music_Lib
+    app.update_music_lib = Update_Music_Lib
     os.chdir(app.root_path)
     app._config = configparser.ConfigParser()
 
@@ -3640,7 +3641,7 @@ if __name__ == '__main__':
     app.updating = False
     app.restartqueue = False
     app.ripping = False
-    app.update_lib = Update_Lib
+    app.update_music_lib = Update_Music_Lib
     app.update_queries = None
 
 

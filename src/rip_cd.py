@@ -174,7 +174,7 @@ def rip_cd(app,tmp,dest):
         pass
     system("eject")
 
-    worker = app.Update_Lib(app.mongo_addr, None,app,False, False, importdest , False)
+    worker = app.Update_Music_Lib(app.mongo_addr, None, app, False, False, importdest, False)
     worker.start()
     app.ripping = False
 

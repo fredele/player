@@ -421,8 +421,8 @@ function Server_Set_Volume(val, clbk, state) {
   SendCommand("/v1/Player/Volume/Set?val=" + val, clbk, state);
 }
 
-function Server_LibraryScanFolders(clbk, state) {
-  SendCommand("/v1/Library/Scan/Update/Folders", clbk, state);
+function Server_LibraryScanMusicFolders(clbk, state) {
+  SendCommand("/v1/Library/Scan/Music/Update/Folders", clbk, state);
 }
 
 function Server_Player_CurrentTrack(displaystr, separator, clbk, state) {

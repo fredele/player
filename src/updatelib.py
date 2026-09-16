@@ -75,7 +75,7 @@ def get_cover_names(image_names,imageextension):
     e = list(set(e))
     return  [  name+'.' + ext for ext in e for name in n]
 
-class Update_Folders(Thread):
+class Update_Music_Folders(Thread):
 
     def __init__(self, mongo_addr, folders, owner=None):
         Thread.__init__(self)
@@ -88,7 +88,7 @@ class Update_Folders(Thread):
             self.owner.send_message("Update Library")
             def worker():
                 for folder in self.folders:
-                    thr = Update_Lib(self.mongo_addr, folder=folder, owner=self.owner)
+                    thr = Update_Music_Lib(self.mongo_addr, folder=folder, owner=self.owner)
                     thr.start()
                     thr.join()  # Attend que le thread Update_Lib se termine avant de passer au suivant
                     time.sleep(.1)
@@ -118,7 +118,7 @@ class Update_Folders(Thread):
             self.owner.update_queries = Update_Queries(self.owner, self.owner.requestfind)
             self.owner.update_queries.start()
 
-class Update_Lib(Thread):
+class Update_Music_Lib(Thread):
     home = os.getenv("HOME")
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     if os.path.isfile(os.path.join(home, '.Player', 'config','config.ini')):
@@ -155,7 +155,6 @@ class Update_Lib(Thread):
             if  self.owner is not None :
                 self.owner.send_message("Update Library")
                 self.owner.scan_lock = True
-            if self.owner is not None:
                 self.owner.plugins_action('before_server_update')
             def extension(f):
                 try :
@@ -282,22 +281,24 @@ class Update_Lib(Thread):
         time.sleep(2)
         try:
             if self.folder == 'all' and self.owner is not None:
-                self.owner.plugins_action('after_library_update',"all")
+                self.owner.plugins_action('after_library_update', "all")
                 self.owner.imported_dirhashs = []
+
             if self.callback is not None:
                 self.callback()
 
-            if  self.owner is not None :
+            if self.owner is not None:
                 self.owner.updating = False
                 self.owner.scan_lock = False
 
-            if self.folder == 'all' and self.owner is not None:
-                self.owner.send_message("Library Updated")
-                louie.send( "lib_updated", self)
-            if  self.owner is not None:
-                if (self.owner.update_queries != None):
+                if self.folder == 'all':
+                    self.owner.send_message("Library Updated")
+                    louie.send("lib_updated", self)
+
+                if self.owner.update_queries is not None:
                     self.owner.update_queries.do_stop()
-                self.owner.update_queries =  Update_Queries(self.owner, self.owner.requestfind)
+
+                self.owner.update_queries = Update_Queries(self.owner, self.owner.requestfind)
                 self.owner.update_queries.start()
         except Exception:
             logging.exception("Final library update cleanup failed")
@@ -338,7 +339,7 @@ def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
     Insert only one file
     '''
     filename, file_extension = os.path.splitext(os.path.basename(file))
-    if file_extension[1:] not in Update_Lib.audioextension: return
+    if file_extension[1:] not in Update_Music_Lib.audioextension: return
     f = os.path.join(root, file)
 
     dirname = (os.path.dirname(f)).replace(os.path.join(os.getenv("HOME"), '.Player', 'mediafiles'), "")[1:]
@@ -385,7 +386,7 @@ def import_audio_file(owner, db, root, file, overwrite, shared_state_lock=None):
             # Copy cover
         info["cover"] = False
         owner.plugins_action('before_image_import')
-        for image_name in get_cover_names(Update_Lib.image_names, Update_Lib.imageextension):
+        for image_name in get_cover_names(Update_Music_Lib.image_names, Update_Music_Lib.imageextension):
                 #img = os.path.realpath(f)
             if subfolder == True:
                 img = os.path.abspath(os.path.join(f, os.pardir))

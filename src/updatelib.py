@@ -139,6 +139,7 @@ class Update_Music_Lib(Thread):
         self.owner = owner
         if self.owner is not None:
             self.owner.imported_dirhashs = []
+            self.owner.imported_ids = []
         self.overwrite = overwrite
         self.rebuild = rebuild
         self.stop = False

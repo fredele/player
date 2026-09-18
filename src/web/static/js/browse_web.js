@@ -671,10 +671,15 @@ function onload_browse() {
   }
 
 
-  document.getElementById('volume_btn').addEventListener('long-press', function (e) {
-    e.preventDefault();
-    show_outputs();
-  });
+
+  const volumeBtn = document.getElementById('volume_btn');
+
+  addLongPressListener(
+    volumeBtn,
+    () => volume_show(),    // Clic court
+    () => show_outputs(),   // Appui long
+    1000                     // Optionnel : durée en ms (700 par défaut)
+  );
 
 
   levelcanvas = document.getElementById('level');

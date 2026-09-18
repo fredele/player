@@ -78,23 +78,48 @@ try {
 function after_Player_CurrentPosition() { }
 try {
 
-  document.getElementById('volume_btn').addEventListener('long-press', function (e) {
-    e.preventDefault();
-    show_outputs();
-  });
+  //document.getElementById('volume_btn').addEventListener('long-press', function (e) {
+  //  e.preventDefault();
+  //  show_outputs();
+  //});
 
-  document.getElementById('scanning_img').addEventListener('long-press', function (e) {
-    e.preventDefault();
-    if (document.getElementById('scanning_img').style.opacity == 0) {
+  const volumeBtn = document.getElementById('volume_btn');
+
+  addLongPressListener(
+    volumeBtn,
+    () => volume_show(),    
+    () => show_outputs(),   
+    700                    
+  );
+
+
+
+  const scanBtn = document.getElementById('scanning_img');
+
+  addLongPressListener(
+    scanBtn,
+    () => move_panels(),    
+    () => Server_LibraryScanMusicFolders(),   
+    700                 
+  );
+
+
+
+} catch (e) { }
+
+
+
+function ScanMusicFolders() {
+
+  if (document.getElementById('scanning_img').style.opacity == 0) {
       // n'exécute le scan que si on est dans le hub "music library"
       if (current_hub === 'music_library') {
         Server_LibraryScanMusicFolders();
       }
     }
 
-  });
+}
 
-} catch (e) { }
 
 function move_panels() {
   if (document.getElementById("menu_all").style.width == "80px") {

@@ -403,8 +403,18 @@ items.forEach((item, index) => {
 
   // Assembler tout
   entry.appendChild(content);
-  entry.appendChild(buttonZone);4
+  entry.appendChild(buttonZone);
   itemList.appendChild(entry);
+
+  // Drag & drop
+  entry.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    entry.style.borderTop = "2px solid black";
+  });
+
+  entry.addEventListener("dragleave", () => {
+    entry.style.borderTop = "";
+  });
 
   // Drag & drop (inchangé)
   entry.addEventListener("dragstart", (e) => {

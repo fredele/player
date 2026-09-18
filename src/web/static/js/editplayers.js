@@ -79,16 +79,14 @@ function renderUpnpPlayers(players) {
       </div>
 
       <div class="field-label gapless-label">Gapless</div>
-      <select class="gapless-select" aria-label="Gapless">
-        <option value="true" ${p.gapless === true || p.gapless === 'true' ? 'selected' : ''}>true</option>
-        <option value="false" ${p.gapless === false || p.gapless === 'without' || p.gapless === 'false' ? 'selected' : ''}>false</option>
-      </select>
+      <label class="checkbox-field">
+        <input class="gapless-checkbox" type="checkbox" ${p.gapless === true || p.gapless === 'true' ? 'checked' : ''}>
+      </label>
 
       <div class="field-label volume-label">Volume</div>
-      <select class="volume-select" aria-label="Contrôle du volume">
-        <option value="true" ${p.volume_control === true ? 'selected' : ''}>true</option>
-        <option value="false" ${p.volume_control === false ? 'selected' : ''}>false</option>
-      </select>
+      <label class="checkbox-field">
+        <input class="volume-checkbox" type="checkbox" ${p.volume_control === true || p.volume_control === 'true' ? 'checked' : ''}>
+      </label>
 
       <div class="field-label transcode-label">Transcode</div>
       <label class="checkbox-field">
@@ -204,8 +202,8 @@ function collectUpnpPlayers() {
     const id = index + 1; // numérotation incrémentale
     const address = item.dataset.address;
     const nameInput = item.querySelector('.name-input');
-    const gaplessSelect = item.querySelector('.gapless-select');
-    const volumeSelect = item.querySelector('.volume-select');
+    const gaplessCheckbox = item.querySelector('.gapless-checkbox');
+    const volumeCheckbox = item.querySelector('.volume-checkbox');
     const transcodeCheckbox = item.querySelector('.transcode-checkbox');
     const codecSelect = item.querySelector('.codec-select');
     const bitrateSelect = item.querySelector('.bitrate-select');
@@ -215,8 +213,8 @@ function collectUpnpPlayers() {
       type: 'upnp',
       name: nameInput ? nameInput.value.trim() : '',
       address: String(address || ''),
-      volume_control: volumeSelect?.value === 'true',
-      gapless: gaplessSelect?.value === 'true',
+      volume_control: volumeCheckbox ? volumeCheckbox.checked : false,
+      gapless: gaplessCheckbox ? gaplessCheckbox.checked : false,
       transcode: transcodeCheckbox ? transcodeCheckbox.checked : false,
       codec: codecSelect ? codecSelect.value : 'mp3',
       bitrate: bitrateSelect ? Number(bitrateSelect.value) : 128,

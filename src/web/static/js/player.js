@@ -82,18 +82,20 @@ function on_ws_msg(data)
    }
 
 
-  if (msg == "Update Library")
+  if (msg == "library_scan_started") 
    {
      document.getElementById('scanning_img').style.opacity = 1;
      window.scanning = true;
      sessionStorage.setItem("Library Updating", "true");
+     return;
    }
 
-  if (msg == "Library Updated")
+  if (msg == "library_scan_finished" || msg == "library_scan_stopped" || msg == "library_scan_error")
    {
      document.getElementById('scanning_img').style.opacity = 0;
      sessionStorage.setItem("Library Updating", "false");
      window.scanning = false;
+     return;
    }
 
    if (msg == "end of stream")

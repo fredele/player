@@ -39,6 +39,7 @@ import urllib.parse
 from updatesavedqueries import Update_Queries
 from upnpclient.discover_upnp import get_upnp_renderers
 from coherence.base import Coherence
+from updatelib import LibraryScannerService, Update_Music_Folders
 import base64
 import random
 from bson.objectid import ObjectId
@@ -159,6 +160,26 @@ def send_message_value(message,value):
     else:
         msg['id'] = '-1'
     WSServerProtocol.broadcast_message(msg)
+
+
+def emit_library_scan_event(event, **payload):
+    msg = {
+        'message': event,
+        'value': payload,
+        'event': event,
+        'id': getattr(app, 'player_id', '-1')
+    }
+    WSServerProtocol.broadcast_message(msg)
+
+    if event in ("library_scan_finished", "library_scan_stopped"):
+        try:
+            if getattr(app, "update_queries", None) is not None:
+                app.update_queries.do_stop()
+            app.update_queries = Update_Queries(app, requestfind)
+            app.update_queries.start()
+        except Exception:
+            logging.exception("Failed to refresh saved query cache after library scan")
+
 
 def plugins_action(function_name, param='none',param2='none'):
     plugin_files =sorted([f for f in listdir(plugins_dir) if isfile(join(plugins_dir, f)) and f.rsplit('.', 1)[1] == 'py'])
@@ -2402,29 +2423,33 @@ def upload_file():
 @adminlogrequired
 @app.tokenauth.login_required
 def Library_Scan_Music_Update_Files():
-    '''Add new music files without altering what's there'''
-    if app.scan_lock == False:
-        app.db.internals.update_one({"_id": app.internals["_id"]},{"$set":  {"last_scan": Timestamp_Now()}}, upsert=False)
-        Update_Music_Lib( app.mongo_addr,callback= updated_clbk, owner= app, overwrite=False,scanfolder=False).start()
-    else:
-        pass
-    res = {"result": "OK"}
-    return json_resp(res)
+    '''Add new music files without altering what's there.'''
+    if not hasattr(app, "library_scanner"):
+        app.library_scanner = LibraryScannerService(
+            mongo_uri=app.mongo_addr,
+            db=app.db,
+            media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
+            notifier=emit_library_scan_event,
+            max_workers=int(getattr(app, "scan_threads", 4)),
+        )
+    app.library_scanner.schedule_scan(operation="incremental", folder="all", overwrite=False, rebuild=False)
+    return json_resp({"result": "OK", "status": "queued"})
 
 @app.route("/v1/Library/Scan/Music/Update/Folders")
 @adminlogrequired
 @app.tokenauth.login_required
 def Library_Scan_Music_Update_Folders():
-    '''Add new music folders without altering what's there
-    Scan Folder button'''
-
-    if app.scan_lock == False:
-        #app.db.internals.update_one({"_id": app.internals["_id"]},{ "$set":{"last_scan": Timestamp_Now()}}, upsert=False)
-        Update_Music_Lib( app.mongo_addr,callback= updated_clbk, owner= app, overwrite=False,scanfolder=True).start()
-    else:
-        pass
-    res = {"result": "OK"}
-    return json_resp(res)
+    '''Add new music folders without altering what's there (scan folder button).'''
+    if not hasattr(app, "library_scanner"):
+        app.library_scanner = LibraryScannerService(
+            mongo_uri=app.mongo_addr,
+            db=app.db,
+            media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
+            notifier=emit_library_scan_event,
+            max_workers=int(getattr(app, "scan_threads", 4)),
+        )
+    app.library_scanner.schedule_scan(operation="incremental", folder="all", overwrite=False, rebuild=False, scanfolder=True)
+    return json_resp({"result": "OK", "status": "queued"})
 
 def rescan_clbk():
     msg = {}
@@ -2910,8 +2935,15 @@ def Library_import():
     if 'folder' in request.args:
         f =urllib.parse.unquote(request.args["folder"])
         dirnames = f.split(";")
-        worker = Update_Music_Folders(app.mongo_addr, dirnames, owner=app)
-        worker.start()
+        time.sleep(1)
+        Update_Music_Folders(dirnames,
+                     mongo_uri=app.mongo_addr,
+                     db=app.db,
+                     media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
+                     notifier=emit_library_scan_event,
+                     max_workers=int(getattr(app, "scan_threads", 4)),
+                     overwrite=False,
+                     rebuild=False)
 
     if 'last' in request.args:
         minutes = "-"+str([urllib.parse.unquote(request.args["last"])][0])
@@ -2920,8 +2952,15 @@ def Library_import():
         folders = subprocess.check_output(cmd).splitlines()
         folders = [f.decode("utf-8").replace("/artwork","") for f in folders]
         folders = ['Music' + f.split('/Music')[1] for f in folders ]
-        worker = Update_Music_Folders(app.mongo_addr, folders, owner=app)
-        worker.start()
+        time.sleep(1)
+        Update_Music_Folders(folders,
+                     mongo_uri=app.mongo_addr,
+                     db=app.db,
+                     media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
+                     notifier=emit_library_scan_event,
+                     max_workers=int(getattr(app, "scan_threads", 4)),
+                     overwrite=False,
+                     rebuild=False)
 
     return json_resp({'response': 'OK'})
 
@@ -2945,8 +2984,14 @@ def Library_Reimport():
         app.db.mediadirs.delete_many({"dirhash" : { "$in" : dirhashs}})
 
         time.sleep(1)
-        worker= Update_Music_Folders(app.mongo_addr,dirnames, owner=app)
-        worker.start()
+        Update_Music_Folders(dirnames,
+                     mongo_uri=app.mongo_addr,
+                     db=app.db,
+                     media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
+                     notifier=emit_library_scan_event,
+                     max_workers=int(getattr(app, "scan_threads", 4)),
+                     overwrite=False,
+                     rebuild=False)
 
     return json_resp({'response': 'OK','dirhashs': dirhashs})
 
@@ -3400,11 +3445,8 @@ if __name__ == '__main__':
     app.send_message = send_message
     app.send_message_value = send_message_value
 
-    from updatelib import Update_Music_Lib, Update_Music_Folders
 
-    app.Update_Music_Folders = Update_Music_Folders
-    app.Update_Music_Lib = Update_Music_Lib
-    app.update_music_lib = Update_Music_Lib
+
     os.chdir(app.root_path)
     app._config = configparser.ConfigParser()
 
@@ -3621,6 +3663,13 @@ if __name__ == '__main__':
             print("Server not available")
 
     app.db = app.MongoConnection.player
+    app.library_scanner = LibraryScannerService(
+        mongo_uri=app.mongo_addr,
+        db=app.db,
+        media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
+        notifier=emit_library_scan_event,
+        max_workers=int(getattr(app, "scan_threads", 4)),
+    )
     if "mongo" in app.m_connection :
         app.db_name = "mongodb"
     elif "ferret" in app.m_connection :
@@ -3641,7 +3690,7 @@ if __name__ == '__main__':
     app.updating = False
     app.restartqueue = False
     app.ripping = False
-    app.update_music_lib = Update_Music_Lib
+    #app.update_music_lib = Update_Music_Lib
     app.update_queries = None
 
 

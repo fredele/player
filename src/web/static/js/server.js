@@ -54,12 +54,24 @@ function on_ws_msg(data) {
     var msg = data["message"];
     var val = data["value"];
     var id = data["id"];
-    if (id != playerid) { return };
 
-    if (msg == "mediafile_updated") {
+    if (msg == "library_scan_started") {
+      document.getElementById('scanning_img').style.opacity = 1;
+      window.scanning = true;
+      sessionStorage.setItem("Library Updating", "true");
+      return;
+    }
 
-      try { cancelabletimer.cancel(); } catch (error) { }
-      cancelabletimer = CancelableTimer(3000);
+    if (msg == "library_scan_finished" || msg == "library_scan_stopped" || msg == "library_scan_error") {
+      document.getElementById('scanning_img').style.opacity = 0;
+      sessionStorage.setItem("Library Updating", "false");
+      window.scanning = false;
+      return;
+    }
+
+    if (msg == "cover_changed") {
+      try { Server_Get_Queue(after_Get_Queue, null); } catch (error) {}
+      return;
     }
 
 

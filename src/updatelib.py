@@ -198,8 +198,10 @@ class LibraryScannerService:
             search_root = os.path.join(self.media_root, "Music")
         else:
             search_root = os.path.join(self.media_root, request.folder)
-
+        
         self.emit("library_scan_started", operation=request.operation, folder=request.folder)
+        self.plugins_action('before_server_update')
+        
         if not os.path.isdir(search_root):
             self.emit("library_scan_finished", operation=request.operation, folder=request.folder, scanned=0)
             return
@@ -230,8 +232,10 @@ class LibraryScannerService:
                     logging.exception("Error while importing music file")
 
         self._cleanup_missing_files()
+        self.plugins_action('after_library_update', "all")
         self.emit("library_scan_finished", operation=request.operation, folder=request.folder, scanned=len(files_to_scan))
-
+        
+        
     def _cleanup_missing_files(self):
         try:
             cursor = self.db.mediafiles.find({"dirname": {"$exists": True}})
@@ -427,7 +431,26 @@ class LibraryScannerService:
         if self.mongo_client is not None:
             self.mongo_client.close()
 
+    def plugins_action(function_name, param='none',param2='none'):
+        plugins_dir = os.path.join(os.getenv("HOME"), '.Player', 'plugins')
+        plugin_files =sorted([f for f in os.listdir(plugins_dir) if os.path.isfile(os.path.join(plugins_dir, f)) and f.rsplit('.', 1)[1] == 'py'])
+        for _filename_ in plugin_files:
+            if os.path.isfile(os.path.join(os.path.join(os.getenv("HOME"), '.Player', 'plugins'), _filename_)):
+                try:
+                    if param != 'none' and param2!= "none":
+                        p = _filename_.split('.')[0] + '.'+ function_name +'(app,'+'"' +str(param)+ '"' + ','+str(param2) + ')'
+                    if param != 'none'and param2 == "none":
+                        p = _filename_.split('.')[0] + '.'+ function_name +'(app,'+ str(param) + ')'
+                    if param == 'all' and param2 == "none":
+                        p = _filename_.split('.')[0] + '.'+ function_name +'(app,"all")'
+                    if param == 'none' and param2 == "none":
+                        p = _filename_.split('.')[0] + '.' + function_name + '(app)'
+                    exec(p)
 
+                except Exception as e:
+                    pass
+            
+            
 def Update_Music_Folders(dirnames, mongo_uri: Optional[str] = None, db=None, media_root: Optional[str] = None,
                          notifier: Optional[Callable] = None, max_workers: int = 4, overwrite: bool = False,
                          rebuild: bool = False):

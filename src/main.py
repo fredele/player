@@ -886,7 +886,6 @@ def init():
     app.imported_ids = []
     app.running_saved_queries = []
     app.requestfind = requestfind
-    app.updating = None
     app.mute = False
     app.mediafiles_dir = os.path.join(os.getenv("HOME"), '.Player','mediafiles')
     app.docs_dir = os.path.join(os.getenv("HOME"), '.Player', 'docs')
@@ -1643,7 +1642,12 @@ def _info(player,displaystr ="", separator= ", "):
     res['mute'] = StrBool(app.mute)
     res['volume'] =player.get_volume()
     app.volume = res['volume']
-    res['scanning'] = app.updating
+    scanner = getattr(app, 'library_scanner', None)
+    res['scanning'] = bool(
+        scanner is not None and (
+            getattr(scanner, 'is_running', False) or getattr(scanner, 'current_scan', None) is not None
+        )
+    )
     res['restartqueue'] = app.restartqueue
     res['response'] = 'OK'
     return res
@@ -3701,7 +3705,6 @@ if __name__ == '__main__':
         if os.path.isfile(file):
             app.playlists.append(os.path.splitext(os.path.basename(file))[0])
     app._id = 0
-    app.updating = False
     app.restartqueue = False
     app.ripping = False
     #app.update_music_lib = Update_Music_Lib

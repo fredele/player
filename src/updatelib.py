@@ -90,7 +90,7 @@ class LibraryScannerService:
 
         self._stop_event = threading.Event()
         self._queue = queue.Queue()
-        self._lock = threading.Lock()
+        self._lock_scanning = threading.Lock()
         self._thread = threading.Thread(target=self._worker_loop, name="library-scanner", daemon=True)
         self._shared_state_lock = threading.Lock()
 
@@ -117,6 +117,10 @@ class LibraryScannerService:
         return self
 
     def schedule_scan(self, operation="incremental", folder="all", overwrite=False, rebuild=False, scanfolder=False):
+        """Schedule a scan request.
+
+        Returns the ScanRequest on success, or False if a scan is already running.
+        """
         self._stop_event.clear()
         request = ScanRequest(
             operation=operation,
@@ -125,9 +129,17 @@ class LibraryScannerService:
             rebuild=rebuild,
             scanfolder=scanfolder,
         )
-        self._queue.put(request)
-        if not self._thread.is_alive():
-            self.start()
+
+        with self._lock_scanning:
+            # If a scan is already running, refuse to schedule a second one.
+            if self.is_running:
+                return False
+
+            # otherwise enqueue and ensure worker thread is started
+            self._queue.put(request)
+            if not self._thread.is_alive():
+                self.start()
+
         return request
 
     def request_stop(self):
@@ -169,6 +181,12 @@ class LibraryScannerService:
                     self.current_scan = None
                     self.current_folder = ""
                     self._queue.task_done()
+                    # If there are no pending requests, stop the worker thread
+                    try:
+                        if self._queue.empty():
+                            return
+                    except Exception:
+                        pass
         finally:
             self.running = False
 

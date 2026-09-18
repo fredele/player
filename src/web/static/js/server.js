@@ -176,6 +176,28 @@ function onload_server() {
   read_vars();
   translateUI();
   dbinfos();
+  try { Server_LibraryScanStatus(after_ScanStatus, null); } catch (e) {}
+}
+
+function Server_LibraryScanStatus(clbk, state) {
+  SendCommand("/v1/Library/Scan/Status", clbk, state);
+}
+
+function after_ScanStatus() {
+  try {
+    var res = JSON.parse(this.response);
+    var running = res['running'] || false;
+    var queue_size = res['queue_size'] || 0;
+    var current = res['current_scan'];
+    var scanning = running || queue_size > 0 || (current !== null && current !== undefined);
+    try {
+      document.getElementById('scanning_img').style.opacity = scanning ? 1 : 0;
+    } catch (e) {}
+    window.scanning = scanning;
+    sessionStorage.setItem("Library Updating", scanning ? "true" : "false");
+  } catch (e) {
+    console.error('after_ScanStatus error', e);
+  }
 }
 
 function Server_Connect_ws(ws_addr) {
@@ -221,9 +243,7 @@ function Server_Ports(clbk, state) {
   SendCommand("/v1/Ports", clbk, state);
 }
 
-function Server_Scanning(clbk, state) {
-  SendCommand("/v1/Scanning", clbk, state);
-}
+
 
 function after_Ports() {
   if (this.status == 404) { return };

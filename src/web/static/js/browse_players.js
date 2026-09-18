@@ -564,10 +564,7 @@ function onload_browse() {
   document.getElementById('button_set_value').value = translate("save");
 
   window.ui = "active"
-  updating = sessionStorage.getItem('Library Updating');
-  if (updating == "true") {
-    document.getElementById('scanning_img').style.opacity = 1;
-  }
+  try { Server_LibraryScanStatus(after_ScanStatus, null); } catch (e) {}
 
   // Get the modals
   tageditormodal = document.getElementById("TagEditorModal");
@@ -687,7 +684,7 @@ function after_onload_browse() {
     Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
     Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
     Server_Player_CurrentTrack(format_info, " ", after_Format_Display, null);
-    Server_Scanning(after_Scanning, null);
+    Server_LibraryScanStatus(after_ScanStatus, null);
     Server_Get_Ouputs(after_Get_Output, null);
     Server_Get_Queue(after_Get_Queue, null);
     Server_Player_CurrentPosition(after_Player_CurrentPosition, null);

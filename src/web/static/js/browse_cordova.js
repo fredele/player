@@ -726,7 +726,7 @@ function each5second() {
     document.getElementById('time_elapsed').innerHTML = "";
   
   }
- Server_Scanning(after_Scanning, null);
+  Server_LibraryScanStatus(after_ScanStatus, null);
 }
 
 function onload_browse() {
@@ -830,10 +830,7 @@ function onload_browse() {
 
   window.ui = "active"
 
-  updating = sessionStorage.getItem('Library Updating');
-  if (updating == "true") {
-    document.getElementById('scanning_img').style.opacity = 1;
-  }
+  try { Server_LibraryScanStatus(after_ScanStatus, null); } catch (e) {}
 
   // Get the modals
   window.tageditormodal = document.getElementById("TagEditorModal");
@@ -970,6 +967,6 @@ function after_onload_browse() {
   document.getElementById('playlist_item_delete_img').addEventListener('dragenter', playlist_item_dragenter);
   Server_Get_Players_Detected(after_Get_Players_Detected);
   //Server_Get_Players_Detect(after_Get_Players_Detect);
-   Server_Scanning(after_Scanning, null);
+  Server_LibraryScanStatus(after_ScanStatus, null);
 
 }

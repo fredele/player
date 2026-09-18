@@ -1568,13 +1568,6 @@ def CurrentPosition():
         res["response"] = "Error"
     return json_resp(res)
 
-@app.route("/v1/Scanning")
-@app.tokenauth.login_required
-def Scanning():
-    res = {}
-    res['scanning'] = app.updating
-    res['response'] = 'OK'
-    return res
 
 @app.route("/v1/Player/TrackInfo")
 @app.tokenauth.login_required
@@ -3007,6 +3000,27 @@ def Display_Covers():
         return json_resp({'response': 'OK', 'dirhash': f['dirhash'] , 'dirname': f['dirname'], 'query' : urllib.parse.quote(str(query))})
     else:
         return json_resp({'response': 'No query', 'dirhash': []})
+
+
+@app.route("/v1/Library/Scan/Status")
+@app.tokenauth.login_required
+def Library_Scan_Status():
+    """Return the current status of the library scanner for UI reloads."""
+    if not hasattr(app, "library_scanner"):
+        return json_resp({'running': False, 'current_folder': '', 'current_scan': None, 'queue_size': 0})
+
+    s = app.library_scanner
+    current = None
+    if getattr(s, 'current_scan', None) is not None:
+        current = {'operation': s.current_scan.operation, 'folder': s.current_scan.folder}
+
+    queue_size = 0
+    try:
+        queue_size = s._queue.qsize()
+    except Exception:
+        queue_size = 0
+
+    return json_resp({'running': bool(s.is_running), 'current_folder': getattr(s, 'current_folder', ''), 'current_scan': current, 'queue_size': queue_size})
 
 @app.route("/v1/Display/Group")
 @app.tokenauth.login_required

@@ -3196,10 +3196,8 @@ def create_self_signed_cert(certfile, keyfile, certargs, cert_dir="."):
 
 if __name__ == '__main__':
     
-    
     app.config_folder = Path.home() / ".Player"
 
-    
     with app.app_context():
         Initialize()
     from streamer3 import send_audio_file

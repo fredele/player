@@ -109,7 +109,7 @@ class GPlayer():
             logging.debug("GPlayer|__set_pipeline__|set_state(Gst.State.NULL)")
 
         try:
-            icon = os.path.join(os.getenv("HOME"), ".Player","config", "player.xpm")
+            icon = os.path.join(os.getenv("HOME"), ".config","Player", "player.xpm")
             output = self.app.outputs[self.app.current_output]["gstpipeline"]
             output = output.replace("$icon$", icon)
             logging.info("GPlayer|__set_pipeline__to:|"+output)

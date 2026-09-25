@@ -4,20 +4,7 @@ import shutil
 from flask import current_app as app
 
 
-def Initialize():
-    
-
-    # Chemin absolu du dossier template
-    src = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "init_template"
-        )
-    )
-
-    dst = app.config_folder
-
+def copy_template(src, dst):
     if os.path.exists(dst):
         print(
             "Configuration already exists: %s",
@@ -36,3 +23,13 @@ def Initialize():
         "Configuration initialized: %s",
         dst
     )
+    
+    
+    
+def Initialize():
+    
+    src = os.path.abspath( os.path.join( os.path.dirname(__file__),"..","init_template"))
+    dst = app.config_folder
+    copy_template(src, dst)
+
+

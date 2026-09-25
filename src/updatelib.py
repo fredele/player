@@ -650,11 +650,11 @@ def build_parser():
 
 
 if __name__ == "__main__":
+    
     args = build_parser().parse_args()
-
+    config_folder = Path.home() / ".Player" 
     notifier = ScanNotifier(os.path.join(os.getenv("HOME"), '.Player', 'run', 'scan.sock'))
-
-    p = os.path.join(os.getenv("HOME"), ".Player", "config", "config.ini")
+    p = config_folder / "config"/  "config.ini"
     mongo_uri = args.mongo_uri
 
     if not mongo_uri and os.path.isfile(p):

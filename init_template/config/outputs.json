@@ -1,0 +1,29 @@
+{
+  "outputs": [
+    {
+      "name": "Basic Pulse",
+      "comment": "Pulse Audio Basic Output",
+      "gstpipeline": "audioresample ! audioconvert ! level ! pulsesink  client-name= \"Player\" stream-properties=\"props,application.icon_name=$icon$\""
+    },
+    {
+      "name": "Basic Alsa",
+      "comment": "Alsa Audio Basic Output",
+      "gstpipeline": "audioresample ! audioconvert ! level ! alsasink device=hw:1,0"
+    },
+    {
+      "name": "Equa Pulse",
+      "comment": "Pulse Audio Equa Output",
+      "gstpipeline": "audioresample ! audioconvert ! level ! equalizer-10bands band0=-15 band1=-10 band2=-4.1 band3=-2.3 band4=0 band5=-0 band6=-2.0 band7=-2.0 band8=-6.0 band9=-16 ! pulsesink  client-name= \"Player\" stream-properties=\"props,application.icon_name=$icon$\""
+    },
+    {
+      "name": "Casque",
+      "comment": "Casque Binaural Equa Pulse",
+      "gstpipeline": "audioresample ! audioconvert ! bs2b fcut=650 feed=95 ! level ! equalizer-10bands band0=-0.2 band1=-4.4 band2=-1.0 band3=3.1 band4=-1.1 band5=-0.6 band6=-0.3 band7=1.2 band8=-4.2 band9=-7.7 ! pulsesink  client-name= \"Player\" stream-properties=\"props,application.icon_name=$icon$\""
+    },
+    {
+      "name": "Spectrum Pulse",
+      "comment": "Pulse Audio Output with DSPs",
+      "gstpipeline": "audioresample ! audioconvert ! level ! spectrum name=spectrum interval=100000000 bands=16  post-messages=TRUE message-magnitude=1 ! level name=level1 ! pulsesink  client-name= \"Player\" stream-properties=\"props,application.icon_name=$icon$\""
+    }
+  ]
+}

@@ -196,7 +196,7 @@ function after_ScanStatus() {
     window.scanning = scanning;
     sessionStorage.setItem("Library Updating", scanning ? "true" : "false");
   } catch (e) {
-    console.error('after_ScanStatus error', e);
+    //console.error('after_ScanStatus error', e);
   }
 }
 
@@ -454,7 +454,7 @@ function Server_Set_Volume(val, clbk, state) {
 }
 
 function Server_LibraryScanMusicFolders(clbk, state) {
-  SendCommand("/v1/Library/Scan/Music/Update/Folders", clbk, state);
+  SendCommand("/v1/Library/Scan/Music", clbk, state);
 }
 
 function Server_Player_CurrentTrack(displaystr, separator, clbk, state) {
@@ -504,8 +504,8 @@ function Server_find(q, field, sort, display, page_nbr, response_count, clbk, st
   SendCommand("/v1/Library/Find?query=" + q + "&field=" + encodeURIComponent(field) + "&sorttag=" + encodeURIComponent(sort) + "&display=" + encodeURIComponent(display) + "&page_nbr=" + page_nbr + "&response_count=" + response_count, clbk, state);
 }
 
-function Server_search(field, value, query, clbk, state) {
-  SendCommand("/v1/Library/Search?field=" + field + "&value=" + value + "&query=" + query, clbk, state);
+function Server_search( value, query, clbk, state) {
+  SendCommand("/v1/Library/Search?value=" + value + "&query=" + query, clbk, state);
 }
 
 function Server_Get_Podcast(file, clbk, state) {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/">
+  <trackList>
+    <track>
+      <title>Radio Classique</title>
+      <location>http://radioclassique.ice.infomaniak.ch/radioclassique-high.mp3</location>
+      <image>Radio Classique.png</image>
+    </track>
+    
+
+  
+  </trackList>
+</playlist>

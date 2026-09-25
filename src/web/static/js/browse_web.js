@@ -470,6 +470,7 @@ function getMousePosition(canvas, event) {
   document.getElementById("volume-progress-bar").style.width = String(pos) + "%";
 }
 
+
 function on_ws_msg(data) {
   if (typeof data === 'string') { if (data.startsWith("#") == true) { return; } }
   if (typeof data === 'string') { if (data.startsWith("##") == true) { return; } }
@@ -493,21 +494,21 @@ function on_ws_msg(data) {
       }, 3000);
     }
 
-   if (msg == "library_scan_started") {
+   if (msg == "library_scan_started")
    {
-     document.getElementById('scanning_img').style.opacity = 1;
-     window.scanning = true;
-     sessionStorage.setItem("Library Updating", "true");
+      document.getElementById('scanning_img').style.opacity = 1;
+      window.scanning = true;
+      sessionStorage.setItem("Library Updating", "true");
      return;
-   }
+    }
 
-   if (msg == "library_scan_finished" || msg == "library_scan_stopped" || msg == "library_scan_error") {
+   if (msg == "library_scan_finished" || msg == "library_scan_stopped" || msg == "library_scan_error")
    {
-     document.getElementById('scanning_img').style.opacity = 0;
-     sessionStorage.setItem("Library Updating", "false");
-     window.scanning = false;
-     return;
-   }
+      document.getElementById('scanning_img').style.opacity = 0;
+      sessionStorage.setItem("Library Updating", "false");
+      window.scanning = false;
+      return;
+    }
 
     if (msg == "Cover changed") {
       Server_Get_UpdatedImages(after_Get_UpdatedImages)
@@ -516,6 +517,7 @@ function on_ws_msg(data) {
 
   }
 }
+
 
 function change_track(nbr) {
   event.stopPropagation();
@@ -836,7 +838,3 @@ function after_onload_browse() {
   Server_LibraryScanStatus(after_ScanStatus, null);
 
 }
-
-
-
-

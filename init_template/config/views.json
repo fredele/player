@@ -1,0 +1,1424 @@
+{
+  "music": [
+    {
+      "name": "Genre/Artiste/Album\nclassé par ordre alphabétique",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "date": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genre",
+          "genre$ASCENDING",
+          "$genre$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "dirhash$full",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Genre/Artiste/Album\nclassé par Année",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "date": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genre",
+          "genre$ASCENDING",
+          "$genre$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "dirhash$full",
+          "date$DESCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Abums indispensables\nRanking 5",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "date": {
+              "$exists": true
+            }
+          },
+          {
+            "ranking": 5
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz Contemporain\nclassé par Artiste/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "date": {
+              "$gte": 1990
+            }
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "compilation": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album",
+          "date$DESCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz Vocal Contemporain\nclassé par Artiste/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "subgenre": "Vocal"
+          },
+          {
+            "date": {
+              "$gte": 1990
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "date": {
+              "$exists": true
+            }
+          },
+          {
+            "compilation": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album$full",
+          "date$DESCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz Vocal\nclassé par Artiste/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "subgenre": "Vocal"
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album$full",
+          "date$DESCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz\nclassé par décade",
+      "query": {
+        "$and": [
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "date": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "date_decade",
+          "date_decade$DESCENDING",
+          "$date_decade$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album$full",
+          "date$DESCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz\nclassé par instrument",
+      "query": {
+        "$and": [
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "instrument",
+          "instrument$ASCENDING",
+          "$instrument$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album",
+          "date$ASCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz\nclassé par Artiste",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist_alphabet",
+          "artist_alphabet$ASCENDING",
+          "$artist_alphabet$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "dirhash$full",
+          "date$DESCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz\nclassé par Sélection",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Jazz"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "selection": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "selection",
+          "selection$ASCENDING",
+          "$selection$"
+        ],
+        [
+          "album$full",
+          "album$ASCENDING",
+          "$artist$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Latin\nclassé par Style",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Latin"
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "subgenre": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "subgenre",
+          "subgenre$ASCENDING",
+          "$subgenre$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album$full",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Albums\nclassé par Label/Série/Numéro",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "organization": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "catalogserie": {
+              "$exists": true
+            }
+          },
+          {
+            "catalognumber": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genre",
+          "genre$ASCENDING",
+          "$genre$"
+        ],
+        [
+          "organization",
+          "organization$ASCENDING",
+          "$organization$"
+        ],
+        [
+          "catalogserie",
+          "catalogserie$ASCENDING",
+          "$catalogserie$"
+        ],
+        [
+          "catalognumber",
+          "catalognumber$ASCENDING",
+          "$catalognumber$<BR>$artist$-$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Classique\nclassé par instrument",
+      "query": {
+        "$and": [
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "genre": "Classique"
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "instrument",
+          "instrument$ASCENDING",
+          "$instrument$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album",
+          "album$ASCENDING",
+          "$date$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Classique\nclassé par Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Classique"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "album",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Classique\nclassé par Artiste",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Classique"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "dirhash",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Classique\nclassé par Compositeur",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Classique"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          },
+          {
+            "composer": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "composer_invert",
+          "composer_invert$ASCENDING",
+          "$composer_invert$"
+        ],
+        [
+          "dirhash$full",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Classique\nclassé par Chef d' Orchestre",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Classique"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          },
+          {
+            "conductor": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "conductor_invert",
+          "conductor_invert$ASCENDING",
+          "$conductor_invert$"
+        ],
+        [
+          "dirhash",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Classique\nclassé par Orchestre",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": "Classique"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "collection": {
+              "$exists": false
+            }
+          },
+          {
+            "performer": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "performer",
+          "performer$ASCENDING",
+          "$performer$"
+        ],
+        [
+          "dirhash",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Artistes\nclassé par Groupe/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "group_artist",
+          "group_artist$ASCENDING",
+          "$group_artist$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "dirhash",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Artistes\nclassé par Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "artist_alphabet",
+          "artist_alphabet$ASCENDING",
+          "$artist_alphabet$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "dirhash",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Albums\nclassé par Ordre Alphabétique",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "album_alphabet",
+          "album_alphabet$ASCENDING",
+          "$album_alphabet$"
+        ],
+        [
+          "dirhash",
+          "album$ASCENDING",
+          "$album$<BR>$artist$"
+        ]
+      ]
+    },
+    {
+      "name": "Albums\nclassé par Décade/Année/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          },
+          {
+            "date": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "date_decade",
+          "date_decade$DESCENDING",
+          "$date_decade$"
+        ],
+        [
+          "date",
+          "date$DESCENDING",
+          "$date$"
+        ],
+        [
+          "album",
+          "album$ASCENDING",
+          "$artist$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Collection\nclassé par Artiste",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "collection": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "collection",
+          "collection$ASCENDING",
+          "$collection$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$<BR>$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Collection\nclassé par N° Disque",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "collection": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "collection",
+          "collection$ASCENDING",
+          "$collection$"
+        ],
+        [
+          "discnumber",
+          "discnumber$ASCENDING",
+          "$discnumber$<BR>$artist$"
+        ]
+      ]
+    },
+    {
+      "name": "Jazz Standards\nclassé par Artiste/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "Jazz_Standard": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "Jazz_Standard",
+          "Jazz_Standard$ASCENDING",
+          "$Jazz_Standard$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ]
+      ]
+    },
+    {
+      "name": "Albums\nImports de la Semaine",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "date_imported_timestamp": {
+              "$gte": "$time_604800$"
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "dirhash",
+          "dirname$ASCENDING",
+          "$dirname$<BR>$artist$-$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Compilations\nclassé par Genre/Album",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "compilation": "Yes"
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genre",
+          "genre$ASCENDING",
+          "$genre$"
+        ],
+        [
+          "album$full",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Albums\nclassé par formats",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "audio"
+          },
+          {
+            "genre": {
+              "$exists": true
+            }
+          },
+          {
+            "artist": {
+              "$exists": true
+            }
+          },
+          {
+            "album": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "extension",
+          "extension$ASCENDING",
+          "$extension$"
+        ],
+        [
+          "genre",
+          "genre$ASCENDING",
+          "$genre$"
+        ],
+        [
+          "artist",
+          "artist$ASCENDING",
+          "$artist$"
+        ],
+        [
+          "album",
+          "album$ASCENDING",
+          "$album$"
+        ]
+      ]
+    },
+    {
+      "name": "Imports\ndes 10 Dernières Minutes",
+      "query": {
+        "$and": [
+          {
+            "date_imported_timestamp": {
+              "$gte": "$time_600$"
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "dirhash",
+          "dirname$DESCENDING",
+          "$dirname$<BR>/$genre$-$artist$-$album$-$date$"
+        ]
+      ]
+    }
+  ],
+  "video": [
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": "movie"
+          }
+        ]
+      },
+      "levels": [
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Titre des Films"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": "movie"
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genres",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Genres"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": "movie"
+          },
+          {
+            "credits": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "credits.cast.name",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Acteurs"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": "movie"
+          },
+          {
+            "Director": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "Director",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Réalisateurs"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": "movie"
+          },
+          {
+            "Original_Music_Composer": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "Original_Music_Composer",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Bande Originale"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": "movie"
+          }
+        ]
+      },
+      "levels": [
+        [
+          "title",
+          "date$ASCCENDING",
+          "$date$ \n $title$<BR>"
+        ]
+      ],
+      "name": "par date"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "tmdb_id": {
+              "$exists": false
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "sans TMDB ID"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": {
+              "$ne": "movie"
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genres",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Autre Genres par genre"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          },
+          {
+            "mediasubtype": {
+              "$ne": "movie"
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Autre Genres par titre"
+    }
+  ],
+  "image": [
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "image"
+          }
+        ]
+      },
+      "levels": [
+        [
+          "collection",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Collections"
+    },
+    {
+      "query": {
+        "$and": [
+          {
+            "mediatype": "image"
+          },
+          {
+            "DateTime": {
+              "$exists": true
+            }
+          }
+        ]
+      },
+      "levels": [
+        [
+          "DateTime",
+          "ASCENDING"
+        ],
+        [
+          "collection",
+          "ASCENDING"
+        ],
+        [
+          "title",
+          "ASCENDING"
+        ]
+      ],
+      "name": "Date"
+    }
+  ],
+  "podcast": [
+    {
+      "name": "Jazz",
+      "file": "Jazz.opml"
+    }
+  ],
+  "radios": [
+    {
+      "name": "Classique",
+      "file": "Classique.xspf"
+    },
+    {
+      "name": "Jazz",
+      "file": "Jazz.xspf"
+    },
+    {
+      "name": "Radio France",
+      "file": "Radio France.xspf"
+    },
+    {
+      "name": "Regional",
+      "file": "Regional.xspf"
+    }
+  ],
+  "playlists": [],
+  "videos": [
+    {
+      "name": "Par genre",
+      "query": {
+        "$and": [
+          {
+            "mediatype": "video"
+          }
+        ]
+      },
+      "levels": [
+        [
+          "genre",
+          "genre$ASCENDING",
+          "$genre$"
+        ]
+      ]
+    }
+  ]
+}

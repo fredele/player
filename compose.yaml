@@ -3,25 +3,34 @@ services:
     user: "${HOST_UID}:${HOST_GID}"
     image: myplayer
     network_mode: host
+    mem_limit: 1.5g
+    memswap_limit: 1.5g
+
+
     volumes:
       - ${HOME}/.Player:/home/player/.Player
       - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
       - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
-      # Set your music drives here...
+
+      # Musique
       - /mnt/Disque_1:/mnt/Disque_1
       - /mnt/Disque_2:/mnt/Disque_2
-
+ 
 
     environment:
       PULSE_SERVER: ${XDG_RUNTIME_DIR}/pulse/native
 
     group_add:
       - "${AUDIO_GID}"
+
   mongo:
     user: "${HOST_UID}:${HOST_GID}"
     image: mongo:3.6
     restart: unless-stopped
     network_mode: host
+    mem_limit: 1.5g
+    memswap_limit: 1.5g
+    command: mongod --wiredTigerCacheSizeGB 1.4
     volumes:
       - /mnt/Disque_1/DB_Player/database:/data/db
 

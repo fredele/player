@@ -560,7 +560,6 @@ function onload_browse() {
   document.getElementById('editor1').innerHTML = translate("Tag") + " :";
   document.getElementById('editor2').innerHTML = translate("Value") + " :";
   document.getElementById('search1').innerHTML = translate("Search") + " :";
-  document.getElementById('search2').innerHTML = translate("Tag") + " :";
   document.getElementById('button_set_value').value = translate("save");
 
   window.ui = "active"

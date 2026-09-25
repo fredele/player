@@ -5,7 +5,58 @@
   "version": "0.2.0",
   "configurations": [
     
-   {
+{
+    "name": "Run local with mongodb docker image",
+    "type": "python",
+    "request": "launch",
+    "program": "${workspaceFolder}/src/main.py",
+    "console": "integratedTerminal",
+    "python": "${workspaceFolder}/../venv/bin/python",
+    "preLaunchTask": "docker-compose-mongodb-up",
+    "postDebugTask": "docker-compose-mongodb-down",
+    "justMyCode": true
+},
+    {
+      "name": "Debug local with mongodb docker image",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up"
+      
+    },
+    {
+      "name": "Debug scan",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/updatelib.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up", 
+      "postDebugTask": "docker-compose-mongodb-down"
+    },
+        {
+      "name": "Debug fuz",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/fuz.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up" 
+      
+    },
+     {
+      "name": "Debug querybuilder",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/updatesavedqueries.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up", 
+      "postDebugTask": "docker-compose-mongodb-down"
+    },
+       {
       "name": "Debug local with mongodb docker image",
       "type": "debugpy",
       "request": "launch",

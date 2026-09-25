@@ -1,0 +1,44 @@
+{
+  "players": [
+    {
+      "id": "0",
+      "type": "gstreamer",
+      "name": "Interne",
+      "volume_control": true,
+      "gapless": true
+    },
+    {
+      "id": "1",
+      "type": "upnp",
+      "name": "Denon",
+      "address": "http://192.168.1.89:8080/description.xml",
+      "volume_control": false,
+      "gapless": true,
+      "transcode": true,
+      "codec": "ogg",
+      "bitrate": 256
+    },
+    {
+      "id": "2",
+      "type": "upnp",
+      "name": "Gmedia",
+      "address": "http://192.168.1.15:49495/description.xml",
+      "volume_control": true,
+      "gapless": true,
+      "transcode": true,
+      "codec": "mp3",
+      "bitrate": 320
+    },
+    {
+      "id": "3",
+      "type": "upnp",
+      "name": "TV Salon",
+      "address": "http://192.168.1.16:38400/MediaServer/rendererdevicedesc.xml",
+      "volume_control": true,
+      "gapless": true,
+      "transcode": true,
+      "codec": "ogg",
+      "bitrate": 256
+    }
+  ]
+}

@@ -1,3 +1,9 @@
 /help
 /mongodb
 *.pyc
+.aider*
+.env
+aider
+/cordova
+
+

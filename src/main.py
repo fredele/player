@@ -1,15 +1,15 @@
 import gi
 import pulsectl
+from pathlib import Path
 gi.require_version('Gst', '1.0')
 import io
 import urllib.parse
 import json
-#from streamer import send_audio_file
-from streamer3 import send_audio_file
 from gi.repository import Gst
 import logging
 import markdown
 import louie
+from scannotifier import ScanNotifier
 from twisted.web.static import DirectoryLister
 from twisted.web.static import File
 from twisted.python.threadpool import ThreadPool
@@ -37,6 +37,8 @@ from os import listdir
 from os.path import isfile, join
 import urllib.parse
 from updatesavedqueries import Update_Queries
+from requestfind import Requestfind
+from scanlistener import ScanSocketListener
 from upnpclient.discover_upnp import get_upnp_renderers
 from coherence.base import Coherence
 from updatelib import LibraryScannerService, Update_Music_Folders
@@ -55,8 +57,11 @@ from flask_httpauth import HTTPBasicAuth
 from requests.auth import HTTPBasicAuth as basicaut
 from  players.gplayer import GPlayer
 from  players.upnpplayer import UpnpPlayer
+from ramsearch import RamSearch
+from typing import List, Dict
 import time
 import socket
+import ast
 import os
 import glob
 import copy
@@ -81,15 +86,14 @@ from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerPr
 from autobahn.twisted.resource import WebSocketResource, WSGIRootResource
 from utils.tags import gettags, replacetags
 from  io import BytesIO
-from autoimport import Autoimport
 from utils.proc import set_proc_name
 from utils.string import clean
 from flask import request
 from html.parser import HTMLParser
+from initialize import Initialize
 from lxml import etree
 from rip_cd import launch_rip
 from logging.handlers import RotatingFileHandler
-from change_stream_thread import ChangeStream
 from download import streamdirhash
 app = Flask(__name__,static_url_path='',
             static_folder='web/static',
@@ -141,17 +145,9 @@ def GetPlayer(player_id):
     else:
         return None
 
-def send_message(message):
-    msg = {}
-    msg['message'] = message
-    msg['value'] = ''
-    if  hasattr(app, 'player_id'):
-      msg['id'] = app.player_id
-    else:
-        msg['id'] = '-1'
-    WSServerProtocol.broadcast_message(msg)
 
-def send_message_value(message,value):
+
+def send_message_value(message,value =""):
     msg = {}
     msg['message'] = message
     msg['value'] = value
@@ -170,15 +166,6 @@ def emit_library_scan_event(event, **payload):
         'id': getattr(app, 'player_id', '-1')
     }
     WSServerProtocol.broadcast_message(msg)
-
-    if event in ("library_scan_finished", "library_scan_stopped"):
-        try:
-            if getattr(app, "update_queries", None) is not None:
-                app.update_queries.do_stop()
-            app.update_queries = Update_Queries(app, requestfind)
-            app.update_queries.start()
-        except Exception:
-            logging.exception("Failed to refresh saved query cache after library scan")
 
 
 def plugins_action(function_name, param='none',param2='none'):
@@ -468,6 +455,61 @@ def fname(s):
 def passer_titre():
     return dict(titre="Bienvenue !")
 
+
+
+@app.route("/slskd", methods=["POST"])
+def slskd_webhook():
+    data = request.get_json(silent=True)
+
+    if not data:
+        return {"status": "ignored"}, 200
+
+    if data.get("type") != "DownloadDirectoryComplete":
+        return {"status": "ignored", "type": data.get("type")}, 200
+
+    remote_path = data.get("localDirectoryName")
+
+    if not remote_path:
+        return {"status": "error", "message": "localDirectoryName missing"}, 400
+
+    prefix = "/app/downloads/complete"
+
+    if not remote_path.startswith(prefix):
+        return {"status": "error", "message": "unexpected path"}, 400
+
+    # /app/downloads/complete/gxk...
+    # -> /mnt/Disque_2/Soulseek Downloads/complete/gxk...
+
+    relative_path = remote_path[len(prefix):].lstrip("/")
+
+    local_path = os.path.join(
+        "/mnt/Disque_2/Soulseek Downloads/complete",
+        relative_path
+    )
+
+    print(f"DownloadDirectoryComplete: {local_path}")
+
+    # Lancement asynchrone : ne bloque pas la requête HTTP
+    process = subprocess.Popen(
+        [
+            "/home/fredele/MyPlayer/scripts/correctcomplete",
+            local_path
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True
+    )
+
+    print("correctcomplete launched, PID:", process.pid)
+
+    # Réponse immédiate à slskd
+    return {
+        "status": "ok",
+        "path": local_path,
+        "pid": process.pid
+    }, 200
+    
+    
 @app.route("/v1/Transcode/<string:player_id>/<path:filename>")
 def transcodedfile(player_id, filename):
     fileid = os.path.splitext(filename)[0]
@@ -882,10 +924,9 @@ def touch_activity():
 
 @app.before_first_request
 def init():
-
+    app.scanprocess = None
     app.imported_ids = []
     app.running_saved_queries = []
-    app.requestfind = requestfind
     app.mute = False
     app.mediafiles_dir = os.path.join(os.getenv("HOME"), '.Player','mediafiles')
     app.docs_dir = os.path.join(os.getenv("HOME"), '.Player', 'docs')
@@ -926,10 +967,8 @@ def init():
         app.player.set_pipeline()
     except:
         pass
-    app.send_message = send_message
+
     app.send_message_value = send_message_value
-    app.change_stream =  ChangeStream(app)
-    app.change_stream.start()
     app.plugins_action('server_before_first_request')
 
 
@@ -1316,33 +1355,21 @@ def AlbumStats(dirhash):
 def LibrarySearch():
     res = {}
     try:
-        if 'field' in request.args and 'value' in request.args and 'query' in request.args:
-            field =  request.args['field']
-            value = request.args['value'] # MUST be a string
-            query =eval(urllib.parse.unquote(request.args['query']))
-
-            result = app.db.mediadirs.aggregate(
-                [
-                {'$match': query},
-                {'$match': { field: { '$regex': value,'$options': 'i'   }}},
-                {'$group': {'_id': {'search_field': '$' + field, 'dirhash': '$dirhash', 'artist': '$artist', 'album': '$album'},'count': {'$sum': 1}}}
-            ])
-
-            if  field == "artist":
-                sorted_dictionaries = sorted([doc for doc in result], key=lambda x:(x['_id']['artist'][0], x['_id']['album']))
-            elif  field == "album":
-                sorted_dictionaries = sorted([doc for doc in result], key=lambda x: x['_id']['album'])
-            elif  field == "title":
-                sorted_dictionaries = sorted([doc for doc in result], key=lambda x:(x['_id']['artist'][0], x['_id']['album']))
-            else :
-                sorted_dictionaries = sorted([doc for doc in result], key=lambda x: x['_id']['album'])
-
-            res['Result'] = sorted_dictionaries
-            res['Response'] = 'OK'
-            res['field'] = field
-    except:
+        if  'value' in request.args and 'query' in request.args:
+            if app.ram_search.available:
+                results = app.ram_search.search(request.args['value'], limit=100)
+                res['Result'] = results
+                res['Response'] = 'OK'
+          
+    except Exception as e:
+        print(f"Error in LibrarySearch: {e}")
         res['Response'] = 'Error'
-    return json_resp(res)
+        return json_resp(res)
+    res = json_resp(res)
+    return res
+
+
+
 
 @app.route("/v1/Player/Radio")
 @app.tokenauth.login_required
@@ -2416,37 +2443,33 @@ def upload_file():
       res['response'] = 'OK'
       return json_resp(res)
 
-@app.route("/v1/Library/Scan/Music/Update/Files")
-@adminlogrequired
-@app.tokenauth.login_required
-def Library_Scan_Music_Update_Files():
-    '''Add new music files without altering what's there.'''
-    if not hasattr(app, "library_scanner"):
-        app.library_scanner = LibraryScannerService(
-            mongo_uri=app.mongo_addr,
-            db=app.db,
-            media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
-            notifier=emit_library_scan_event,
-            max_workers=int(getattr(app, "scan_threads", 4)),
-        )
-    app.library_scanner.schedule_scan(operation="incremental", folder="all", overwrite=False, rebuild=False)
-    return json_resp({"result": "OK", "status": "queued"})
 
-@app.route("/v1/Library/Scan/Music/Update/Folders")
+
+@app.route("/v1/Library/Scan/Music")
 @adminlogrequired
 @app.tokenauth.login_required
 def Library_Scan_Music_Update_Folders():
-    '''Add new music folders without altering what's there (scan folder button).'''
-    if not hasattr(app, "library_scanner"):
-        app.library_scanner = LibraryScannerService(
-            mongo_uri=app.mongo_addr,
-            db=app.db,
-            media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
-            notifier=emit_library_scan_event,
-            max_workers=int(getattr(app, "scan_threads", 4)),
-        )
-    app.library_scanner.schedule_scan(operation="incremental", folder="all", overwrite=False, rebuild=False, scanfolder=True)
-    return json_resp({"result": "OK", "status": "queued"})
+    """Scan the music folders and update the database"""
+    res = {}
+    if app.scanprocess is not None:
+        print("SCAN PID =", app.scanprocess.pid)
+        if app.scanprocess.poll() is None:
+            return json_resp({
+                "result": "OK",
+                "status": "scanning"
+            })
+
+        app.scanprocess = None  # Ancien scan terminé
+        
+    
+    app.scanprocess = subprocess.Popen(
+        ["/bin/bash", "scan"],
+        cwd=os.chdir(app.root_path)
+    )
+
+    print("SCAN PID =", app.scanprocess.pid)
+    res['response'] = 'OK'
+    return json_resp(res)
 
 def rescan_clbk():
     msg = {}
@@ -2454,17 +2477,6 @@ def rescan_clbk():
     msg['id'] =app.player_id
     WSServerProtocol.broadcast_message(msg)
 
-@app.route("/v1/Library/Scan/Music/Rebuild")
-@app.tokenauth.login_required
-@adminlogrequired
-def Library_Scan_Music_Rebuild():
-    '''Erase all music and rebuild '''
-
-    if not hasattr(app, 'up'):
-        app.db.internals.update_one({"_id": app.internals["_id"]},{ "$set": {"last_scan": Timestamp_Now()}}, upsert=False)
-        Update_Music_Lib(app.mongo_addr, callback= rescan_clbk , owner= app, overwrite=True, rebuild =True).start()
-        res = {"Library": "Start rescanning"}
-    return json_resp(res)
 
 
 @app.route("/v1/Library/SetTag") #, methods = ['GET', 'POST']
@@ -2473,10 +2485,8 @@ def Library_Scan_Music_Rebuild():
 def Set_Tag():
     """Set a given tag of given file ids"""
     try:
-        app.auto_import.pause()
+        
         res = {}
-        #TODO : Enable /Disable this feature ?
-        #writetag = BoolStr(request.json['write_tag'])
 
         if ('ids' in request.args) and ('value' in request.args) and ('tag' in request.args):
             value = request.args["value"].split(";")
@@ -2516,18 +2526,9 @@ def Set_Tag():
     except Exception as e:
         res['result'] = 'Error'
 
-    if (app.update_queries != None):
-        app.update_queries.do_stop()
-    app.update_queries = Update_Queries(app,requestfind)
-    app.update_queries.start()
     update_playlist()
     louie.send("lib_updated")
-    app.send_message("Tags Edited")
-
-    def reprise_auto_import():
-        app.auto_import.reprise()
-    if app._config['AutoImport']['activate'] == "True":
-        threading.Timer(5.0, reprise_auto_import).start()
+    app.send_message_value("Tags Edited")
 
     return json_resp(res)
 
@@ -2656,7 +2657,7 @@ def find( ):
     used by Control player view
     """
     try:
-        res = requestfind(request.args,app.db)
+        res = Requestfind(request.args,app.db)
         if res == "error":
             return json_resp({"response": "No more pages"})
         return json_resp({'response': 'OK', 'key': res["key"],'page_nbr': res["page_nbr"] , 'result': res["result"], 'query' : res["query"] })
@@ -2665,257 +2666,6 @@ def find( ):
 
 
 
-def requestfind(request,db,query_hash =None):
-    """
-    query : the query which selects a subset of files
-    field: tag giving for each widget  a different tag value
-    sorttag : optionnal, tag on which the result is sorted + optionnal ASC or DESC sorting ...
-    display: optionnal, set a different value for the display fo each widget
-    full: optionnal, DOES NOT WORK mith mediadirs
-    page_nbr:  get the page you want
-    response_count : number of items in a page
-    Note : sort on multiple tags does not work, NOT implemented...
-    """
-
-    page_nbr = int(request.get("page_nbr", 0))
-    response_count = int(request.get("response_count", 1500))
-    key = urllib.parse.unquote(request.get('field', ""))
-    sorttag = urllib.parse.unquote(request["sorttag"].split('$', 1)[0] if "sorttag" in request else key)
-    if "sort" in request:
-        sort = urllib.parse.unquote(request["sort"])
-    else:
-        if len(request["sorttag"].split('$', 1)) == 2:
-            sort = request["sorttag"].split('$', 1)[1] if "sorttag" in request else "ASCENDING"
-        else:
-            sort = "ASCENDING"
-
-    sort =  -1 if sort == "DESCENDING" else 1
-    display = urllib.parse.unquote(request.get('display', ""))
-    full = request.get("full", "false")
-    
-    strquery =   urllib.parse.unquote(request.get("query", ""))
-    if strquery == "null":
-        return json_resp({'response': 'No error'})
-    # replace $time with the current date
-    tags = gettags(strquery)
-    countt = [t.rsplit('_', 1)[1] for t in tags if 'time_' in t]
-    vals = {}
-    for ct in countt:
-        try:
-            t =  int(time.time()) - int(ct)
-            vals['$time_' + ct + '$'] = t
-        except:
-            pass
-
-    def replacetime(d):
-        # replaces the string repr. with the int value ...
-        if isinstance(d, dict):
-            for k, v in d.items():
-                if not isinstance(v, str):
-                    replacetime(v)
-                else:
-                    for k1, v1 in vals.items():
-                        if k1 in v:
-                            d[k] = v1
-        elif isinstance(d, list):
-            for i in d:
-                replacetime(i)
-
-        return d
-    try:
-        query = eval(strquery)
-    except:
-        pass
-        # décode str en dict
-    query =replacetime(query)
-
-    basequery = copy.deepcopy(query)
-    tags = gettags(display)
-    displaytags = [t for t in tags if not t.endswith("_count")]
-    counttags = [t for t in tags if t.endswith("_count")]
-    counttags = [t.replace("_count","") for t in counttags]
-    # The Last filtered key and value is :
-    lastfield = list(query["$and"][-1].keys())[0]
-    lastfieldvalue = list(query["$and"][-1].values())[0]
-
-    # Get the full albums
-    if full.lower() == "true":
-        dirhash_values = app.db.mediafiles.find(basequery).distinct('dirhash')
-        basequery = {'$and': [{'dirhash': {'$in': [f for f in dirhash_values]} }]}
-    result = []
-    try:
-        s = urllib.parse.quote(str(query)) + str(sort) + sorttag + display + str(page_nbr) + str(response_count) + full
-    except:
-        return ""
-    if query_hash == None:
-        has = hashlib.sha256(s.encode('utf-8')).hexdigest()
-        #print(f"query hash from this query : {has}")
-        full = BoolStr(full)
-    else:
-        has = query_hash
-        #print(f"query hash to update : {has}")
-
-    # Decoding the query ends here ..
-
-    if app.debug != "yes": # Default no , -d yes to activate
-        try:
-            cursorsavedquery = db.savedqueries.find({'hashquery': has})
-            cs = [x for x in cursorsavedquery]
-            if len(cs) >= 1:
-                result = cs[0]['''result''']
-                q = cs[0]['''query''']
-                # Query has been found, return it ... and update the count !
-                db.savedqueries.update_one({'hashquery': has}, {"$set": {"displayed": 1 + cs[0]["displayed"]}})
-                return { 'key': key, 'result': result , 'page_nbr' : page_nbr,"query" :q }
-        except:
-            json_resp({'response': 'Error', })
-    send_message_value('Calculating query', str(has))
-    def displayed(r,val):
-        try:
-            if isinstance(r[val],list):
-                result =r[val]
-                if isinstance(result, list):
-                    result = ", ".join([str(e) for e in result])
-
-                try:
-                    if isinstance(eval(result), list):
-                        if len(eval(result))>0:
-                            result = ", ".join(sorted([str(item) for sublist in r[val] for item in sublist]))
-                        else:
-                            result = ", ".join([str(eval(e)) for e in r[val]])
-                except:
-                    pass
-            else:
-                result =str(r[val])
-
-            return result
-        except:
-            return ""
-
-    # ############# MongoDB / With aggregation
-    tags = []
-    if app.db_name == "mongodb":
-        def add_count_tag(tag):
-            if tag not in grp:
-                grp[tag + "_count"] = {"$addToSet": "$" + tag}
-                tags.append(tag)
-            if tag not in prj:
-                prj[tag + "_count"] = {"$size": "$" + tag + "_count"}
-
-        def add_display_tag(tag):
-            if tag not in grp:
-                grp[tag ] = {"$addToSet": "$" + tag}
-                tags.append(tag)
-            if tag not in prj:
-                prj[tag] =  "$" + tag
-
-        grp = {"_id": "$" + key, "files": {"$sum": 1}, "dirhashs": {"$addToSet": "$dirhash"}}
-        prj = {"_id": 0, "keyval": "$_id", "files": 1, "dirhashs": "$dirhashs"}
-
-        for tag in counttags:
-            add_count_tag(tag)
-
-        for tag in displaytags:
-            add_display_tag(tag)
-
-        try:
-            sortvals = list(sorted(app.db.mediafiles.find(basequery).distinct(sorttag)))
-        except:
-            sortvals = list(sorted([str(x) for x in app.db.mediafiles.find(basequery).distinct(sorttag)]))
-
-        if sort == -1:
-            sortvals.reverse()
-        sortvals = list( sortvals[(page_nbr * response_count):min((page_nbr * response_count) + response_count, len(sortvals))])
-
-        if sortvals == []:
-            return  "error"
-        q= copy.deepcopy(basequery)
-        q["$and"].append({sorttag :{"$in":sortvals}})
-
-        m = app.db.mediafiles
-        search = m.aggregate([
-            {"$match": q},
-            {"$unwind": "$" + key},
-            {"$group": grp},
-            {"$project": prj},
-            {"$sort": {sorttag: sort}}  #Beware of parallel indexing, does not work with multiple sorting ...
-        ])
-        result = list(search)
-        for l in result:
-            for tag in tags:
-                try:
-                    l[tag] = [ x for xs in l[tag] for x in xs] if type(l[tag][0]) is list else  l[tag]
-                except:
-                    pass
-        res = []
-        for l in result :
-            if l['keyval'] not in ['', ['']] :
-                if l[sorttag][0] in sortvals: # limit result to this sortag page values
-                    res.append(l)
-        result = res
-
-
-
-    #Delete all result not beginning with the correct Letter on "alphabet" tag ...
-    if "alphabet" in lastfield and key != "dirhash":
-        try:
-            result = [i for i in result if i["keyval"].lower().startswith(lastfieldvalue.lower() )]
-        except:
-            pass
-
-    # Delete all result not beginning in this group tag ...
-    if "group_" in lastfield and key != "dirhash":
-        try:
-            result = [i for i in result if (  char_position(lastfieldvalue[0]) <= char_position(i["keyval"].lower()) and  char_position(i["keyval"].lower())  <= char_position(lastfieldvalue[-1]) ) ]
-        except:
-            pass
-
-    for r in result:
-        try:
-            query = copy.deepcopy(basequery)
-            query_and = query['$and']
-            query_and.append({key: r["keyval"]})
-            r["query"] =   urllib.parse.quote(str(query).encode("UTF-8"))
-            displayval = copy.deepcopy(display)
-            displayval =  displayval.replace('$' + key + '$',   displayed(r,"keyval"))
-            displayval = displayval.replace('$' +sorttag+ '$', displayed(r,sorttag))
-            for tag in displaytags:
-                displayval = displayval.replace('$' + tag + '$', displayed(r,tag))
-            for tag in counttags:
-                displayval = displayval.replace('$' + tag + '_count$', displayed(r,tag+"_count"))
-            r["display"] = displayval if displayval != "" else r["keyval"]
-            if "covers" not in r :
-                r["covers"] = r["dirhashs"]
-            r.pop('dirhashs')
-        except Exception as e:
-            print(e)
-
-
-
-    try:
-         q =urllib.parse.quote(str(basequery))
-         # update the query ...
-         update = db.savedqueries.update_one({"hashquery": has},
-            {"$set": {
-                  "hashquery": has,
-                  "query" : q,
-                  "lasttime": int(round(time.time())),
-                  "field" : key,
-                  "sort" : sort,
-                  "sorttag" : sorttag,
-                  "display" : display,
-                  "full": StrBool(full),
-                  "displayed" : 0,
-                  "result": result,
-                  "page_nbr": page_nbr,
-                  "response_count": response_count,
-              }} , upsert=True)
-
-         print("Insert hash :" + str(has))
-         #print(s)
-    except Exception as e:
-        print(e)
-    return { 'key': key,'page_nbr' : page_nbr ,"query" :q,'result': result}
 
 
 def clbk():
@@ -2925,72 +2675,119 @@ def clbk():
     WSServerProtocol.broadcast_message(msg)
 
 @app.route("/v1/Library/Import")
-#@adminlogrequired
+# @adminlogrequired
 def Library_import():
-    #TODO : continue ...
-    os.chdir(app.root_path)
-    if 'folder' in request.args:
-        f =urllib.parse.unquote(request.args["folder"])
-        dirnames = f.split(";")
-        time.sleep(1)
-        Update_Music_Folders(dirnames,
-                     mongo_uri=app.mongo_addr,
-                     db=app.db,
-                     media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
-                     notifier=emit_library_scan_event,
-                     max_workers=int(getattr(app, "scan_threads", 4)),
-                     overwrite=False,
-                     rebuild=False)
+    """ Import a folder in the Library """
+    if "folder" not in request.args:
+        return json_resp({"error": "missing folder"}), 400
 
-    if 'last' in request.args:
-        minutes = "-"+str([urllib.parse.unquote(request.args["last"])][0])
-        app.mediafiles_dir = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles')
-        cmd = ['find', '-L' ,f'{app.mediafiles_dir}', '-type', 'd' , '-mmin' ,minutes, '-links', '-3']
-        folders = subprocess.check_output(cmd).splitlines()
-        folders = [f.decode("utf-8").replace("/artwork","") for f in folders]
-        folders = ['Music' + f.split('/Music')[1] for f in folders ]
-        time.sleep(1)
-        Update_Music_Folders(folders,
-                     mongo_uri=app.mongo_addr,
-                     db=app.db,
-                     media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
-                     notifier=emit_library_scan_event,
-                     max_workers=int(getattr(app, "scan_threads", 4)),
-                     overwrite=False,
-                     rebuild=False)
+    folder = request.args["folder"]
 
-    return json_resp({'response': 'OK'})
+    result = app.library_scanner.schedule_scan(
+        operation="incremental",
+        folder=folder,
+        overwrite=False,
+        rebuild=False,
+        scanfolder=False,
+    )
 
+    if result is False:
+        return json_resp({
+            "status": "busy",
+            "message": "A library scan is already running"
+        }), 409
+
+    return json_resp({
+        'response': 'OK',
+        "status": "scheduled",
+        "folder": folder
+    }), 202
+    
+    
 @app.route("/v1/Library/Reimport")
-#@adminlogrequired
+# @adminlogrequired
 def Library_Reimport():
-    if app.scan_lock == True:
-        return json_resp({'response': 'Error'})
-    os.chdir(app.root_path)
-    if 'query' in request.args:
-        q = eval(urllib.parse.unquote(request.args["query"]))
-        app.db.savedqueries.delete_many({"query": urllib.parse.quote(str(copy.deepcopy(q)["$and"].pop()))})
-        if list(q['$and'][-1].keys())[0] == 'dirhash':
-            dirnames = app.db.mediafiles.find({"$and":[q['$and'][-1]]}).distinct("dirname")
-            dirhashs = [list(q['$and'][-1].values())[0]]
-        else:
-            dirnames = app.db.mediafiles.find(q).distinct("dirname")
-            dirhashs = app.db.mediafiles.find(q).distinct("dirhash")
-        app.db.mediafiles.delete_many({"dirhash" : { "$in" : dirhashs}})
-        app.db.thumbnails.delete_many({"dirhash" : { "$in" : dirhashs}})
-        app.db.mediadirs.delete_many({"dirhash" : { "$in" : dirhashs}})
 
-        time.sleep(1)
-        Update_Music_Folders(dirnames,
-                     mongo_uri=app.mongo_addr,
-                     db=app.db,
-                     media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
-                     notifier=emit_library_scan_event,
-                     max_workers=int(getattr(app, "scan_threads", 4)),
-                     overwrite=False,
-                     rebuild=False)
+    if "query" not in request.args:
+        return json_resp({
+            "response": "Error",
+            "message": "missing query"
+        }), 400
 
-    return json_resp({'response': 'OK','dirhashs': dirhashs})
+    try:
+        q = ast.literal_eval(
+            urllib.parse.unquote(request.args["query"])
+        )
+    except (ValueError, SyntaxError):
+        return json_resp({
+            "response": "Error",
+            "message": "invalid query"
+        }), 400
+
+    # Suppression de la saved query
+    last_query = copy.deepcopy(q)["$and"].pop()
+
+    app.db.savedqueries.delete_many({
+        "query": urllib.parse.quote(str(last_query))
+    })
+
+    # Recherche des dossiers concernés
+    if list(q["$and"][-1].keys())[0] == "dirhash":
+        dirnames = app.db.mediafiles.find(
+            {"$and": [q["$and"][-1]]}
+        ).distinct("dirname")
+
+        dirhashs = [
+            list(q["$and"][-1].values())[0]
+        ]
+
+    else:
+        dirnames = app.db.mediafiles.find(q).distinct("dirname")
+        dirhashs = app.db.mediafiles.find(q).distinct("dirhash")
+
+    # Suppression des données existantes
+    app.db.mediafiles.delete_many({
+        "dirhash": {"$in": dirhashs}
+    })
+
+    app.db.thumbnails.delete_many({
+        "dirhash": {"$in": dirhashs}
+    })
+
+    app.db.mediadirs.delete_many({
+        "dirhash": {"$in": dirhashs}
+    })
+
+    # Pour l'instant, on ne peut programmer qu'un seul dossier
+    folder = dirnames[0] if dirnames else ""
+
+    if not folder:
+        return json_resp({
+            "response": "OK",
+            "status": "nothing_to_reimport",
+            "dirhashs": dirhashs
+        }), 200
+
+    result = app.library_scanner.schedule_scan(
+        operation="incremental",
+        folder=folder,
+        overwrite=False,
+        rebuild=False,
+        scanfolder=False,
+    )
+
+    if result is False:
+        return json_resp({
+            "status": "busy",
+            "message": "A library scan is already running"
+        }), 409
+
+    return json_resp({
+        "response": "OK",
+        "status": "scheduled",
+        "folder": folder,
+        "dirhashs": dirhashs
+    }), 202
 
 @app.route("/v1/Display/Covers")
 @app.tokenauth.login_required
@@ -3398,12 +3195,14 @@ def create_self_signed_cert(certfile, keyfile, certargs, cert_dir="."):
         open(K_F, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
 if __name__ == '__main__':
+    
 
-    app.player = None
-    app.savedqueries = []
-    path = os.path.join(os.getenv("HOME"), '.Player' , 'logs')
-    if not os.path.exists(os.path.dirname(path)):
-        os.mkdir( path)
+    app.config_folder = os.path.join( os.path.expanduser("~"), ".Player")
+    
+    with app.app_context():
+        Initialize()
+    from streamer3 import send_audio_file
+    
     logfile = os.path.join(os.getenv("HOME"), '.Player', 'logs', 'log.txt')
     logging.basicConfig(
     level=logging.DEBUG,
@@ -3411,48 +3210,17 @@ if __name__ == '__main__':
     handlers=[
         RotatingFileHandler(logfile, maxBytes=10_000_000, backupCount=1),
         logging.StreamHandler()   # stdout/stderr
-    ]
-)
+        ]
+    )
+
+    app.player = None
+    app.savedqueries = []
+   
     app.pid = getpid()
     set_proc_name('Player')
     DirectoryLister.template = my_template
-    def create_folder(f):
-        # Create target Directory if don't exist
-        if not os.path.exists(f):
-            os.mkdir(f)
-
-    def create_data():
-        src = os.path.abspath(os.path.join('..', 'init_config'))
-        dst = os.path.join(os.getenv("HOME"), '.Player/config')
-  
-        try:
-            shutil.copytree(src, dst)
-        except Exception as e:
-            print("COPY PLUGINS ERROR:", e)
-            pass # Tree already exists
-
-        src = os.path.abspath(os.path.join('..', 'init_plugins'))
-        dst = os.path.join(os.getenv("HOME"), '.Player/plugins')
-        print(src)
-        print(dst)
-        try:
-            mongolock = os.path.join(os.getenv("HOME"), '.Player/database/mongod.lock')
-            os.remove(mongolock)
-        except:
-            pass #No mongo.lock file
-        try:
-            shutil.copytree(src, dst)
-        except Exception as e:
-            print("COPY PLUGINS ERROR:", e)
-            pass # Tree already exists
-    # Set initial folders
-    os.chdir(app.root_path)
     app.mediafiles_folder = os.path.abspath(os.path.join(app.root_path, "..", "mediafiles"))
     app.main_folder = os.path.abspath(os.path.join(app.root_path, ".."))
-    app.choose = False
-    app.time = int(round(time.time() * 1000))
-
-    # Create Folders ...
    
     parser = optparse.OptionParser()
     parser.add_option("-d", "--debug",help="set debug flag",default="no")
@@ -3460,7 +3228,6 @@ if __name__ == '__main__':
 
     options, _ = parser.parse_args()
     app.debug = options.debug
-    app.send_message = send_message
     app.send_message_value = send_message_value
 
 
@@ -3484,7 +3251,7 @@ if __name__ == '__main__':
                 exec('import ' +_filename_.split('.')[0])
             except:
                 pass
-    app.Plugins_dir = plugins_dir
+
     app.plugins_action = plugins_action
     plugins_action('server_start')
     output = os.path.join(os.getenv("HOME"), '.Player', 'config', "outputs.json")
@@ -3539,13 +3306,8 @@ if __name__ == '__main__':
     app.cover_names = get_cover_names(app.image_names,app.imageextension)
     app.text_name = app._config['Tags']['text_name']
     app.album_sub_folder = app._config['Tags']['album_sub_folder'].split(',')
-    #app.host = app._config['Server']['host']
     app.host = get_adresse_ip_locale()
     app.httpport = app._config['Server']['httpport']
-
-
-
-
     app.wsport = app._config['Server']['wsport']
     app.scan_threads = app._config['Scan']['threads']
     app.mongo_db_type = app._config['MongoDB']['database']
@@ -3558,13 +3320,6 @@ if __name__ == '__main__':
     app.bearers = []
     app.scan_lock = False
 
-    app.m_connection ='../mongodb/mongod --dbpath "' + os.path.join(os.getenv("HOME"), '.Player', 'database') +'"'   +  ' --storageEngine ' + app.mongo_db_type #wiredTiger or mmapv1
-    app.m_connection += ' --replSet mediafiles_changes '
-
-    if app._config['MongoDB']['bind_ip_all']:
-        app.m_connection += ' --bind_ip_all'
-    if app._config['MongoDB']['port'] not in ['','localhost'] :
-        app.m_connection += " --port " + app._config['MongoDB']['port']
 
 
     app.mongo_addr = 'mongodb://'
@@ -3660,40 +3415,57 @@ if __name__ == '__main__':
         app.player = None
 
     reactor.callWhenRunning(set_upnp_config, config)
-    app.auto_import = Autoimport(app)
-    if app._config['AutoImport']['activate'] == "True":
-        app.auto_import.start()
+
     app.reactor = reactor
     app.old_subs = None
 
     if app._config['HttpServer']['activate'] != "True":
         app.token = json.loads(requests.get(app.http_server_adr + '/v1/Login', verify=True, auth=basicaut('user', 'password')).text)["token"]
-    louie.connect(on_upnp_started, "upnpstarted")
-    if app._config['MongoDB']['embded'] == 'True':
-        app.mongod = subprocess.Popen(app.m_connection, shell=True)
-        app.mongo_addr ="mongodb://localhost:27017"
-    print("mongo_addr :" + app.mongo_addr)                      
+    louie.connect(on_upnp_started, "upnpstarted")                   
     app.MongoConnection = MongoClient(app.mongo_addr)
-    if app._config['MongoDB']['embded'] == 'True':
-        try:
-            app.MongoConnection.admin.command('ismaster')
-        except ConnectionFailure:
-            print("Server not available")
 
     app.db = app.MongoConnection.player
+    
+    app.ram_search = RamSearch(app.db)
+    
+    
+    def scan_started():
+        send_message_value("library_scan_started")
+
+
+    def scan_stopped():
+        send_message_value("library_scan_stopped")
+
+
+    def scan_finished():
+        send_message_value("library_scan_finished")
+        # Wait data to be written ...
+        time.sleep(10)
+        app.ram_search.refresh()
+        
+        app.scanprocess = subprocess.Popen(["/bin/bash", "querybuilder"], cwd=os.chdir(app.root_path) )
+
+    def file_importing(path):
+        send_message_value("library_file_importing")
+
+
+    app.socketlistener = ScanSocketListener(
+        library_scan_started=scan_started,
+        library_scan_stopped=scan_stopped,
+        library_scan_finished=scan_finished,
+        library_file_importing=file_importing,
+    )
+
+    app.socketlistener.start()
+
+    
     app.library_scanner = LibraryScannerService(
         mongo_uri=app.mongo_addr,
         db=app.db,
         media_root=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"),
-        notifier=emit_library_scan_event,
+        notifier=ScanNotifier(os.path.join(os.getenv("HOME"), '.Player', 'run', 'scan.sock')),
         max_workers=int(getattr(app, "scan_threads", 4)),
     )
-    if "mongo" in app.m_connection :
-        app.db_name = "mongodb"
-    elif "ferret" in app.m_connection :
-        app.db_name = "ferretdb"
-    else:
-        pass
 
     app.podcasts = []
     app.radios = []
@@ -3704,10 +3476,10 @@ if __name__ == '__main__':
     for file in files:
         if os.path.isfile(file):
             app.playlists.append(os.path.splitext(os.path.basename(file))[0])
+    os.chdir(app.root_path)
     app._id = 0
     app.restartqueue = False
     app.ripping = False
-    #app.update_music_lib = Update_Music_Lib
     app.update_queries = None
 
 

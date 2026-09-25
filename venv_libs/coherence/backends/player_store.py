@@ -23,7 +23,7 @@ from utils.omplparser import read_opml
 from utils.RSSparsers import Podcast
 
 _config = configparser.ConfigParser()
-inifile = os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
+inifile = os.path.join(app.config_folder, 'config.ini')
 if os.path.isfile(inifile):
      _config.read(inifile)
      port = _config['Server']['httpport']

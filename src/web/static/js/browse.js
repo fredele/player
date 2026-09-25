@@ -324,20 +324,17 @@ function showsearch() {
 
 function exit_search() {
   event.stopPropagation();
-  document.getElementById('header_container').innerHTML = searchheader
+  //document.getElementById('header_container').innerHTML = searchheader
   browse_to_level(level);
 }
 
 function Search_value() {
 
-  searchheader = document.getElementById('header_container').innerHTML
-  document.getElementById('header_container').innerHTML =
-    '<span class="color1"> < </span>' + '<span class="color2" onclick="exit_search()">' + translate("back") + '</span>'
+  document.getElementById('header_container').innerHTML = '<span class="color1"> < </span>' + '<span class="color2" onclick="exit_search()">' + translate("back") + '</span>'
   search_text = document.getElementById('search_txt').value;
-  tag = document.getElementById('search_select').value;
-
-  document.getElementById('search_btn').disabled = true;
-  Server_search(tag, search_text, lastquery, After_Search_value, null);
+  document.getElementById('search_btn').disabled = true; 
+  Server_search(search_text, lastquery, After_Search_value, null);
+  window.searchmodal.style.display = "none";
 }
 
 function After_Search_value() {
@@ -350,24 +347,10 @@ function After_Search_value() {
   thumbs_box.innerHTML = '';
   allcontent = "";
   for (var i = 0; i < res['Result'].length; i++) {
-    dirhash = res["Result"][i]["_id"]["dirhash"]
+    dirhash = res["Result"][i]["dirhash"]
     thumburl = Server_Get_ThumbUrl(dirhash)
     coverurl = thumburl
-
-    display = res["Result"][i]["_id"]["album"]
-
-    if (res['field'] == "album") {
-      display = res["Result"][i]["_id"]["search_field"]
-    }
-
-    if (res['field'] == "artist") {
-      display = res["Result"][i]["_id"]["search_field"] + "<br> <b>" + res["Result"][i]["_id"]["album"] + "</b>"
-    }
-
-    if (res['field'] == "title") {
-      display = res["Result"][i]["_id"]["search_field"] + "<br> <b>" + res["Result"][i]["_id"]["artist"][0] + "</b>"
-    }
-
+    display = res["Result"][i]["album"]
     query = "%7B%27%24and%27%3A+%5B%7B%27dirhash%27%3A+" + dirhash + "%7D%5D%7D"
     content = '<div class="thumb" onclick="on_thumb_click_Search(this)" dirhash="' + dirhash + '" covers="' + coverurl + '" query="' + query + '" style="width: 135px; height: 151px;"><img class="yall_lazy thumbimg" data-src="' + thumburl + `" onerror="this.src='img/cd.png' draggable='false' "> <div class="thumbtitle"><span class=` + `album` + `_display >${display}</span></div></div>`
     allcontent = allcontent + content;

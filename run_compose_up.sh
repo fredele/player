@@ -1,1 +1,1 @@
-docker compose -f mongodb.yaml up
+docker compose -f compose.yaml up

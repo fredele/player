@@ -168,15 +168,8 @@
     <!-- Modal content -->
     <div class="modal-content">
       <label id="search1" class="tageditorlabel to_translate" style="width:20%;">search :</label>
-      <input type="text"  id="search_txt" class="tageditorlabel" >
-      <label id="search2" class="tageditorlabel" style="width:20%;">field :</label>
-      <input class="form-select search_select" value="album" id="search_select" aria-label="Default select example"  list="mylist">
-      <datalist id="mylist">
-        <option selected>album</option>
-        <option value="artist">artist</option>
-        <option value="title">title</option>
-      </datalist>
-      &nbsp; <input type="button" id="search_btn" class="btn to_translate" onclick="Search_value()" value="Search"> &nbsp;
+      <input type="text"  id="search_txt" class="tageditorlabel" autocomplete="off">
+      <input type="button" id="search_btn" class="btn to_translate" onclick="Search_value()" value="Search">
     </div>
   </div>
   <!-- Tag Editor -->

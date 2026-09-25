@@ -6,7 +6,7 @@ import urllib.parse
 from utils.web import get_adresse_ip_locale
 
 _config = configparser.ConfigParser()
-inifile = os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
+inifile =os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
 if os.path.isfile(inifile):
      _config.read(inifile)
      port = _config['Server']['httpport']

@@ -1,0 +1,7 @@
+{
+  "commands":[
+{"description":"shutdown computer","command":"sudo systemctl poweroff"},
+{"description":"restart service","command":"sudo systemctl --user restart player.service"},
+{"description":"sleep disk","command":"sleep_disk"}
+]
+}

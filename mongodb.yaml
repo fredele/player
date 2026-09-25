@@ -4,5 +4,8 @@ services:
     image: mongo:3.6
     restart: unless-stopped
     network_mode: host
+    mem_limit: 1.5g
+    memswap_limit: 1.5g
+    command: mongod --wiredTigerCacheSizeGB 1.4
     volumes:
       - /mnt/Disque_1/DB_Player/database:/data/db

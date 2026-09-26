@@ -243,7 +243,7 @@ class GPlayer():
         os.chdir(self.app.root_path)
         f =urllib.parse.quote(os.path.abspath(path))
         uri = f.replace("file://", "")
-        p = os.path.join(os.getenv("HOME"), '.Player', "mediafiles")
+        p = str(self.app.mediafiles_folder)
         h = self.app.http_server_adr
         uri = uri.replace(p, h)
         print(f"set_uri: {uri}")
@@ -258,7 +258,7 @@ class GPlayer():
     def set_uri(self,dic,position = None):
         os.chdir(self.app.root_path)
         uri = dic["uri"].replace("file://", "")
-        p = os.path.join(os.getenv("HOME"), '.Player', "mediafiles")
+        p = self.app.mediafiles_folder
         h = self.app.http_server_adr
         uri = uri.replace(p, h)
         self.playbin.set_property("uri",uri)

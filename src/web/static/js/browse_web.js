@@ -78,12 +78,21 @@ function Fill_Queue() {
   for (var i = 0; i < queue.length; i++) {
     track = queue[i];
     if ("dirhash" in track) {
-      // Ancienne route (compatibilité) : /v1/Transcode/<codec>/<bitrate>/<fileid>.<extension>
-      // const trackExt = (track.extension || (track.file || "track.mp3").split('.').pop() || "mp3");
-      // track["file_addr"] = "/v1/Transcode/" + window.web_codec + "/" + window.web_bitrate + "/" + track["_id"] + "." + trackExt;
-      const playerId = (window.current_player && window.current_player.id) ? window.current_player.id : 1;
-      const trackExt = (track.extension || (track.file || "track.mp3").split('.').pop() || "mp3");
-      track["file_addr"] = "/v1/Transcode/" + playerId + "/" + track["_id"] + "." + trackExt;
+      
+      if (window.current_player == "here")
+      {
+       const playerId = "web"
+       const trackExt = (track.extension || (track.file || "track.mp3").split('.').pop() || "mp3");
+       track["file_addr"] = "/v1/Transcode/" + playerId + "/" + track["_id"] + "?codec=" +  window.web_codec+ '&bitrate=' + window.web_bitrate ;
+
+      }
+      else
+      {
+       const playerId = window.current_player
+       track["file_addr"] = "/v1/Transcode/" + playerId + "/" + track["_id"] ;
+      }
+      
+      
     }
     queue[i]["transcode"] = true;
     if (i == current_playing_position) {

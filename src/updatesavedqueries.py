@@ -20,8 +20,8 @@ from pymongo.database import Database
 from threading import Thread
 from bson import ObjectId  # only if you need it later
 from requestfind import Requestfind
-
-
+from pathlib import Path
+from paths import config_folder
 
 class Update_Queries(Thread):
     def __init__(
@@ -156,7 +156,7 @@ def build_parser():
 if __name__ == "__main__":
     args = build_parser().parse_args()
     mongo_uri = args.mongo_uri
-    p = os.path.join(os.getenv("HOME"), ".Player", "config", "config.ini")
+    p = config_folder / "config.ini"
 
 
     if not mongo_uri and os.path.isfile(p):

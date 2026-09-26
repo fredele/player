@@ -3,6 +3,8 @@
 import os
 from bson.objectid import ObjectId
 from flask import Flask, Response, send_file, abort, request
+from flask import current_app as app
+from pathlib import Path
 import gi
 import threading
 import hashlib
@@ -11,7 +13,7 @@ gi.require_version('GstPbutils', '1.0')
 from gi.repository import Gst, GstPbutils
 import time
 
-CACHE_DIR = os.path.join(os.path.expanduser("~"), ".Player", "cache", "transcode")
+CACHE_DIR = app.transcoded_folder
 os.makedirs(CACHE_DIR, exist_ok=True)
 TRANSCODE_LOCKS = {}
 TRANSCODE_LOCKS_GUARD = threading.Lock()

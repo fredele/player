@@ -21,7 +21,7 @@ class ScanNotifier:
                 data = json.dumps(message) + "\n"
                 sock.sendall(data.encode("utf-8"))
 
-        except (FileNotFoundError, ConnectionRefusedError):
+        except (FileNotFoundError, ConnectionRefusedError) as e:
             # Flask n'est éventuellement pas à l'écoute.
             # Le scan doit pouvoir continuer malgré cela.
-            pass
+            print(e)

@@ -16,18 +16,22 @@ def create_directory(path):
 
 
 def copy_template(src, dst):
+
+    src = Path(src)
+    dst = Path(dst)
+
     if dst.exists():
-        print(f"Configuration already exists: {dst}")
+        print(f"Already exists: {dst}")
         return
 
     if not src.is_dir():
         raise FileNotFoundError(
             f"Template directory not found: {src}"
         )
-
+    
     shutil.copytree(src, dst)
 
-    print(f"Configuration initialized: {dst}")
+    print(f"Initialized: {dst}")
 
 
 def Initialize():
@@ -53,19 +57,12 @@ def Initialize():
     # Create directories
     # ---------------------------------------------------------
 
-    create_directory(app.config_folder)
-    create_directory(app.data_folder)
+ 
 
     create_directory(app.backup_folder)
-    create_directory(app.mediafiles_folder)
-    create_directory(app.plugins_folder)
-
     create_directory(app.cache_folder)
     create_directory(app.transcoded_folder)
-
     create_directory(app.state_folder)
-    create_directory(app.logs_folder)
-
     create_directory(app.runtime_folder)
 
     # ---------------------------------------------------------
@@ -82,5 +79,25 @@ def Initialize():
         )
     )
 
-    copy_template(src, app.config_folder)
+    # Configuration
+    copy_template(
+        src / "config",
+        app.config_folder
+    )
+
+    copy_template(
+        src / "mediafiles",
+        app.mediafiles_folder
+    )
+
+    copy_template(
+        src / "plugins",
+        app.plugins_folder
+    )
+
+    # État / logs
+    copy_template(
+        src / "logs",
+        app.logs_folder
+    )
 

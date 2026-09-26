@@ -270,7 +270,7 @@ class UpnpPlayer:
         file_path = dic.get("file", "") or dic.get("uri", "")
         if "file" in file_path:
             uri = file_path.replace("file://", "")
-            uri = uri.replace(os.path.join(os.getenv("HOME"), '.Player', "mediafiles"), "")
+            uri = uri.replace(str(self.app.mediafiles_folder), "")
             uri = urllib.parse.quote(uri)
             uri = self.app.webadr + uri
             dic['uri'] = uri
@@ -343,7 +343,7 @@ class UpnpPlayer:
     @defer.inlineCallbacks
     def set_path(self, dic, position=None):
         uri = dic["file"]
-        uri = uri.replace(os.path.join(os.getenv("HOME"), '.Player', "mediafiles"), "")
+        uri = uri.replace(str(self.app.mediafiles_folder), "")
         uri = urllib.parse.quote(uri)
         uri = self.app.webadr + uri
         dic["uri"] = uri
@@ -455,7 +455,7 @@ class UpnpPlayer:
         if 'file' in dic and self.Has_Next_AVTransport:
             uri = dic['file']
             uri = uri.replace("file://", "")
-            uri = uri.replace(os.path.join(os.getenv("HOME"), '.Player', "mediafiles"), "")
+            uri = uri.replace(str(self.app.mediafiles_folder), "")
             uri = urllib.parse.quote(uri)
             uri = f"{self.app.webadr}{uri}"
             dic['uri'] = uri

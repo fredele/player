@@ -25,11 +25,11 @@ from pymongo import MongoClient
 from mutagen.easyid3 import EasyID3
 from mutagen.easymp4 import EasyMP4
 from mutagen.mp3 import EasyMP3
-
+from pathlib import Path
 from utils.exceldate import Excel_Now, Timestamp_Now, Timestamp_modified, convert
 from utils.fileos import isfile_insensitive
 from utils.string import ReprInt
-
+from paths import config_folder,mediafiles_folder,plugins_folder,runtime_folder
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 from updatesavedqueries import Update_Queries
@@ -122,7 +122,7 @@ class LibraryScannerService:
         if self.db is None:
             raise ValueError("A MongoDB database or mongo_uri must be provided.")
         
-        self.media_root = media_root or os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles")
+        self.media_root = str(mediafiles_folder)
         self.notifier = notifier or self._default_notifier
         self.max_workers = max(max_workers, 1)
         self.audio_extensions = set((audio_extensions or ["mp3", "flac", "wav", "m4a", "aac", "ogg"]))
@@ -592,7 +592,7 @@ class LibraryScannerService:
             self.mongo_client.close()
 
     def plugins_action(self,function_name, param='none',param2='none'):
-        plugins_dir = os.path.join(os.getenv("HOME"), '.Player', 'plugins')
+        plugins_dir = plugins_folder
         plugin_files =sorted([f for f in os.listdir(plugins_dir) if os.path.isfile(os.path.join(plugins_dir, f)) and f.rsplit('.', 1)[1] == 'py'])
         for _filename_ in plugin_files:
             if os.path.isfile(os.path.join(os.path.join(os.getenv("HOME"), '.Player', 'plugins'), _filename_)):
@@ -644,17 +644,16 @@ def Update_Music_Folders(dirnames, mongo_uri: Optional[str] = None, db=None, med
 def build_parser():
     parser = argparse.ArgumentParser(description="Standalone library scanner service")
     parser.add_argument("--mongo-uri", default="mongodb://localhost:27017", help="MongoDB URI")
-    parser.add_argument("--media-root", default=os.path.join(os.getenv("HOME", "."), ".Player", "mediafiles"), help="Root folder of the media library")
+    parser.add_argument("--media-root", default=mediafiles_folder, help="Root folder of the media library")
     parser.add_argument("--max-workers", type=int, default=4, help="Max worker threads")
     return parser
 
 
 if __name__ == "__main__":
     
-    args = build_parser().parse_args()
-    config_folder = Path.home() / ".Player" 
-    notifier = ScanNotifier(os.path.join(os.getenv("HOME"), '.Player', 'run', 'scan.sock'))
-    p = config_folder / "config"/  "config.ini"
+    args = build_parser().parse_args()    
+    notifier = ScanNotifier(os.path.join(str(runtime_folder), 'scan.sock'))
+    p = config_folder /  "config.ini"
     mongo_uri = args.mongo_uri
 
     if not mongo_uri and os.path.isfile(p):

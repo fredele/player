@@ -90,7 +90,7 @@ from utils.proc import set_proc_name
 from utils.string import clean
 from flask import request
 from html.parser import HTMLParser
-from initialize import Initialize
+from initialize2 import Initialize
 from lxml import etree
 from rip_cd import launch_rip
 from logging.handlers import RotatingFileHandler
@@ -213,7 +213,7 @@ def update_playlist():
                 for q in playlist:
                     if q['_id'] == str(id):
                         doc['_id'] = str(doc['_id'])
-                        doc['file'] = os.path.join(app.mediafiles_dir, str(doc['dirname']), str(doc['filename']) + '.' + str(doc['extension']))
+                        doc['file'] = app.mediafiles_folder / str(doc['dirname']) / str(doc['filename']) + '.' + str(doc['extension'])
                         playlist[i] = doc
                     i += 1
             GetPlayer(player['id']).queue = playlist
@@ -227,7 +227,7 @@ def _writetag(i,field,value):
     os.chdir(app.root_path)
     try:
         if i['extension'] in app.audioextension:
-            p = os.path.join(app.mediafiles_dir, str(i['dirname']), str(i['filename']) + '.' + str(i['extension']))
+            p = os.path.join(str(app.mediafiles_dir), str(i['dirname']), str(i['filename']) + '.' + str(i['extension']))
             p = os.path.realpath(p)
             if os.path.exists(p):
                 filename, file_extension = os.path.splitext(os.path.basename(p))
@@ -278,7 +278,7 @@ def _writetags(i,field,value,mode):
     os.chdir(app.root_path)
     try:
         if i['extension'] in app.audioextension:
-            p = os.path.join(app.mediafiles_dir, str(i['dirname']), str(i['filename']) + '.' + str(i['extension']))
+            p = os.path.join(str(app.mediafiles_dir), str(i['dirname']), str(i['filename']) + '.' + str(i['extension']))
             p = os.path.realpath(p)
             if os.path.exists(p):
                 filename, file_extension = os.path.splitext(os.path.basename(p))
@@ -322,7 +322,7 @@ def json_resp(data):
     Format the response in JSON
     """
     return app.response_class(
-            response=json.dumps(data,iterable_as_array=True),status=200, mimetype='application/json' )  #
+            response=json.dumps(data,iterable_as_array=True),status=200, mimetype='application/json' )
 
 def getfiles(dir):
     """
@@ -352,8 +352,7 @@ def getfiles(dir):
         try:
             with open(md, "r", encoding='utf-8', errors='ignore') as myfile:
                 data = myfile.read()
-                #data = data.replace("\n","</br>")
-                data = markdown.markdown(data)
+                data = markdown.markdown(data, extensions=['nl2br'])
             res['text'] = (data.encode('utf8'))
         except:
             res['text'] =''
@@ -516,13 +515,20 @@ def transcodedfile(player_id, filename):
     fileid = fileid.split("?", 1)[0]
     range_header = request.headers.get('Range', None)
 
-    codec = "mp3"
-    bitrate = 128
+
+    codec = request.args.get("codec", "mp3")
+    bitrate = request.args.get("bitrate", "128")
+    
+    if player_id == "web":
+        return send_audio_file(app, fileid, codec, bitrate, range_header)
+
     if hasattr(app, 'players'):
         player = next((p for p in app.players if str(p.get('id')) == str(player_id)), None)
         if player is not None:
             codec = str(player.get('codec', getattr(getattr(app, 'player', None), 'transcode_codec', 'mp3'))).lower()
             bitrate = int(player.get('bitrate', getattr(getattr(app, 'player', None), 'transcode_bitrate', 128)))
+            
+        
     elif hasattr(app, 'player') and getattr(app, 'player', None) is not None:
         codec = str(getattr(app.player, 'transcode_codec', 'mp3')).lower()
         bitrate = int(getattr(app.player, 'transcode_bitrate', 128))
@@ -634,7 +640,7 @@ def stats():
     c = app.db.mediafiles.find().distinct('genre')
     res['genre_count'] = len(c)
 
-    path = app.config_folder / "mediafiles"/ "Music"
+    path = app.mediafiles_folder / "Music"
 
     def get_folder_size(path: str) -> int:
         """
@@ -662,7 +668,7 @@ def file_listing(dirhash,filename):
     c = app.db.mediafiles.find_one({"dirhash": int(dirhash)})
     if c is not None:
         path = str(c["dirname"])
-        path = app.config_folder / "mediafiles" / path / filename
+        path = app.mediafiles_folder / path / filename
         if os.path.exists(path):
             return send_file(path)
         else:
@@ -700,7 +706,7 @@ def get_players():
     res = {}
 
     if (len(request.args) == 0): # Returns saved players only
-        players = os.path.join(os.getenv("HOME"), '.Player', 'config', "players.json")
+        players = app.config_folder / "players.json"
         with open(players, 'r') as j:
             try:
                 contents = json.loads(j.read())
@@ -850,11 +856,11 @@ def set__player(id):
 
     if app._config["Player"]["last"] != id :
         app._config["Player"]["last"] = id
-        p = os.path.join(os.getenv("HOME"), '.Player', 'config', options.config)
+        p = app.config_folder / options.config
         if os.path.isfile(p):
             pass
         else:
-            p = os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
+            p = app.config_folder / 'config.ini'
         with open(p, 'w') as configfile:
             app._config.write(configfile)
     res["response"] = "OK"
@@ -928,7 +934,7 @@ def init():
     app.imported_ids = []
     app.running_saved_queries = []
     app.mute = False
-    app.mediafiles_dir = os.path.join(os.getenv("HOME"), '.Player','mediafiles')
+    app.mediafiles_dir = str(app.mediafiles_folder)
     app.docs_dir = os.path.join(os.getenv("HOME"), '.Player', 'docs')
 
     names = app.db.list_collection_names()
@@ -1154,21 +1160,21 @@ def menu():
         if not file.endswith(".json"):
             file += ".json"
 
-        v = app.config_folder / "config" / file
+        v = app.config_folder  / file
         if os.path.exists(v):
             with open(v) as f:
                 menu = json.load(f)
         else:
-                v = app.config_folder / "config" / 'views.json'
+                v = app.config_folder / 'views.json'
                 with open(v) as f:
                     menu = json.load(f)
     else:
-        v = app.config_folder / "config" / 'views.json'
+        v = app.config_folder  / 'views.json'
         with open(v) as f:
             menu = json.load(f)
 
 
-    v =  app.config_folder / "mediafiles" / "Podcasts"
+    v =  app.mediafiles_folder / "Podcasts"
     podcasts = []
     files = sorted([file for file in glob.glob(os.path.join(v,"*.opml"))])
     for file in files:
@@ -1176,14 +1182,14 @@ def menu():
             podcasts.append({ "name": os.path.splitext(os.path.basename(file))[0],"file":os.path.basename(file)})
     menu['podcast'] = podcasts
 
-    v =  app.config_folder / "mediafiles" / "Radios"
+    v =  app.mediafiles_folder  / "Radios"
     radios= []
     files = sorted([file for file in glob.glob(  os.path.join(v,"*.xspf"))])
     for file in files:
         if os.path.isfile(file):
             radios.append({ "name":os.path.splitext(os.path.basename(file))[0] ,"file":os.path.basename(file) })
     menu['radios'] = radios
-    v =  app.config_folder / "mediafiles" / "Playlists"
+    v =  app.mediafiles_folder / "Playlists"
 
     playlists= []
     files = sorted([file for file in glob.glob(  os.path.join(v,"*.xspf"))])
@@ -1212,7 +1218,7 @@ def save_players():
         players_json = json.loads(content)  # Lève une exception si invalide
         players_json["players"].insert(0,  {"id": "0", "type": "gstreamer", "name": "Interne","volume_control":True,"gapless":True})
         # Enregistrer le fichier dans ~/.Player/config
-        config_dir = app.config_folder / "config"
+        config_dir = app.config_folder 
         os.makedirs(config_dir, exist_ok=True)
         filepath = os.path.join(config_dir, filename)
 
@@ -1326,7 +1332,7 @@ def save_menu():
         menu_json = json.loads(content)  # Lève une exception si invalide
 
         # Enregistrer le fichier dans ~/.Player/config
-        config_dir = app.config_folder / "config"
+        config_dir = app.config_folder 
         os.makedirs(config_dir, exist_ok=True)
         filepath = os.path.join(config_dir, filename)
 
@@ -1941,7 +1947,7 @@ def get_uri_from_path(dic,position = None):
     os.chdir(app.root_path)
     f =urllib.parse.quote(os.path.abspath(path))
     uri = f.replace("file://", "")
-    p = os.path.join(os.getenv("HOME"), '.Player', "mediafiles")
+    p = app.mediafiles_folder
     h = app.http_server_adr
     uri = uri.replace(p, h)
     print(f"set_uri: {uri}")
@@ -2152,7 +2158,7 @@ def cover(dirhash):
         except:
             return abort(404)
         if 'path' in q :
-            p = os.path.join(os.getenv("HOME"), '.Player', "mediafiles",q['path'])
+            p = app.mediafiles_folder /q['path']
             if os.path.exists(p):
                 if 'thumbnail' in request.args:
                     im = Image.open(p)
@@ -2433,7 +2439,7 @@ def upload_file():
       im.convert('RGB').save(buffered, format="JPEG")
       # encode the image
       thumb_encoded_string = base64.b64encode(buffered.getvalue()).decode()
-      npath = os.path.relpath(npath, app.config_folder / "mediafiles")
+      npath = os.path.relpath(npath, app.mediafiles_folder)
 
       # updatedb
       app.db.thumbnails.update_one({"dirhash": dirhash},{"$set": {"last_modified_epoch": round(time.time()), "dirhash": dirhash,
@@ -2951,7 +2957,7 @@ def Display_Files():
 @app.route("/v1/Player/Outputs/Get")
 #@app.tokenauth.login_required
 def Output_Get():
-    output = os.path.join(os.getenv("HOME"), '.Player', 'config', "outputs.json")
+    output = app.config_folder / "outputs.json"
     with open(output, 'r') as j:
         try:
             contents = json.loads(j.read())
@@ -2980,7 +2986,7 @@ def save_outputs():
         outputs_json = json.loads(content)  # Lève une exception si invalide
 
         # Enregistrer le fichier dans ~/.Player/config
-        config_dir = app.config_folder / "config"
+        config_dir = app.config_folder 
         os.makedirs(config_dir, exist_ok=True)
         filepath = os.path.join(config_dir, filename)
 
@@ -3002,7 +3008,7 @@ def Output_Set():
     else:
         return abort(404)
     if 'nbr' in request.args:
-        cf = app.config_folder / "config" / app.config_file
+        cf = app.config_folder  / app.config_file
         parser = configparser.ConfigParser()
         parser.read(cf)
         parser.set("Output", "last", str(request.args['nbr']))
@@ -3012,7 +3018,7 @@ def Output_Set():
         app.current_output = int(request.args['nbr'])
         logging.debug("current_output : " + str(app.current_output))
         output = app.outputs[app.current_output]["gstpipeline"]
-        icon = app.config_folder / "config" / "player.xpm"
+        icon = app.config_folder  / "player.xpm"
         output = output.replace("$icon$",icon )
         try:
             GetPlayer(player_id).set_pipeline(output)
@@ -3156,7 +3162,7 @@ def Get_Settings():
 @app.route("/v1/Settings/Set")
 @app.tokenauth.login_required
 def Set_Settings():
-    cf = app.config_folder / "config" / app.config_file
+    cf = app.config_folder / app.config_file
     parser = configparser.ConfigParser()
     parser.read(cf)
     parser.set("Tags", "indexes", str(urllib.parse.unquote(request.args['indexes'])))
@@ -3196,13 +3202,12 @@ def create_self_signed_cert(certfile, keyfile, certargs, cert_dir="."):
 
 if __name__ == '__main__':
     
-    app.config_folder = Path.home() / ".Player"
 
     with app.app_context():
         Initialize()
-    from streamer3 import send_audio_file
+        from streamer3 import send_audio_file
     
-    logfile = app.config_folder / 'logs' / 'log.txt'
+    logfile = app.logs_folder / 'log.txt'
     logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s %(levelname)s %(message)s",
@@ -3218,7 +3223,7 @@ if __name__ == '__main__':
     app.pid = getpid()
     set_proc_name('Player')
     DirectoryLister.template = my_template
-    app.mediafiles_folder = os.path.abspath(os.path.join(app.root_path, "..", "mediafiles"))
+    #TODO : a enlever
     app.main_folder = os.path.abspath(os.path.join(app.root_path, ".."))
    
     parser = optparse.OptionParser()
@@ -3233,16 +3238,16 @@ if __name__ == '__main__':
 
     os.chdir(app.root_path)
     app._config = configparser.ConfigParser()
-    chemin = app.config_folder  / "config" / options.config
+    chemin = app.config_folder  / options.config
 
     if os.path.isfile(chemin):
         app._config.read(chemin)
         app.config_file = options.config
     else :
-        app._config.read( app.config_folder / "config" /  'config.ini')
+        app._config.read( app.config_folder /  'config.ini')
         app.config_file = 'config.ini'
 
-    plugins_dir = os.path.join(os.getenv("HOME"), '.Player', 'plugins')
+    plugins_dir = app.plugins_folder
     sys.path.insert(1, plugins_dir )
 
     for _filename_ in sorted([f for f in listdir(plugins_dir) if isfile(join(plugins_dir, f)) and f.rsplit('.', 1)[1] =='py']):
@@ -3254,7 +3259,7 @@ if __name__ == '__main__':
 
     app.plugins_action = plugins_action
     plugins_action('server_start')
-    output = os.path.join(os.getenv("HOME"), '.Player', 'config', "outputs.json")
+    output = app.config_folder / "outputs.json"
 
     with open(output , 'r') as j:
         try:
@@ -3274,7 +3279,9 @@ if __name__ == '__main__':
 
     app.users = []
     try:
-        app.users = json.load(open(os.path.join(os.getenv("HOME"), '.Player', 'config', "users.json")))
+        users_file = app.config_folder / "users.json"
+        with open(users_file, "r", encoding="utf-8") as f:
+            app.users = json.load(f)
     except:
         logging.warning("users file not valid !")
 
@@ -3347,7 +3354,7 @@ if __name__ == '__main__':
 
     # create a WSGI resource for our Flask server
     wsgiResource = WSGIResource(reactor, thread_pool, app) #reactor.getThreadPool()
-    p  = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles','Music')
+    p  = app.mediafiles_folder /'Music'
     static_resource = File(p)
 
     # http://localhost:8000/Music/ -> Browse Directory of Local Files ...
@@ -3387,7 +3394,7 @@ if __name__ == '__main__':
         config['plugins'].append({'backend': 'PlayerStore', 'name': name, 'uuid': uuid})
 
     app.txxx = app._config['Tags']['txxx'].split(",")
-    players = os.path.join(os.getenv("HOME"), '.Player', 'config', "players.json")
+    players = app.config_folder / "players.json"
     with open(players, 'r') as j:
             contents = json.loads(j.read())
     app.players = contents["players"]
@@ -3460,7 +3467,7 @@ if __name__ == '__main__':
     app.library_scanner = LibraryScannerService(
         mongo_uri=app.mongo_addr,
         db=app.db,
-        media_root= app.config_folder /  "mediafiles",
+        media_root= app.mediafiles_folder ,
         notifier=ScanNotifier(os.path.join(os.getenv("HOME"), '.Player', 'run', 'scan.sock')),
         max_workers=int(getattr(app, "scan_threads", 4)),
     )
@@ -3468,7 +3475,7 @@ if __name__ == '__main__':
     app.podcasts = []
     app.radios = []
     app.playlists = []
-    directory = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles', 'Playlists')
+    directory = app.mediafiles_folder / 'Playlists'
     os.chdir(directory)
     files = [file for file in glob.glob("*.xspf")]
     for file in files:

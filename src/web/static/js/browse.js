@@ -2100,7 +2100,7 @@ function after_Server_Get_SideFiles() {
   if ("text" in res) {
     source = `/v1/SideFile${res["text"]}`;
     document.getElementById('query_text').setAttribute("class", "cls_query_text");
-    document.getElementById('query_text').innerHTML = decodeURIComponent(res["text"]);
+    document.getElementById('query_text').innerHTML = res["text"];
   }
 
   lazyload.run();
@@ -2972,7 +2972,7 @@ function playerschangeandroid(item) {
 
 function playerschange(item) {
   document.getElementById("choosestreaming").style.display = "none";
-  //browsemenu = 0;  //fredele
+  
   clear_ui();
   try {
     loadScript("js/browse_players.js", after_playerschange(item));

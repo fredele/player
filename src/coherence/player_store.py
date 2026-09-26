@@ -22,13 +22,13 @@ from utils.xspfparser import parseFile
 from utils.omplparser import read_opml
 from utils.RSSparsers import Podcast
 from utils.web import get_adresse_ip_locale
+from paths import mediafiles_folder, config_folder 
 
 _config = configparser.ConfigParser()
-inifile = os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
+inifile = config_folder / 'config.ini'
 if os.path.isfile(inifile):
      _config.read(inifile)
      port = _config['Server']['httpport']
-     #host = _config['HttpServer']['address']
      host = get_adresse_ip_locale()
      http_server_addr = 'http://'+ host + ':' + port
      mongo_addr =  _config['MongoDB']['address']
@@ -517,7 +517,7 @@ class PlayerStore(BackendStore):
         return ret
 
     def get_menu(self):
-        v = os.path.join(os.path.abspath(os.path.join(os.getenv("HOME"), ".Player", "config")), "views.json")
+        v = config_folder / "views.json"
         if os.path.exists(v):
             with open(v) as f:
                 self.menu = json.load(f)
@@ -569,7 +569,7 @@ class PlayerStore(BackendStore):
                     self.containers[nextid].type = "MusicTracks"
                     self.containers[1].add_child(self.containers[nextid])
                 # Radios
-                v = os.path.join(os.path.join(os.getenv("HOME"), ".Player", "mediafiles", "Radios"))
+                v = mediafiles_folder / "Radios"
                 radios = []
                 files = sorted([file for file in glob.glob(os.path.join(v, "*.xspf"))])
                 for file in files:
@@ -581,7 +581,7 @@ class PlayerStore(BackendStore):
                     self.containers[nextid].type ="Radios"
                     self.containers[2].add_child(self.containers[nextid])
                     try:
-                        ra = os.path.join(os.path.join(os.getenv("HOME"), ".Player", "mediafiles", "Radios",radiofile["file"]))
+                        ra =  mediafiles_folder /"Radios"/radiofile["file"]
                         ra = parseFile(ra)
                     except:
                         return
@@ -595,7 +595,7 @@ class PlayerStore(BackendStore):
                         self.containers[nextid] = BroadCastRadio(nextid, j,radio['location'], item, store=self)
                         self.containers[j].add_child(self.containers[nextid])
                 # Podcasts
-                v = os.path.join(os.path.join(os.getenv("HOME"), ".Player", "mediafiles", "Podcasts"))
+                v =  mediafiles_folder / "Podcasts"
                 podcasts = []
                 files = sorted([file for file in glob.glob(os.path.join(v, "*.opml"))])
                 for file in files:
@@ -607,7 +607,7 @@ class PlayerStore(BackendStore):
                     self.containers[nextid] = Container(nextid, 3, {"display": podcastfile["name"]}, store=self)
                     self.containers[nextid].type = "Podcasts Menu"
                     self.containers[3].add_child(self.containers[nextid])
-                    file = os.path.join(os.path.join(os.getenv("HOME"), ".Player", "mediafiles", "Podcasts", podcastfile["file"]))
+                    file =  mediafiles_folder / "Podcasts"/ podcastfile["file"]
                     pocds = read_opml(file,"1")
                     j = nextid
                     for pocd in pocds:

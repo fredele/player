@@ -2,14 +2,9 @@ import os
 import socket
 import json
 import threading
+from paths import socket_path
 
-
-SOCKET_PATH = os.path.join(
-    os.getenv("HOME"),
-    ".Player",
-    "run",
-    "scan.sock"
-)
+SOCKET_PATH = str(socket_path)
 
 
 class ScanSocketListener:

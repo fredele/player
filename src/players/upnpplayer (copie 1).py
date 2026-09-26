@@ -262,7 +262,7 @@ class UpnpPlayer:
 
             uri = dic['file']
             uri = uri.replace("file://", "")
-            uri = uri.replace(os.path.join(os.getenv("HOME"), '.Player', "mediafiles"), "")
+            uri = uri.replace(self.app.mediafiles_folder, "")
             uri = urllib.parse.quote(uri)
             uri = self.app.webadr + uri
             dic['uri'] = uri
@@ -332,7 +332,7 @@ class UpnpPlayer:
     def set_path(self, dic,position = None):
 
         uri = dic["file"]
-        uri = uri.replace(os.path.join(os.getenv("HOME"), '.Player', "mediafiles"), "")
+        uri = uri.replace(self.app.mediafiles_folder, "")
         uri = urllib.parse.quote(uri)
         uri = self.app.webadr + uri
         dic["uri"] =uri
@@ -480,7 +480,7 @@ class UpnpPlayer:
 
             uri = dic['file']
             uri = uri.replace("file://", "")
-            uri = uri.replace(os.path.join(os.getenv("HOME"), '.Player', "mediafiles"), "")
+            uri = uri.replace(self.app.mediafiles_folder, "")
             uri = urllib.parse.quote(uri)
             uri = self.app.webadr + uri
             dic['uri'] = uri

@@ -16,20 +16,27 @@ def create_directory(path):
 
 
 def copy_template(src, dst):
-
     src = Path(src)
     dst = Path(dst)
-
-    if dst.exists():
-        print(f"Already exists: {dst}")
-        return
 
     if not src.is_dir():
         raise FileNotFoundError(
             f"Template directory not found: {src}"
         )
-    
-    shutil.copytree(src, dst)
+
+    def copier_uniquement_si_absent(source, destination):
+        if os.path.exists(destination):
+            print(f"Ignoré (déjà présent) : {destination}")
+            return
+
+        shutil.copy2(source, destination)
+
+    shutil.copytree(
+        src,
+        dst,
+        dirs_exist_ok=True,
+        copy_function=copier_uniquement_si_absent
+    )
 
     print(f"Initialized: {dst}")
 

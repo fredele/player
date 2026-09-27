@@ -60,6 +60,25 @@
       "type": "shell",
       "command": "docker compose -f player-dev-build.yaml build",
       "problemMatcher": []
+    },
+    {
+        "label": "Sauvegarde MyPlayer (rsync)",
+        "type": "shell",
+        "command": "rsync",
+        "args": [
+            "-avH",
+            "--delete",
+            "--progress",
+            "/home/fredele/MyPlayer/",
+            "/mnt/Disque_2/MyPlayer/"
+        ],
+        "group": "none",
+        "presentation": {
+            "reveal": "always",
+            "panel": "new"
+        }
+        
+    
     }
 
 

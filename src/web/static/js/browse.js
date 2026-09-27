@@ -330,7 +330,7 @@ function exit_search() {
 
 function Search_value() {
 
-  document.getElementById('header_container').innerHTML = '<span class="color1"> < </span>' + '<span class="color2" onclick="exit_search()">' + translate("back") + '</span>'
+  document.getElementById('header_container').innerHTML = '<span class="color1"> < </span>' + '<span class="color2" id="exit_span" onclick="exit_search()">' + translate("back") + '</span>'
   search_text = document.getElementById('search_txt').value;
   document.getElementById('search_btn').disabled = true; 
   Server_search(search_text, lastquery, After_Search_value, null);

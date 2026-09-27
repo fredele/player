@@ -2,6 +2,7 @@ body {font-family: Arial, Helvetica, sans-serif;}
 
 .tag-row {
     display: flex;
+    align-items: center; /* Centre verticalement les enfants */
     justify-content: flex-start;
     margin-bottom: 20px;
     height: 30px;

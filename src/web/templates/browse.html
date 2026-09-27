@@ -167,9 +167,13 @@
   <div id="SearchBoxModal" class="modal">
     <!-- Modal content -->
     <div class="modal-content">
+      <div class="tag-row">
       <label id="search1" class="tageditorlabel to_translate" style="width:20%;">search :</label>
       <input type="text"  id="search_txt" class="tageditorlabel" autocomplete="off">
-      <input type="button" id="search_btn" class="btn to_translate" onclick="Search_value()" value="Search">
+      </div>
+      
+        <input type="button" id="search_btn" class="btn to_translate" onclick="Search_value()" value="Search">
+      
     </div>
   </div>
   <!-- Tag Editor -->
@@ -189,7 +193,7 @@
   <!-- Output -->
   <div id="OutputModal" class="modal">
     <div id="mainmodal" class="modal-content">
-      <label class="modaloutput to_translate" id="output_label">Choose a Player</label>
+      <label class="modaloutput to_translate output_label" id="player_label" >Choose a Player</label>
       <div class="dropdown" id="playerDropdown">
         <button style="width:100%;" id="playerdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdownplayerButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
         <div style="width:100%;" id="playerdrop" class="dropdown-menu" type="button" aria-labelledby="playerOutputButton">
@@ -198,7 +202,7 @@
       <label style="width:100%;" id="status">status: ?</label>
       
       <div id="chooseoutput">
-        <label class="modaloutput to_translate" id="output_label">Choose an Output</label>
+        <label class="modaloutput to_translate output_label" id="output_label" >Choose an Output</label>
         <div class="dropdown" id="outputDropdown">
           <button style="width:100%;" id="outputgstdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdowngstOutputButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Output </button>
           <div style="width:100%;" id="outputgstdrop" class="dropdown-menu" aria-labelledby="dropdowngstOutputButton"></div>

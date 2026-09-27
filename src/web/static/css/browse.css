@@ -73,16 +73,24 @@ border-radius:3px;
 
 #search_txt
 {
-background-color: #4a4a4a;
-border-radius:3px;
-margin-bottom: 20px;
-font-size: 18px;
+	width: 80%;
+	font-style: normal;
+	font-size: 110%;
+	padding-left: 5px;
+	background-color: black;
+	color: white;
+	border: 2px solid #727272;
+	cursor: pointer;
+	border-radius: 3px;
 }
 
 div {
 cursor: default;
 }
 
+#exit_span{
+	margin-left:5px;
+}
 
 .color2{
   color: #cdcdcdc4;
@@ -468,12 +476,12 @@ div#header_container {
 
 
 #search_div {
-	width: 15%;
+	/* width: 15%; */
 	color: #525252;
 	text-align: right;
 	position: absolute;
 	top: 0px;
-	right: 0px;
+	right: 20px;
 	padding-right: 10px;
 	background-color: black;
 	padding-left: 10px;
@@ -781,6 +789,7 @@ select {
 
 
 .menu_item {
+    margin-left: 5px;
     display: flex;
     align-items: center;
     width: 100%;
@@ -1216,13 +1225,16 @@ label.disabled {
   opacity: .4;
 }
 
-#output_label{
+#player_label{margin-top: 0px;}
+
+.output_label{
+display: flex;
+height: 30px;
+margin-top: 20px;
 color:white;
 font-weight:normal;
-padding-top:15px;
-padding-left:3px;
-padding-bottom:0px;
-text-transform:capitalize;
+padding-left: 5px;
+text-transform:capitalize;align-items: center;
 }
 
 #output_dropdown{

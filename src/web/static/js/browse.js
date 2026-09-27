@@ -809,9 +809,13 @@ function after_Server_Play_Radio() {
 function setDisplay() {
   if (localStorage.hasOwnProperty('thumb_width')) {
     var w = parseInt(localStorage.getItem('thumb_width'));
-    $('div.thumb').css("width", w);
+    document.querySelectorAll('div.thumb').forEach(el => {
+    //el.style.width = w;
+    });
     w = Math.round(w * 1.12);
-    $('div.thumb').css("height", w);
+    document.querySelectorAll('div.thumb').forEach(el => {
+    //el.style.height = w;
+});
   }
 }
 
@@ -1807,52 +1811,101 @@ function browse_to_level(lev) {
 }
 
 
-function after_Server_find2() {
-  // Click sur les tag en haut de la fenêtre pour la navigation vers l' arrière
-  window.scrollTo(0, 0);
-  res = JSON.parse(this.response);
-  resk = res.key
-  res = res["result"];
+// ============================================================
+// Fonction commune : injection des thumbs
+// ============================================================
+function render_thumbs(res, key) {
+
   var thumbs_box = document.getElementById("thumbs_box");
   thumbs_box.innerHTML = '';
+
   for (var i = 0; i < res.length; i++) {
+
+    var thumburl = Server_Get_ThumbUrl(res[i]["covers"][0]);
+
+    var display = BBCodeToHtml(res[i]["display"]);
+    display = display.substring(0, 70);
+
+    var match = /\r|\n/.exec(display);
+    if (match) {
+      display = "<br>" + display;
+    }
+
     var thumb = document.createElement('div');
-    thumb.setAttribute('class', thumb_style);
+
+    // Propriétés communes
+    thumb.setAttribute('class', 'thumb');
     thumb.setAttribute('onclick', 'on_thumb_click_Library(this)');
     thumb.setAttribute('query', res[i]["query"]);
     thumb.setAttribute('keyval', res[i]["keyval"]);
     thumb.setAttribute('covers', res[i]["covers"]);
-    thumburl = Server_Get_ThumbUrl(res[i]["covers"][0])
-    display = BBCodeToHtml(res[i]["display"]);
-    display = display.substring(0, 70);
-    var match = /\r|\n/.exec(display);
-    if (!match) { } else {
-      display = "<br>" + display;
-    }
+    thumb.setAttribute('style', 'width: 135px; height: 151px;');
 
     thumb.innerHTML =
       `
-        <img  class="lozad thumbimg" src="${thumburl}" loading="lazy" draggable="false" onerror="this.src='img/cd.png'">
-        <div class="thumbtitle"><span>${display}</span></div>
+        <img class="yall_lazy thumbimg"
+             draggable="false"
+             data-src="${thumburl}"
+             onerror="this.src='img/cd.png'">
 
-        `;
+        <div class="thumbtitle">
+          <span class="${key}_display">${display}</span>
+        </div>
+      `;
+
     thumbs_box.appendChild(thumb);
   }
+
+  lazyload.run();
+}
+
+
+// ============================================================
+// after_Server_find2
+// ============================================================
+function after_Server_find2() {
+
+  // Click sur les tags en haut de la fenêtre pour la navigation vers l'arrière
+  window.scrollTo(0, 0);
+
+  res = JSON.parse(this.response);
+
+  resk = res.key;
+  res = res["result"];
+
+  // La clé utilisée pour la classe CSS
+  var displayKey = resk;
+
+  if (displayKey == "dirhash") {
+    displayKey = "album";
+  }
+
+  // Partie commune
+  render_thumbs(res, displayKey);
+
   if (!isCordova()) {
     history.pushState(this.response, "", null);
   }
+
   block = false;
   setDisplay();
 }
 
+
+// ============================================================
+// after_Server_find
+// ============================================================
 function after_Server_find() {
 
   window.scrollTo(0, 0);
+
   if (this.response == undefined) {
     block = false;
     return;
   }
+
   res = JSON.parse(this.response);
+
   if (res["response"] == "No more pages") {
     var thumbs_box = document.getElementById("thumbs_box");
     thumbs_box.innerHTML = '';
@@ -1860,59 +1913,61 @@ function after_Server_find() {
     return;
   }
 
-  key = res.key
+  key = res.key;
+
   if (res["result"] == []) {
     return;
-  };
-  resk = res.key
-  if (resk == "dirhash") {
-    resk = "album"
   }
+
+  resk = res.key;
+
+  if (resk == "dirhash") {
+    resk = "album";
+  }
+
   if (resk == 'undefined') {
     return;
-  };
+  }
+
   if (resk == undefined) {
     return;
-  };
-  newheader_line = '<span class="color2" onclick="javascript:event.stopPropagation();browse_to_level(' + level + ');">' + translate(resk) + '</span>'
-  if (header_line.indexOf(newheader_line) <= -1) // Ne pas doubler ...
-  {
+  }
+
+  // ----------------------------------------------------------
+  // Partie spécifique à after_Server_find()
+  // Gestion du header
+  // ----------------------------------------------------------
+
+  newheader_line =
+    '<span class="color2" onclick="javascript:event.stopPropagation();browse_to_level(' +
+    level +
+    ');">' +
+    translate(resk) +
+    '</span>';
+
+  if (header_line.indexOf(newheader_line) <= -1) {
     header_line.push(newheader_line);
   }
-  document.getElementById("header_container").innerHTML = header_line.join(' > ');
+
+  document.getElementById("header_container").innerHTML =
+    header_line.join(' > ');
 
   q = this.responseURL.split("=")[1];
+
   res = res["result"];
-  var thumbs_box = document.getElementById("thumbs_box");
-  thumbs_box.innerHTML = '';
-  allcontent = "";
-  for (var i = 0; i < res.length; i++) {
 
-    if (updatedimages.indexOf(res[i]["covers"][0]) >= 0) {
-      thumburl = Server_Get_ThumbUrl(res[i]["covers"][0])
-    } else {
-      thumburl = Server_Get_ThumbUrl(res[i]["covers"][0])
-    }
+  // ----------------------------------------------------------
+  // Partie commune
+  // ----------------------------------------------------------
 
-    display = BBCodeToHtml(res[i]["display"]);
-    display = display.substring(0, 70);
-    var match = /\r|\n/.exec(display);
-    if (!match) { } else {
-      display = "<br>" + display;
-    }
+  render_thumbs(res, resk);
 
-    coverurl = res[i]["covers"]
-    content = '<div class="thumb" onclick="on_thumb_click_Library(this)" query="' + res[i]["query"] + '" keyval="' + res[i]["keyval"] + '" covers="' + coverurl + '" style="width: 135px; height: 151px;"><img class="yall_lazy thumbimg" draggable="false" data-src="' + thumburl + `" onerror="this.src='img/cd.png'"> <div class="thumbtitle"><span class=` + key + `_display >${display}</span></div></div>`
-    allcontent = allcontent + content;
-  }
-
-  thumbs_box.innerHTML = allcontent;
-  lazyload.run();
   if (!isCordova()) {
     history.pushState(this.response, "", null);
   }
+
   block = false;
-  //setTimeout(setdoclinks, 1000);
+
   setDisplay();
 }
 
@@ -2777,7 +2832,7 @@ function after_Get_Players(response) {
   playerdrop.innerHTML = '';
 
 
-  if (getExecutionContext() != "internet" && window.executionlocation != "external"){
+  if (getExecutionContext() != "internet" && getExecutionContext != "external"){
     document.getElementById("param_btn").style.display = "block";
     for (i = 0; i < players.length; i++) {
       

@@ -383,34 +383,29 @@ color:#ffffff;
     margin-right: 10px;
     margin-left: 10px;
     margin-top: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 25px;
     /* Pour la tablette : 136,152*/
     /* Pour l'ordi      : 100,112*/
-    width: 140px; 
-    height:155px;
+     
+   
 }
 
 
 .thumbtitle{
-    margin-top:0%;
+    margin-top:5%;
     margin-right:10px;
     margin-left:10px;
     height: 20%;
-    
-    
-    /*white-space: nowrap;*/
     text-align:center;
     text-transform: capitalize;
     z-index: 9;/*Overlapp the cover image*/
     color:white;
     display: flex;
-    
-
 }
 
 .thumbtitle span {
-  min-height: 40px; 
-  margin-top:10;
+  min-height: 40px;
+  margin-top: 10px;
   width:100%;
   align-self: flex-end;
   background-color: rgb(16 15 15 / 34%);

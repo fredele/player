@@ -57,7 +57,7 @@
   </div>
   <div id="thumbs_container">
     <div id="thumbs_container_2">
-      <div class="d-flex flex-wrap" id="thumbs_box">
+      <div  id="thumbs_box">
       </div>
     </div>
 
@@ -116,7 +116,7 @@
       <img id="query_play_btn" loading="lazy" src="img/play.png" onclick=query_play(); onerror="this.src='img/cd.png'">
     </div>
     <div id="query_all">
-      <div id="query_overview" class="d-flex flex-wrap" onmouseover="query_overview_mouse_over()" onmouseout="query_overview_mouse_out()">
+      <div id="query_overview" onmouseover="query_overview_mouse_over()" onmouseout="query_overview_mouse_out()">
       </div>
       <div id="query_tracklist">
       </div>
@@ -195,7 +195,7 @@
     <div id="mainmodal" class="modal-content">
       <label class="modaloutput to_translate output_label" id="player_label" >Choose a Player</label>
       <div class="dropdown" id="playerDropdown">
-        <button style="width:100%;" id="playerdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdownplayerButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+        <button style="width:100%;" id="playerdropbtn" class=" btn  " type="button" id="dropdownplayerButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
         <div style="width:100%;" id="playerdrop" class="dropdown-menu" type="button" aria-labelledby="playerOutputButton">
         </div>
       </div>
@@ -204,7 +204,7 @@
       <div id="chooseoutput">
         <label class="modaloutput to_translate output_label" id="output_label" >Choose an Output</label>
         <div class="dropdown" id="outputDropdown">
-          <button style="width:100%;" id="outputgstdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdowngstOutputButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Output </button>
+          <button style="width:100%;" id="outputgstdropbtn" class="btn " type="button" id="dropdowngstOutputButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Output </button>
           <div style="width:100%;" id="outputgstdrop" class="dropdown-menu" aria-labelledby="dropdowngstOutputButton"></div>
         </div>
         <label class="modaloutput" id="current_pipeline"></label>

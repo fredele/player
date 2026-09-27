@@ -148,7 +148,8 @@ div#playlist_container {
 
 #playlist_cover{
   position: absolute;
-  width: 100%;
+  width: 90%;
+  margin-left: 5%;
   height:65%;
   top:5%;
   left:0%;
@@ -353,6 +354,8 @@ color:#ffffff;
   flex-grow:1;
   overflow: hidden;
   text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
 }
 
@@ -495,6 +498,11 @@ height: 100%;
 overflow-y: scroll;
 }
 
+div#thumbs_box{
+display: flex !important;
+flex-wrap: wrap !important;
+
+}
 #doc {
     left : -100%;
     position: fixed;
@@ -794,14 +802,18 @@ select {
 
 
 #display_strs {
+  /* display: flex; */
+  /* align-items: center; */
   position: fixed;
-  padding-top:15px;
-  padding-left:10px;
+  /* padding-top:15px; */
+  /* padding-left:10px; */
   width: 100%;
   left: 350px;
   color:white;
   text-transform: capitalize;
   bottom:0px;
+  display: flex;
+  align-items: center;
 }
 
 #previous_btn{
@@ -861,11 +873,10 @@ select {
 
 
 .display_str {
-    
-    padding-left:10px;
+    /* align-items: center; */
+    padding-left: 20px;
     width: 100%;
     left: 80px;
-    height:60px;
 }
 
 
@@ -1085,6 +1096,9 @@ select {
   width: 100%;
   display : flex;
   justify-content: left;
+  display: flex !important;
+  flex-wrap: wrap !important;
+
   }
 
 #query_overview_hidden {

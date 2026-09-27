@@ -15,16 +15,16 @@
   <meta charset="UTF-8">
   <title>Player</title>
   <link rel="stylesheet" href="/css/normalize.min.css">
-  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
-  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <<link rel='stylesheet' href='/css/dropdown.css'>
   <script type="module" src="/js/zero-md.min.js"></script>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/browse.css">
   <link rel="stylesheet" href="/css/tageditor.css">
   <link rel="stylesheet" href="/css/dspeditor.css">
   <link rel="manifest" href="manifest.json">
-  <script src='/js/jquery.min.js'></script>
-  <script src='/js/bootstrap.min.js'></script>
+
+   <!--<script src='/js/bootstrap.min.js'></script>-->
+  <script src="js/dropdown.js"></script>
   <script src="js/resizer.js"></script>
   <script src="js/server.js"></script>
   <script src="js/loadplayer.js"></script>
@@ -39,7 +39,7 @@
   <script src="js/long-press-event2.js"></script>
   <script src="js/yall.min.js"></script>
   <script src="js/loadlazyload.js"></script>
-  <script src="js/jquery.min.js"></script>
+  
   <script src="js/drag-drop-touch.esm.min.js?autoload" type="module"></script>
   
   <link rel="icon" type="image/png" href="img/favicon.png" />
@@ -176,8 +176,13 @@
   <div id="TagEditorModal" class="modal">
     <!-- Modal content -->
     <div class="modal-content">
-      <div><label id="editor1" class="tageditorlabel" style="width:20%;">Tag</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag"></div>
-      <div><label id="editor2" class="tageditorlabel" style="width:20%;">Value</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag_value" oninput="edit_tag_value_changed();"></div> &nbsp; <input type="button" id="button_set_value" class="btn" onclick="Set_tag_value()" disabled>
+      <div class="tag-row">
+      <label id="editor1" class="tageditorlabel" style="width:20%;">Tag</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag">
+      </div>
+      <div class="tag-row">
+      <label id="editor2" class="tageditorlabel" style="width:20%;">Value</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag_value" oninput="edit_tag_value_changed();">
+      </div>
+      <input type="button" id="button_set_value" class="btn" onclick="Set_tag_value()" disabled>
       <label id="tageditormodal_error"></label>
     </div>
   </div>
@@ -185,7 +190,7 @@
   <div id="OutputModal" class="modal">
     <div id="mainmodal" class="modal-content">
       <label class="modaloutput to_translate" id="output_label">Choose a Player</label>
-      <div class="dropdown">
+      <div class="dropdown" id="playerDropdown">
         <button style="width:100%;" id="playerdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdownplayerButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
         <div style="width:100%;" id="playerdrop" class="dropdown-menu" type="button" aria-labelledby="playerOutputButton">
         </div>
@@ -194,7 +199,7 @@
       
       <div id="chooseoutput">
         <label class="modaloutput to_translate" id="output_label">Choose an Output</label>
-        <div class="dropdown" id="output_dropdown">
+        <div class="dropdown" id="outputDropdown">
           <button style="width:100%;" id="outputgstdropbtn" class="mt-2 btn  btn-lg dropdown-toggle" type="button" id="dropdowngstOutputButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Output </button>
           <div style="width:100%;" id="outputgstdrop" class="dropdown-menu" aria-labelledby="dropdowngstOutputButton"></div>
         </div>
@@ -224,11 +229,7 @@
   </div>
   <!-- End OutputModal-->
   
-  <!--  
-<script src='/js/jquery.min.js'></script>
-<script src='/js/bootstrap.min.js'></script>
-<script src="/js/bootstrap.bundle.min.js"></script>
--->
+
 </body>
 
 </html>

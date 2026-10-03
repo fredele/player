@@ -29,6 +29,7 @@ import os ,sys
 import simplejson as json
 import configparser
 import mutagen
+import ast
 from mutagen.mp3 import EasyMP3
 from mutagen.easymp4 import EasyMP4
 from mutagen.easyid3 import EasyID3
@@ -45,6 +46,7 @@ from updatelib import LibraryScannerService, Update_Music_Folders
 import base64
 import random
 from bson.objectid import ObjectId
+from flask_restx import Api, Resource as RestXResource
 from flask import g ,Response, stream_with_context
 from flask import send_file, redirect
 from pymongo import MongoClient,ASCENDING, TEXT
@@ -57,6 +59,7 @@ from flask_httpauth import HTTPBasicAuth
 from requests.auth import HTTPBasicAuth as basicaut
 from  players.gplayer import GPlayer
 from  players.upnpplayer import UpnpPlayer
+from updatesavedqueries import request_querybuilder
 from ramsearch import RamSearch
 from typing import List, Dict
 import time
@@ -82,6 +85,7 @@ from OpenSSL import crypto
 from twisted.internet import reactor,ssl
 from twisted.web.server import Site
 from twisted.web.wsgi import WSGIResource
+from twisted.web.resource import Resource as TwistedResource
 from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol , listenWS
 from autobahn.twisted.resource import WebSocketResource, WSGIRootResource
 from utils.tags import gettags, replacetags
@@ -95,6 +99,9 @@ from lxml import etree
 from rip_cd import launch_rip
 from logging.handlers import RotatingFileHandler
 from download import streamdirhash
+from rapidfuzz import fuzz, process
+
+
 app = Flask(__name__,static_url_path='',
             static_folder='web/static',
             template_folder='web/templates')
@@ -115,6 +122,28 @@ CHECK_INTERVAL = 60  # fréquence de vérification en secondes
 
 last_activity = time.monotonic()
 last_activity_lock = threading.Lock()
+
+
+import re
+import unicodedata
+from rapidfuzz import fuzz
+
+
+def compare_command(transcription, command):
+    def normalize(text):
+        text = text.lower()
+        text = unicodedata.normalize("NFD", text)
+        text = "".join(
+            c for c in text
+            if unicodedata.category(c) != "Mn"
+        )
+        text = re.sub(r"[^\w\s]", "", text)
+        return " ".join(text.split())
+
+    transcription = normalize(transcription)
+    command = normalize(command)
+
+    return fuzz.WRatio(transcription, command)
 
 def monitor_inactivity():
     global last_activity
@@ -456,6 +485,52 @@ def passer_titre():
 
 
 
+WHISPER_URL = "http://localhost:9000/v1/audio/transcriptions"
+WHISPER_API_KEY = "whisper-7c0436e42e515ca2ca686ba0e3a25ad8e8ad12765b84f03e"
+
+@app.route("/api/transcribe", methods=["POST"])
+def transcribe():
+    
+    player = app.players[int(request.form.get("player"))]['player']
+    
+    
+    if "file" not in request.files:
+        return json_resp({"error": "Aucun fichier audio"}), 400
+
+    audio_file = request.files["file"]
+
+    files = {
+        "file": (audio_file.filename, audio_file.stream, audio_file.mimetype)
+    }
+    data = {
+        "model": "base",
+        "language": "fr",
+        "prompt": "augmente le volume, diminue le volume, pause, play"
+    }
+    headers = {
+        "Authorization": f"Bearer {WHISPER_API_KEY}"
+    }
+
+    try:
+        r = requests.post(WHISPER_URL, headers=headers, files=files, data=data, timeout=60)
+        r.raise_for_status()
+        response = r.json()
+        response = response["text"]
+        
+        score = compare_command(response,"augmente le volume")
+        if (score >90):
+            vol = player.get_volume()
+            player.set_volume(min(vol+0.2,1))
+            return json_resp({'response':"OK"})
+        
+        return json_resp({'response':"OK"})
+    
+    except requests.exceptions.RequestException as e:
+        return json_resp({"error": str(e)}), 500
+        
+        
+     
+
 @app.route("/slskd", methods=["POST"])
 def slskd_webhook():
     data = request.get_json(silent=True)
@@ -665,17 +740,19 @@ def stats():
 
 @app.route('/v1/<string:dirhash>/<string:filename>')
 def file_listing(dirhash,filename):
-    c = app.db.mediafiles.find_one({"dirhash": int(dirhash)})
-    if c is not None:
-        path = str(c["dirname"])
-        path = app.mediafiles_folder / path / filename
-        if os.path.exists(path):
-            return send_file(path)
+    try:
+        c = app.db.mediafiles.find_one({"dirhash": int(dirhash)})
+        if c is not None:
+            path = str(c["dirname"])
+            path = app.mediafiles_folder / path / filename
+            if os.path.exists(path):
+                return send_file(path)
+            else:
+                return abort(404)
         else:
             return abort(404)
-    else:
+    except:
         return abort(404)
-
 
 @app.route('/upnp/<string:playerid>', methods=['NOTIFY'])
 def upnp_subscription(playerid):
@@ -1365,11 +1442,11 @@ def LibrarySearch():
             if app.ram_search.available:
                 results = app.ram_search.search(request.args['value'], limit=100)
                 res['Result'] = results
-                res['Response'] = 'OK'
+                res['response'] = 'OK'
           
     except Exception as e:
         print(f"Error in LibrarySearch: {e}")
-        res['Response'] = 'Error'
+        res['response'] = 'Error'
         return json_resp(res)
     res = json_resp(res)
     return res
@@ -1409,7 +1486,7 @@ def radiomode():
     GetPlayer(player_id).set_queue_position(0)
     GetPlayer(player_id).set_path(GetPlayer(player_id).get_current(),GetPlayer(player_id).queue_position)
     GetPlayer(player_id).set_play()
-    res = {'Response': 'OK'}
+    res = {'response': 'OK'}
     queue_changed( GetPlayer(player_id).id,'radiomode')
     return json_resp(res)
 
@@ -1436,7 +1513,7 @@ def dsp_get():
                 if dsp['name'] == el['name']:
                     el['props'] = dsp['props']
 
-    res = {'Response':'OK', 'pipeline' : app.pm.pipeline}
+    res = {'response':'OK', 'pipeline' : app.pm.pipeline}
     return json_resp(res)
 
 #TODO:POST
@@ -1453,7 +1530,7 @@ def dsp_set():
         val = BoolStr(request.args['value'])
 
     GetPlayer(player_id).set(request.args['name'], request.args['property'], val)
-    res = {'Response':'OK', 'pipeline' : app.pm.pipeline}
+    res = {'response':'OK', 'pipeline' : app.pm.pipeline}
 
     dsp_changed(player_id)
     return json_resp(res)
@@ -2131,7 +2208,7 @@ def thumb_epoch():
             res.append(thumb['dirhash'])
         return json_resp(res)
     except :
-        return json_resp({"Response":"Error"})
+        return json_resp({'response':"Error"})
 
 @app.route("/v1/Thumbnails/<dirhash>.jpg")
 def thumb(dirhash):
@@ -2219,7 +2296,7 @@ def create_indexes():
                 app.db.mediafiles.create_index(index)
             except:
                 pass
-    res['Response'] = 'OK'
+    res['response'] = 'OK'
     return json_resp(res)
 
 
@@ -2230,7 +2307,7 @@ def get_radio():
     if 'file' in request.args :
         r = []
         dict = {}
-        directory = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles','Radios')
+        directory = os.path.join(app.mediafiiles_folder,'Radios')
         os.chdir(app.root_path)
         os.chdir(directory)
         try:
@@ -2266,7 +2343,7 @@ def get_playlist():
     if 'name' in request.args :
         r = []
         dict = {}
-        directory = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles','Playlists')
+        directory = os.path.join(app.mediafiiles_folder,'Playlists')
         os.chdir(app.root_path)
         os.chdir(directory)
         files = [file for file in glob.glob("*.xspf")]
@@ -2352,7 +2429,7 @@ def Library_Backup():
         for doc in app.db.thumbnails.find():
             f.write(BSON.encode(doc))
 
-    res['Response'] = 'OK'
+    res['response'] = 'OK'
     return json_resp(res)
 
 @app.route("/v1/Library/Restore")
@@ -2395,7 +2472,7 @@ def Library_Restore():
         except:
             pass
 
-    res['Response'] ='OK'
+    res['response'] ='OK'
     return json_resp(res)
 
 
@@ -2421,7 +2498,7 @@ def upload_file():
       subfolder = True if True in [c_folder.startswith(i) for i in app.album_sub_folder] else False
       if subfolder == True:
           path = os.path.normpath(os.path.join(path, os.pardir))
-      path = os.path.join(os.getenv("HOME"), '.Player', 'mediafiles', path,f.filename)
+      path = os.path.join(app.mediafiles_folder, path,f.filename)
 
       #Save the renamed file to disk
       npath = path.replace(os.path.basename(path), "cover.jpg")
@@ -2533,7 +2610,7 @@ def Set_Tag():
         res['result'] = 'Error'
 
     update_playlist()
-    louie.send("lib_updated")
+    request_querybuilder()
     app.send_message_value("Tags Edited")
 
     return json_resp(res)
@@ -2683,31 +2760,35 @@ def clbk():
 @app.route("/v1/Library/Import")
 # @adminlogrequired
 def Library_import():
-    """ Import a folder in the Library """
+    """Import a folder in the Library"""
+
     if "folder" not in request.args:
         return json_resp({"error": "missing folder"}), 400
 
     folder = request.args["folder"]
 
-    result = app.library_scanner.schedule_scan(
-        operation="incremental",
-        folder=folder,
-        overwrite=False,
-        rebuild=False,
-        scanfolder=False,
+    if app.scanprocess is not None:
+        print("SCAN PID =", app.scanprocess.pid)
+
+        if app.scanprocess.poll() is None:
+            return json_resp({
+                "status": "busy",
+                "message": "A library scan is already running"
+            }), 409
+
+        # Ancien scan terminé
+        app.scanprocess = None
+
+    app.scanprocess = subprocess.Popen(
+        ["/bin/bash", "scan", folder],
+        cwd=app.root_path
     )
 
-    if result is False:
-        return json_resp({
-            "status": "busy",
-            "message": "A library scan is already running"
-        }), 409
-
     return json_resp({
-        'response': 'OK',
-        "status": "scheduled",
+        "status": "started",
+        "pid": app.scanprocess.pid,
         "folder": folder
-    }), 202
+    })
     
     
 @app.route("/v1/Library/Reimport")
@@ -2902,7 +2983,7 @@ def Display_Files():
         tags = gettags(displaystr)
 
     if 'query' in request.args:
-        query =eval(urllib.parse.unquote(request.args['query']))
+        query =ast.literal_eval(urllib.parse.unquote(request.args['query']).strip())
 
     if 'ids' in request.args:
         ids = urllib.parse.unquote(request.args["ids"]).split(";")
@@ -3027,7 +3108,7 @@ def Output_Set():
         dsp_changed(player_id)
 
 
-    res = {'Response': 'OK', 'nbr':   int(request.args['nbr'])  }
+    res = {'response': 'OK', 'nbr':   int(request.args['nbr'])  }
     return json_resp(res)
 
 @app.route("/v1/Player/Lang/Get")
@@ -3055,10 +3136,10 @@ def Output_HW_Params():
             k =str(value.split(":")[0].strip())
             v= str(value.split(":")[1].strip())
             res[k]= v
-        res['Response']= 'OK'
+        res['response']= 'OK'
         return json_resp(res)
     except:
-        res['Response']= 'Error'
+        res['response']= 'Error'
         return json_resp(res)
 
 @app.route("/v1/Upnp/Reload")
@@ -3449,8 +3530,9 @@ if __name__ == '__main__':
         # Wait data to be written ...
         time.sleep(10)
         app.ram_search.refresh()
-        
-        app.scanprocess = subprocess.Popen(["/bin/bash", "querybuilder"], cwd=os.chdir(app.root_path) )
+
+        request_querybuilder()
+        #app.scanprocess = subprocess.Popen(["/bin/bash", "querybuilder"], cwd=os.chdir(app.root_path) )
 
     def file_importing(path):
         send_message_value("library_file_importing")
@@ -3497,5 +3579,11 @@ if __name__ == '__main__':
     if app._config['USB']['import'] == "True":
         monitor = USBCopyMonitor(app)
         monitor.start()
+        
+    api = Api(app, version="1.0", title="MyPlayer API", description="MyPlayer REST API", doc="/swagger/")
+    ns = api.namespace("v1", description="MyPlayer API endpoints")
+
+    from swagger import register_swagger_routes
+    register_swagger_routes(api, ns)
 
     reactor.run()

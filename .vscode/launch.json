@@ -1,0 +1,85 @@
+{
+  // Utilisez IntelliSense pour en savoir plus sur les attributs possibles.
+  // Pointez pour afficher la description des attributs existants.
+  // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    
+{
+    "name": "Run local with mongodb docker image",
+    "type": "python",
+    "request": "launch",
+    "program": "${workspaceFolder}/src/main.py",
+    "console": "integratedTerminal",
+    "python": "${workspaceFolder}/../venv/bin/python",
+    "preLaunchTask": "docker-compose-mongodb-up",
+    "postDebugTask": "docker-compose-mongodb-down",
+    "justMyCode": true
+},
+    {
+      "name": "Debug local with mongodb docker image",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up"
+      
+    },
+    {
+      "name": "Debug scan",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/updatelib.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up"
+    },
+        {
+      "name": "Debug fuz",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/fuz.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up" 
+      
+    },
+     {
+      "name": "Debug querybuilder",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/updatesavedqueries.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up", 
+     
+    },
+       {
+      "name": "Debug local with mongodb docker image",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+      "preLaunchTask": "docker-compose-mongodb-up", 
+      "postDebugTask": "docker-compose-mongodb-down"
+    },
+    {
+      "name": "Debug with myplayer-dev docker image",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+          "host": "localhost",
+          "port": 5678
+      },
+      "pathMappings": [
+          {
+              "localRoot": "/home/fredele/MyPlayer/player",
+              "remoteRoot": "/home/player/MyPlayer/player"
+          }
+      ]
+    }
+   
+  ]
+}

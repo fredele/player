@@ -1,4 +1,60 @@
+button,
+input {
+    box-sizing: border-box;
+}
 
+
+
+
+.btn {
+	font-size: 18px !important;
+	height: 30px;
+	margin-top: 5px;
+	px; */
+	width: 90%;
+	justify-content: center;
+	display: flex;
+	text-align: center;
+	align-items: center;
+	text-transform: capitalize;
+	font-weight: 400;
+	font-size: 1rem;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	user-select: none;
+	/* padding: 5px; */
+	line-height: 1.5;
+	background-color: black;
+	color: white;
+	border: 2px solid #727272;
+	border-radius: 3px;
+	transition: none;
+	align-items: center;
+}
+
+.btn:hover {
+    background-color: #333;
+    border: 2px solid transparent;
+    color: white;
+    box-shadow: none;
+}
+
+.btn:active {
+    background-color: #1b54af;
+    border-color: #1b54af;
+}
+
+/* Focus uniquement lorsque la navigation se fait au clavier */
+.btn:focus-visible {
+    outline: 2px solid #ffa;
+}
+
+
+
+#mon-container {
+    font-family: Arial, sans-serif;
+}
 
 input:focus {
    outline: 0 !important;
@@ -70,12 +126,7 @@ button:focus {
   width: 50px;
 }
 
-#dbinfos {
-  margin-top: 10px;
-  margin-left: 0px;
-  color:#c2c2c2;
-  font-size: 18px;
-}
+
 
 #containertemps > div {
   width: 100px;
@@ -117,7 +168,7 @@ color:white;
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #3131315c;
+  /* background-color: #3131315c; */
 }
 
 a:link {
@@ -157,16 +208,17 @@ p.capitalize {
 
 
 .editinput{
-  margin-top: 5px;
-  margin-bottom: 5px;
-  width:100%;
-  color:#ffffff;
-  font-style: normal;
-  font-size: 100%;
-  border-radius:5px;
-  border: 2px solid #727272;        /* Bordure blanche visible */
-  border-radius: 3px;
-  background-color: black; 
+  /* margin-top: 5px; */
+  /* margin-bottom: 5px; */
+  /* width: 90%; */
+  /* margin-left: 5%; */
+  /* color:#ffffff; */
+  /* font-style: normal; */
+  /* font-size: 100%; */
+  /* border-radius:5px; */
+  /* border: 2px solid #727272; */        /* Bordure blanche visible */
+  /* border-radius: 3px; */
+  /* background-color: black; */
 }
 
 .extension{
@@ -306,59 +358,7 @@ button_set_value{
 	text-transform: capitalize;
 	}
 
-.btn {
-	height: 30px;
-	margin-top: 5px;
-	width: 90%;
-	display: inline-block;
-	text-transform: capitalize;
-	font-weight: 400;
-	font-size: 18px;
-	text-align: center;
-	white-space: nowrap;
-	vertical-align: middle;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
-	border: 0px solid transparent;
-	padding: 5;
-	font-size: 1rem;
-	line-height: 1.5;
-	background-color :black;
-	transition:none;
-	color:white;
-	text-transform: capitalize;
-	border: 0px;
-	border: 2px solid #727272;        /* Bordure blanche visible */
-	border-radius: 3px;
-}
 
-.btn:hover {
-    background-color:#333;
-    transition: 0s;
-    border: 2px solid transparent;
-    color:white;
-    box-shadow:none;
-}
-
-.btn:active {
-  background-color: #1b54af;     /* fond pendant clic */
-  border-color: #1b54af;         /* bordure pendant clic */
-}
-
-.btn:focus {
-    background-color: #333;
-    transition: 0s;
-    border: 2px solid transparent;
-    color:white;
-    box-shadow:none;
-}
-
-
-.btn:focus-visible {
-  outline: 2px solid #ffa; /* ou ce que tu préfères comme indication */
-}
 
 .dropdown-menu {
 	border: 0px solid transparent;

@@ -1,3 +1,9 @@
+button,
+input {
+    box-sizing: border-box;
+}
+
+
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
@@ -69,13 +75,14 @@ textarea{
   font-size:18px;
   font-style:normal;
   font-weight:400;
-   border: 2px solid #727272;        /* Bordure blanche visible */
+  border: 2px solid #727272;        /* Bordure blanche visible */
   border-radius: 3px;
   background-color: black;
 }
 
 .edit_var, textarea {
-  background-color : #4a4a4a; 
+  box-sizing: border-box;
+  background-color : #4a4a4a;
   border:none;
   outline:none;
   color:#ffffff;
@@ -83,7 +90,6 @@ textarea{
   font-size: 100%;
   margin-left: 5%;
   border-radius: 5px;
-
 }
 
 .description{
@@ -193,4 +199,13 @@ pre {
     white-space: -pre-wrap;      /* Opera 4-6 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+#save_btn{
+  display: flex;
+  margin-left: 5%;
+  width:90%;
+  text-align: center;
+  align-items: center;
+  justify-content: center;  /* horizontal */
 }

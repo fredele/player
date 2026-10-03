@@ -32,7 +32,7 @@ function onload(){
   {
     window.serverurl =   localStorage.getItem("serverurl");
    }
-   
+ token = localStorage.getItem('token');  
  var browse_page = sessionStorage.getItem("browse_page");
  try{
  document.getElementById('browse_btn').setAttribute('href', browse_page);

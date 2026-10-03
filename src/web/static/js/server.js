@@ -292,6 +292,10 @@ function SendCommand(ApiEntry, Callback, state) {
 
   }
 
+  if (token == null) {
+    return;
+  }
+  
   request.open('GET', url, true);
   request.setRequestHeader("Authorization", "Bearer " + token);
   request.addEventListener('load', Callback);

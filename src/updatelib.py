@@ -642,10 +642,37 @@ def Update_Music_Folders(dirnames, mongo_uri: Optional[str] = None, db=None, med
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Standalone library scanner service")
-    parser.add_argument("--mongo-uri", default="mongodb://localhost:27017", help="MongoDB URI")
-    parser.add_argument("--media-root", default=mediafiles_folder, help="Root folder of the media library")
-    parser.add_argument("--max-workers", type=int, default=4, help="Max worker threads")
+
+    parser = argparse.ArgumentParser(
+        description="Standalone library scanner service"
+    )
+
+    parser.add_argument(
+        "--mongo-uri",
+        default="mongodb://localhost:27017",
+        help="MongoDB URI"
+    )
+
+    parser.add_argument(
+        "--media-root",
+        default=mediafiles_folder,
+        help="Root folder of the media library"
+    )
+
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=4,
+        help="Max worker threads"
+    )
+
+    parser.add_argument(
+        "folder",
+        nargs="?",
+        default=None,
+        help="Folder to scan"
+    )
+
     return parser
 
 
@@ -653,7 +680,7 @@ if __name__ == "__main__":
     
     args = build_parser().parse_args()    
     notifier = ScanNotifier(os.path.join(str(runtime_folder), 'scan.sock'))
-    p = config_folder /  "config.ini"
+    p = config_folder / "config.ini"
     mongo_uri = args.mongo_uri
 
     if not mongo_uri and os.path.isfile(p):
@@ -675,7 +702,6 @@ if __name__ == "__main__":
         else:
             mongo_uri = f"mongodb://{address}:{port}"
         
-    
     service = LibraryScannerService(
         mongo_uri=mongo_uri,
         media_root=args.media_root,
@@ -683,7 +709,12 @@ if __name__ == "__main__":
         max_workers=args.max_workers,
     )
 
-    service.schedule_scan(operation="incremental", folder="all")
+    folder = args.folder if args.folder else "all"
+
+    service.schedule_scan(
+        operation="incremental",
+        folder=folder
+    )
 
     try:
         while service.is_running:

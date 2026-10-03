@@ -1,0 +1,63 @@
+/* Barre de navigation */
+.nav {
+    display: flex;
+    justify-content: center;
+
+    width: 100%;
+    height: 50px;
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+    background: #000;
+}
+
+/* Chaque élément */
+.nav li {
+    height: 50px;
+    margin: 0;
+    padding: 0;
+}
+
+/* Les liens = onglets */
+.nav li a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 50px;
+    padding: 0 18px;
+
+    box-sizing: border-box;
+
+    color: white;
+    background: #000;
+
+    text-decoration: none;
+    font-family: inherit;
+    font-size: inherit;
+
+    transition: background-color 0.15s;
+}
+
+/* Onglet actif */
+.nav li.active a {
+    background: #1b54af;
+}
+
+/* Survol */
+.nav li a:hover {
+    background: #333;
+}
+
+/* Survol de l'onglet actif */
+.nav li.active a:hover {
+    background: #0069d9;
+}
+
+html {
+    font-family: arial;
+    line-height: 1.15;
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+}

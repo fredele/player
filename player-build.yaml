@@ -5,8 +5,8 @@ services:
     container_name: myplayer
     image: myplayer
     build:
-      context: ..
-      dockerfile: ./player/Dockerfile
+      context: .
+      dockerfile: ./Dockerfile
       target: release
 
     network_mode: host

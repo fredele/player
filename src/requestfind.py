@@ -107,6 +107,10 @@ def Requestfind(request: dict, db, query_hash = None) -> dict:
             + full
         )
         has = query_hash or hashlib.sha256(s.encode("utf-8")).hexdigest()
+        print(f"hash:{has}" )
+        
+    except Exception:
+        return {"key": key, "result": [], "page_nbr": page_nbr, "query": strquery}
     except Exception:
         return {"key": key, "result": [], "page_nbr": page_nbr, "query": ""}
 
@@ -116,11 +120,13 @@ def Requestfind(request: dict, db, query_hash = None) -> dict:
         cursorsavedquery = db.savedqueries.find({'hashquery': has})
         cs = [x for x in cursorsavedquery]
         if len(cs) >= 1:
-            result = cs[0]['''result''']
-            q = cs[0]['''query''']
+            r= cs[0]
+            result = r['''result''']
+            q = r['''query''']
             # Query has been found, return it ... and update the count !
-            db.savedqueries.update_one({'hashquery': has}, {"$set": {"displayed": 1 + cs[0]["displayed"]}})
-            return { 'key': key, 'result': result , 'page_nbr' : page_nbr,"query" :q }
+            if r['''valid'''] == "true" :
+                db.savedqueries.update_one({'hashquery': has}, {"$set": {"displayed": 1 + cs[0]["displayed"]}})
+                return { 'key': key, 'result': result , 'page_nbr' : page_nbr,"query" :q }
     except:
         json_resp({'response': 'Error', })
  
@@ -295,6 +301,7 @@ def Requestfind(request: dict, db, query_hash = None) -> dict:
                     "result": result,
                     "page_nbr": page_nbr,
                     "response_count": response_count,
+                    "valid": "true"
                 }
             },
             upsert=True,

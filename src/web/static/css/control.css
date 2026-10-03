@@ -1,3 +1,8 @@
+button,
+input {
+    box-sizing: border-box;
+}
+
 body{
     height: 100%;
     background-color: #000000;

@@ -8,14 +8,16 @@ services:
 
 
     volumes:
-      - ${HOME}/.Player:/home/player/.Player
+
       - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
       - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
 
+      #- /home/fredele/.local/share/player/mediafiles:/home/player/.local/share/player/mediafiles
+      - ${HOME}/.player:/home/player/.local/share/player/mediafiles
+ 
       # Musique
       - /mnt/Disque_1:/mnt/Disque_1
       - /mnt/Disque_2:/mnt/Disque_2
- 
 
     environment:
       PULSE_SERVER: ${XDG_RUNTIME_DIR}/pulse/native
@@ -28,9 +30,9 @@ services:
     image: mongo:3.6
     restart: unless-stopped
     network_mode: host
-    mem_limit: 1.5g
-    memswap_limit: 1.5g
-    command: mongod --wiredTigerCacheSizeGB 1.4
+    mem_limit: 3.1g
+    memswap_limit: 3.1g
+    command: mongod --wiredTigerCacheSizeGB 3
     volumes:
       - /mnt/Disque_1/DB_Player/database:/data/db
 

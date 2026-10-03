@@ -1,0 +1,44 @@
+button,
+input {
+    box-sizing: border-box;
+}
+
+
+.btn {
+	/* height: 30px; */
+	margin-top: 5px;
+	margin-bottom: 5px;
+	width: 90%;
+	margin-left: 5%;
+	/* display: inline-block; */
+	/* text-transform: capitalize; */
+	/* font-weight: 400; */
+	/* font-size: 18px; */
+	/* text-align: center; */
+	/* white-space: nowrap; */
+	/* vertical-align: middle; */
+	/* -webkit-user-select: none; */
+	-moz-user-select: none;
+	-ms-user-select: none;
+	/* user-select: none; */
+	/* border: 0px solid transparent; */
+	/* font-size: 1rem; */
+	/* line-height: 1.5; */
+	/* background-color :black; */
+	/* transition:none; */
+	/* color:white; */
+	/* text-transform: capitalize; */
+	/* border: 0px; */
+	/* border: 2px solid #727272; */        /* Bordure blanche visible */
+	/* border-radius: 3px; */
+}
+
+
+
+#dbinfos {
+  width: 90%;
+  margin-left: 5%;
+  margin-top: 10px;
+  color:#c2c2c2;
+  font-size: 18px;
+}

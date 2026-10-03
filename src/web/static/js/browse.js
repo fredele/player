@@ -50,6 +50,8 @@ var second_interval = null;
 var second_interval_5 = null;
 var init_player = true;
 var player_change_block = false;
+var tagedited = false;
+
 window.playhere = true;
 var mediastop = false;
 var flipflopelapsedbool = false;
@@ -119,7 +121,6 @@ function ScanMusicFolders() {
     }
 
 }
-
 
 function move_panels() {
   if (document.getElementById("menu_all").style.width == "80px") {
@@ -330,7 +331,8 @@ function exit_search() {
 
 function Search_value() {
 
-  document.getElementById('header_container').innerHTML = '<span class="color1"> < </span>' + '<span class="color2" id="exit_span" onclick="exit_search()">' + translate("back") + '</span>'
+  document.getElementById('header_container').innerHTML =
+   '<span class="color1"> < </span>' + '<span class="color2" id="exit_span" onclick="exit_search()">' + translate("back") + '</span>'
   search_text = document.getElementById('search_txt').value;
   document.getElementById('search_btn').disabled = true; 
   Server_search(search_text, lastquery, After_Search_value, null);
@@ -704,7 +706,7 @@ function Goto_Browse_after_Reimport() {
 }
 
 function Goto_Browse() {
-  current_ids = [];
+
   files_queried = [];
   current_selected_ids = [];
 
@@ -723,7 +725,11 @@ function Goto_Browse() {
   document.getElementById('query_image').innerHTML = query_image_content;
   document.getElementById('query_text').innerHTML = "";
   document.getElementById('query_text').classList.remove("cls_query_text");
-
+  if (tagedited == true)
+  {
+  Server_find(lastquery, lastfield, lastsort, lastdisplay, 0, req_thumb_cout, after_Server_find, null)
+  tagedited = false;  
+  }
 }
 
 
@@ -929,7 +935,9 @@ function handleDrop_import(e) {
 
 
 function handleDrop_query(e) {
-
+  if (window.isAdmin == false) {
+    return;
+  }
   e.preventDefault();
   e.stopPropagation();
 
@@ -1742,8 +1750,14 @@ function on_thumb_click_Library(thumb) {
     window.queryview_last_query = q
     lastqueryview = q
     document.getElementById('thumbs_container').style.left = "-150%";
-    document.getElementById('query_container').style.left = "0%";
     Server_Get_Covers(q, after_Server_Get_Covers, null)
+    Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
+    Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
+    Server_Get_Files_query(q, query_track_info, after_Server_Get_Files, null);
+    Server_Get_SideFiles(q, after_Server_Get_SideFiles, null);
+    Server_Get_GetValues(q, "dirname;dirhash", after_Server_Get_Query_Overview_hidden, null);
+
+
   }
 
 }
@@ -1774,7 +1788,7 @@ function after_Server_Get_Covers() {
   for (i = 0; i < divs.length; ++i) {
     divs[i].src = Server_Get_ThumbUrl(dirhash)
   }
-  Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
+  //- Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
 }
 
 function tagmodal() {
@@ -2160,10 +2174,6 @@ function after_Server_Get_SideFiles() {
 
   lazyload.run();
 
-  setTimeout(() => {
-    Server_Get_GetValues(q, "dirname;dirhash", after_Server_Get_Query_Overview_hidden, null);
-  }, 2000);
-
   makeLinksOpenInNewWindow();
 
 }
@@ -2173,7 +2183,7 @@ function after_Server_Get_Files() {
   current_ids = []
   var trackliste = document.getElementById('query_tracklist');
   try {
-    trackliste.innerHTML = "";
+    //trackliste.innerHTML = "";
   } catch { }
   var responseObject = JSON.parse(this.response);
   display = responseObject["display"]
@@ -2227,10 +2237,9 @@ function after_Server_Get_Files() {
   if (q.startsWith("query=")) {
     q = q.slice(6);
   }
+  document.getElementById('query_container').style.left = "0%";
+  //-Server_Get_SideFiles(q, after_Server_Get_SideFiles, null);
 
-  setTimeout(function () {
-    Server_Get_SideFiles(q, after_Server_Get_SideFiles, null);
-  }, 1000);
 
   block = false;
 }
@@ -2243,8 +2252,6 @@ function after_Server_Get_Query_Overview_and_Files() {
   var jsonresponse = JSON.parse(this.response);
   response = jsonresponse["values"]
   ids = jsonresponse["param"]["ids"]
-  //const array = ids.split(';');
-  //current_ids = [...new Set(array)];
   if (current_selected_ids.length == 0) {
     ids = current_ids
   } else {
@@ -2382,7 +2389,7 @@ function after_Server_Get_Query_Overview() {
   if (!isCordova()) {
     history.pushState(this.response, "", null);
   }
-  Server_Get_Files_query(q, query_track_info, after_Server_Get_Files, null);
+  //-Server_Get_Files_query(q, query_track_info, after_Server_Get_Files, null);
 }
 
 
@@ -2497,7 +2504,6 @@ function after_Server_Reimport_Query() {
 
 function after_Server_Get_Group_Query() {
   //Fills query Title
-  current_ids = []
   files_queried = []
   document.getElementById('query_all').scrollTop = 0;
   var responseObject = JSON.parse(this.response);
@@ -2505,7 +2511,7 @@ function after_Server_Get_Group_Query() {
   correctdisplay(display, "query_title");
   block = false;
   setTimeout(() => {
-    Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
+    //- Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
   }, 5);
 }
 
@@ -2562,12 +2568,19 @@ function browse_to_dirhash(dirhash) {
 
   q = encodeURIComponent(' {"$and":[ {"dirhash" : ' + dirhash + '}]}')
   lastqueryview = q;
-  Server_Get_Covers(q, after_Server_Get_Covers, null)
 
+  Server_Get_Covers(q, after_Server_Get_Covers, null)
+  Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
+  Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
+  Server_Get_Files_query(q, query_track_info, after_Server_Get_Files, null);
+  Server_Get_SideFiles(q, after_Server_Get_SideFiles, null);
+  Server_Get_GetValues(q, "dirname;dirhash", after_Server_Get_Query_Overview_hidden, null);
+
+  
   hidebigcover();
   document.getElementById('thumbs_container').style.left = "-150%";
   document.getElementById('playlist_container').style.left = "-150%";
-  document.getElementById('query_container').style.left = "0%";
+  //document.getElementById('query_container').style.left = "0%";
 }
 
 
@@ -2725,9 +2738,8 @@ function Set_tag_value() {
 
 
 function after_set_tag_value() {
-  Server_ClearQueries(null, null);
-  //TODO :clear history ...
-
+ 
+  tagedited = true;
   if (this.status != 200) {
     error = res["response"];
     document.getElementById('window.tageditormodal_error').innerHTML = "Error";
@@ -2747,7 +2759,7 @@ function after_set_tag_value() {
   Server_GetValues(ids, query_tags, after_Server_Get_Query_Overview_and_Files, null)
   // Reload last thumnnails view ...
   q = window.queryview_last_query
-  Server_Get_Covers(window.queryview_last_query, after_Server_Get_Covers, null)
+  //Server_Get_Covers(window.queryview_last_query, after_Server_Get_Covers, null)
 }
 
 

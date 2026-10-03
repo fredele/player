@@ -1,0 +1,84 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker-compose-up",
+      "type": "shell",
+      "command": "docker compose -f compose.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-down",
+      "type": "shell",
+      "command": "docker compose -f compose.yaml down",
+      "problemMatcher": []
+    },
+        {
+      "label": "docker-compose-dev-up",
+      "type": "shell",
+      "command": "docker compose -f compose-dev.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-dev-down",
+      "type": "shell",
+      "command": "docker compose -f compose-dev.yaml down",
+      "problemMatcher": []
+    },
+        {
+      "label": "docker-compose-alsa-up",
+      "type": "shell",
+      "command": "docker compose -f compose-alsa.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-alsa-down",
+      "type": "shell",
+      "command": "docker compose -f compose-alsa.yaml down",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-mongodb-up",
+      "type": "shell",
+      "command": "docker compose -f mongodb.yaml up -d",
+      "problemMatcher": []
+    },
+     {
+      "label": "docker-compose-mongodb-down",
+      "type": "shell",
+      "command": "docker compose -f mongodb.yaml down",
+      "problemMatcher": []
+    },
+    {
+      "label": "build myplayer",
+      "type": "shell",
+      "command": "docker compose -f player-build.yaml build",
+      "problemMatcher": []
+    },
+    {
+      "label": "build myplayer-dev",
+      "type": "shell",
+      "command": "docker compose -f player-dev-build.yaml build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Synchroniser MyPlayer avec rsync",
+      "type": "shell",
+      "command": "rsync",
+      "args": [
+          "-av",
+          "--delete",
+          "/home/fredele/MyPlayer/",
+          "/mnt/Disque_2/MyPlayer/"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    }
+
+
+
+    
+
+
+  ]
+}

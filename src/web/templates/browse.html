@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  
   <meta charset="utf-8">
   <!-- DO NOT DELETE 'unsafe-inline' in meta below ... -->
   <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src *">
@@ -15,15 +16,10 @@
   <meta charset="UTF-8">
   <title>Player</title>
   <link rel="stylesheet" href="/css/normalize.min.css">
-  <<link rel='stylesheet' href='/css/dropdown.css'>
+  <link rel='stylesheet' href='/css/dropdown.css'>
   <script type="module" src="/js/zero-md.min.js"></script>
-  <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/browse.css">
-  <link rel="stylesheet" href="/css/tageditor.css">
-  <link rel="stylesheet" href="/css/dspeditor.css">
   <link rel="manifest" href="manifest.json">
-
-   <!--<script src='/js/bootstrap.min.js'></script>-->
   <script src="js/dropdown.js"></script>
   <script src="js/resizer.js"></script>
   <script src="js/server.js"></script>
@@ -35,13 +31,17 @@
   <script src="js/vars.js"></script>
   <script src="js/spectrum.js"></script>
   <script src="js/wsreconnect.js"></script>
+  <script>
+    //const socket = new ReconnectingWebSocket("wss://...");
+  </script>
   <script src="js/long-press-event.js"></script>
   <script src="js/long-press-event2.js"></script>
   <script src="js/yall.min.js"></script>
   <script src="js/loadlazyload.js"></script>
   
   <script src="js/drag-drop-touch.esm.min.js?autoload" type="module"></script>
-  
+  <script src="js/voice_cmd.js" defer></script>
+
   <link rel="icon" type="image/png" href="img/favicon.png" />
   <!-- For iOS Fullscreen ... -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,7 +99,7 @@
     <canvas id="spectrum" width="300" height="100"></canvas>
     <canvas id="level" width="14" height="40"></canvas>
     <img id="scanning_img" class="footer_height" src="img/import.png">
-
+    <img id="mic_img" class="footer_height" src="img/mic.png">
     <!-- end footer -->
   </div>
   <div id="query_container">
@@ -148,8 +148,8 @@
   <div id="menu_container">
     <div id="menu_all">
       <img id="library_btn" src="img/library.png" onclick="goto_music_library()">
-      <img id="podcast_btn" src="img/podcast.png" onclick="goto_podcast()">
-      <img id="radio_btn" src="img/radio.png" onclick="goto_radio()">
+      <!--<img id="podcast_btn" src="img/podcast.png" onclick="goto_podcast()">-->
+      <!--<img id="radio_btn" src="img/radio.png" onclick="goto_radio()">-->
       <img id="param_btn" src="img/param.png" onclick="goto_database()">
     </div>
     <div class="scrollable-element" id="menu_items"></div>
@@ -186,7 +186,7 @@
       <div class="tag-row">
       <label id="editor2" class="tageditorlabel" style="width:20%;">Value</label><input style="width:80%;" autocapitalize="none" type="text" id="edit_tag_value" oninput="edit_tag_value_changed();">
       </div>
-      <input type="button" id="button_set_value" class="btn" onclick="Set_tag_value()" disabled>
+      <input type="button" id="button_set_value" class="btn" onclick="Set_tag_value()">
       <label id="tageditormodal_error"></label>
     </div>
   </div>

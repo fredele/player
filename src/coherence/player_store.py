@@ -505,10 +505,10 @@ class PlayerStore(BackendStore):
         self.containers = {}
         self.containers[0] = Container(0, -1, {"display": "root"}, store=self)
         self.containers[1] = Container(1, 0, {"display": 'Disques'}, store=self)
-        self.containers[0].add_child(self.containers[1])
-        self.containers[2] = Container(2, 0, {"display": 'Radios'}, store=self)
-        self.containers[0].add_child(self.containers[2])
-        self.containers[3] = Container(3, 0, {"display": 'Podcasts'}, store=self)
+        #self.containers[0].add_child(self.containers[1])
+        #self.containers[2] = Container(2, 0, {"display": 'Radios'}, store=self)
+        #self.containers[0].add_child(self.containers[2])
+        #self.containers[3] = Container(3, 0, {"display": 'Podcasts'}, store=self)
 
 
     def getnextID(self):

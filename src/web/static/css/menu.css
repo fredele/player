@@ -107,11 +107,11 @@ select{
 
 /* Menu (violet) */
 #menu {
-  height: 60px;
+  /* height: 60px; */
   background-color: black;
   flex-shrink: 0;
-  margin-right:9px;
-  margin-bottom:10px;
+  margin-right: 10px;
+  margin-left: 10px;
 }
 
 
@@ -355,7 +355,7 @@ input.level-display {
 
 .item-entry.selected {
   /* background-color: #9797974d; */
-  border: 3px solid #444444;
+  border: 3px solid #3c94f1;
   /* margin-right: 3px; */
 }
 
@@ -496,4 +496,15 @@ input.level-display {
   height: 28px;
   margin-left: 3px;
 }
+
+#save_btn{
+  display: flex;
+  width:100%;
+  text-align: center;
+  align-items: center;
+  justify-content: center;  /* horizontal */
+
+
+}
+
 

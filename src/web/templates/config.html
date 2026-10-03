@@ -3,13 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Player</title>
-
   <link rel="stylesheet" href="/css/normalize.min.css">
-  <link rel='stylesheet' href='/css/bootstrap4.min.css'>
-  <link rel='stylesheet' href='/css/bootstrap3.min.css'>
+  <link rel="stylesheet" href="/css/nav.css">
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/browse.css">
-  <link rel="stylesheet" href="/css/editvars.css">
+  <link rel="stylesheet" href="/css/config.css">
   <script src="/js/server.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/utils.js"></script>
@@ -38,22 +35,20 @@
 <br>
 
 <br>
-<div class="maincontainer" style="width:95%;padding-left:5%">
+<div class="maincontainer" >
 
 
 <!-- credentials : admin/password -->
-<input type="text" autocapitalize="none" id="username" class="editinput" placeholder="Username"  />
-<input type="password"autocapitalize="none"  id="password" class="editinput" placeholder="password" />
+<input type="text" autocapitalize="none" id="username" class="editinput " placeholder="Username"  />
+<input type="password"autocapitalize="none"  id="password" class="editinput " placeholder="password" />
 
 
-<button type="button" style="width:100%;font-size:18px;" class="to_translate mt-2 btn btn-primary btn-lg" onclick="setToken()" onsubmit="return false">Login</button>
+<button type="button"  class="to_translate btn" id="Ok" onclick="setToken()" onsubmit="return false">Login</button>
 </div>
 
 <br>
 
 
-<script src='/js/jquery.min.js'></script>
-<script src='/js/bootstrap.min.js'></script>
 
 </body>
 </html>

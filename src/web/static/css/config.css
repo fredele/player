@@ -1,0 +1,34 @@
+button,
+input {
+    box-sizing: border-box;
+}
+
+.editinput{
+  height: 30px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: 90%;
+  margin-left: 5%;
+  color: white;
+  font-style: normal;
+  font-size: 100%;
+  border-radius:5px;
+  border: 2px solid #727272;        /* Bordure blanche visible */
+  border-radius: 3px;
+  background-color: black;
+}
+
+
+#Ok{
+  width: 90%;
+  margin-left: 5%;
+  margin-top: 20px;
+  /* padding-right: 2px; */
+}
+
+#save{
+  width: 90%;
+  margin-left: 5%;
+  margin-top: 20px;
+  /* padding-right: 2px; */
+}

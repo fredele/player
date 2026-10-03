@@ -40,19 +40,31 @@ RUN useradd -m -u 1000 player && \
 COPY venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV HOME=/home/player
+ENV XDG_RUNTIME_DIR=/run/user/1000
 
 # Configuration
-COPY player/init_config_docker/ /home/player/MyPlayer/player/init_config_docker/
-COPY player/libs /usr/lib/x86_64-linux-gnu/
+COPY init_template/ /home/player/MyPlayer/init_template/
+COPY libs /usr/lib/x86_64-linux-gnu/
 
-RUN mkdir -p /home/player/.Player/logs && \
-    chown -R player:player /home/player && \
-    chmod -R 755 /home/player/.Player
+RUN mkdir -p \
+    /home/player/.config/player \
+    /home/player/.local/share/player \
+    /home/player/.cache/player \
+    /home/player/.local/state/player
+
+RUN chown -R player:player /home/player/.config/player \
+                           /home/player/.local/share/player \
+                           /home/player/.cache/player \
+                           /home/player/.local/state/player
+
+
+
+RUN mkdir -p /run/user/1000/player \
+    && chown -R player:player /run/user/1000 \
+    && chmod 700 /run/user/1000
 
 USER player
 
-COPY --chmod=755 /player/entrypoint.sh /player/entrypoint.sh
-ENTRYPOINT ["/player/entrypoint.sh"]
 
 
 ###############################################################################
@@ -61,9 +73,9 @@ ENTRYPOINT ["/player/entrypoint.sh"]
 
 FROM base AS release
 
-COPY player/src/ /home/player/MyPlayer/player/src/
+COPY src/ /home/player/MyPlayer/src/
 
-CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/player/src/main.py","-c","/home/player/.Player/config/config-docker.ini"]
+CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/src/main.py"]
 
 
 ###############################################################################
@@ -72,4 +84,4 @@ CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/player/src/main.py","-c","/h
 
 FROM base AS debug
 
-CMD ["/opt/venv/bin/python3","-m","debugpy","--listen","0.0.0.0:5678","--wait-for-client","/home/player/MyPlayer/player/src/main.py","-c","/home/player/.Player/config/config-docker.ini"]
+CMD ["/opt/venv/bin/python3","-m","debugpy","--listen","0.0.0.0:5678","--wait-for-client","/home/player/MyPlayer/src/main.py","-c","/home/player/.Player/config/config-docker.ini"]

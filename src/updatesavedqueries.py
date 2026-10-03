@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 import argparse
+import json
 import queue
 import time
 from threading import Thread
 from typing import Callable, Optional, Any
-
+import subprocess
+import threading
 from pymongo import MongoClient
 from pymongo.database import Database
 import copy
@@ -22,7 +24,51 @@ from bson import ObjectId  # only if you need it later
 from requestfind import Requestfind
 from pathlib import Path
 from paths import config_folder
+import subprocess
+import threading
 
+
+
+scan_lock = threading.Lock()
+
+scan_requested = False
+scanprocess = None
+
+# single-flight
+# updates at first and last request_querybuilder
+
+def request_querybuilder():
+    global scan_requested, scanprocess
+    with scan_lock:
+        scan_requested = True
+        
+        if scanprocess is not None:
+            return
+
+        threading.Thread(
+            target=querybuilder_worker,
+            daemon=True
+        ).start()
+
+
+def querybuilder_worker():
+    global scan_requested, scanprocess
+    while True:
+        with scan_lock:
+            if not scan_requested:
+                scanprocess = None
+                return
+
+            scan_requested = False
+
+            scanprocess = subprocess.Popen(
+                ["/bin/bash", "querybuilder"],
+                cwd=None
+            )
+
+        scanprocess.wait()
+        
+        
 class Update_Queries(Thread):
     def __init__(
         self,
@@ -54,12 +100,71 @@ class Update_Queries(Thread):
         # snapshot
         
         try:
-            self.savedqueries = list(self.owner.savedqueries.find())
-            self.owner.savedqueries.drop()
+            # track only 100 most representative requests ..
+            self.savedqueries = list(
+                self.owner.savedqueries.aggregate([
+                    {"$addFields": {"_query_length": {"$strLenCP": "$query"}}},
+                    {"$sort": {"_query_length": 1}},
+                    {"$limit": 100}
+                ])
+            )
+
+            self.owner.savedqueries.delete_many({
+                "_id": {"$nin": [doc["_id"] for doc in self.savedqueries]}
+            })
+
+            self.owner.savedqueries.update_many({}, {"$set": {"valid": "false"}})
+            
+            
         except Exception as e:
             print(f"Failed to drop savedqueries collection: {e}")
             
 
+        def recalculate_music_views() -> None:
+            views_path = config_folder / "views.json"
+
+            try:
+                with views_path.open("r", encoding="utf-8") as f:
+                    views = json.load(f)
+
+                music_views = views.get("music", [])
+                print(f"Recalculating {len(music_views)} music views")
+
+                for view in music_views:
+                    levels = view.get("levels", [])
+                    if not levels or len(levels[0]) < 3:
+                        print(f"Invalid first level for view {view.get('name')}")
+                        continue
+
+                    field_spec, sort_spec, display = levels[0]
+
+                    field_parts = field_spec.split("$", 1)
+                    field = field_parts[0]
+                    full = "true" if len(field_parts) > 1 and field_parts[1] == "full" else "false"
+
+                    sort_parts = sort_spec.split("$", 1)
+                    sorttag = sort_parts[0]
+                    sort = sort_parts[1] if len(sort_parts) > 1 else "ASCENDING"
+
+                    request = {
+                        "query": str(view["query"]),
+                        "field": field,
+                        "sort": sort,
+                        "sorttag": sorttag,
+                        "display": display,
+                        "page_nbr": 0,
+                        "full": full,
+                    }
+
+                    print(f"recalculate view: {view.get('name')}")
+                    self.func(request, self.owner, None)
+
+            except Exception as exc:
+                print(f"Error processing music views: {exc}")
+                if self.notifier:
+                    self.notifier(f"Update_Queries error: {exc}")
+
+        #recalculate_music_views()
 
         # DO NOT REMOVE: wait until the IMPORT process has finished
         #time.sleep(10)

@@ -2542,12 +2542,11 @@ def Library_Scan_Music_Update_Folders():
                 "status": "scanning"
             })
 
-        app.scanprocess = None  # Ancien scan terminé
-        
+        app.scanprocess = None  # Ancien scan terminé    
     
     app.scanprocess = subprocess.Popen(
         ["/bin/bash", "scan"],
-        cwd=os.chdir(app.root_path)
+        cwd=app.root_path
     )
 
     print("SCAN PID =", app.scanprocess.pid)
@@ -2893,21 +2892,26 @@ def Display_Covers():
 @app.tokenauth.login_required
 def Library_Scan_Status():
     """Return the current status of the library scanner for UI reloads."""
-    if not hasattr(app, "library_scanner"):
-        return json_resp({'running': False, 'current_folder': '', 'current_scan': None, 'queue_size': 0})
+    if  hasattr(app, "library_scanner"):
+        
+        s = app.library_scanner
+        current = None
+        if getattr(s, 'current_scan', None) is not None:
+            current = {'operation': s.current_scan.operation, 'folder': s.current_scan.folder}
 
-    s = app.library_scanner
-    current = None
-    if getattr(s, 'current_scan', None) is not None:
-        current = {'operation': s.current_scan.operation, 'folder': s.current_scan.folder}
-
-    queue_size = 0
-    try:
-        queue_size = s._queue.qsize()
-    except Exception:
         queue_size = 0
+        try:
+            queue_size = s._queue.qsize()
+        except Exception:
+            queue_size = 0
 
-    return json_resp({'running': bool(s.is_running), 'current_folder': getattr(s, 'current_folder', ''), 'current_scan': current, 'queue_size': queue_size})
+        return json_resp({'running': bool(s.is_running), 'current_folder': getattr(s, 'current_folder', ''), 'current_scan': current, 'queue_size': queue_size})
+    
+    if hasattr(app, "scanprocess") and app.scanprocess.poll() is None:
+        return json_resp({'running': True})
+
+    return json_resp({'running': False})
+ 
 
 @app.route("/v1/Display/Group")
 @app.tokenauth.login_required

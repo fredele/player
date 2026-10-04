@@ -94,7 +94,7 @@ from utils.proc import set_proc_name
 from utils.string import clean
 from flask import request
 from html.parser import HTMLParser
-from initialize2 import Initialize
+from initialize import Initialize
 from lxml import etree
 from rip_cd import launch_rip
 from logging.handlers import RotatingFileHandler
@@ -381,7 +381,7 @@ def getfiles(dir):
         try:
             with open(md, "r", encoding='utf-8', errors='ignore') as myfile:
                 data = myfile.read()
-                data = markdown.markdown(data, extensions=['nl2br'])
+                data = markdown.markdown(data , extensions=['markdown.extensions.nl2br'])#, extensions=['nl2br']
             res['text'] = (data.encode('utf8'))
         except:
             res['text'] =''
@@ -2855,26 +2855,25 @@ def Library_Reimport():
             "dirhashs": dirhashs
         }), 200
 
-    result = app.library_scanner.schedule_scan(
-        operation="incremental",
-        folder=folder,
-        overwrite=False,
-        rebuild=False,
-        scanfolder=False,
+    if app.scanprocess is not None:
+        print("SCAN PID =", app.scanprocess.pid)
+        if app.scanprocess.poll() is None:
+            return json_resp({
+                "result": "OK",
+                "status": "scanning"
+            })
+
+        app.scanprocess = None  # Ancien scan terminé
+        
+    
+    app.scanprocess = subprocess.Popen(
+        ["/bin/bash", "scan", folder],
+        cwd=os.chdir(app.root_path)
     )
 
-    if result is False:
-        return json_resp({
-            "status": "busy",
-            "message": "A library scan is already running"
-        }), 409
-
-    return json_resp({
-        "response": "OK",
-        "status": "scheduled",
-        "folder": folder,
-        "dirhashs": dirhashs
-    }), 202
+    print("SCAN PID =", app.scanprocess.pid)
+    res['response'] = 'OK'
+    return json_resp(res)
 
 @app.route("/v1/Display/Covers")
 @app.tokenauth.login_required
@@ -3532,20 +3531,25 @@ if __name__ == '__main__':
         app.ram_search.refresh()
 
         request_querybuilder()
-        #app.scanprocess = subprocess.Popen(["/bin/bash", "querybuilder"], cwd=os.chdir(app.root_path) )
 
     def file_importing(path):
         send_message_value("library_file_importing")
 
+    def scan_progress(percent):
+        send_message_value("library_scan_progress",percent)
 
     app.socketlistener = ScanSocketListener(
         library_scan_started=scan_started,
         library_scan_stopped=scan_stopped,
         library_scan_finished=scan_finished,
         library_file_importing=file_importing,
+        library_scan_progress=scan_progress
     )
 
     app.socketlistener.start()
+    
+    
+    """
     app.library_scanner = LibraryScannerService(
         mongo_uri=app.mongo_addr,
         db=app.db,
@@ -3553,6 +3557,7 @@ if __name__ == '__main__':
         notifier=ScanNotifier(os.path.join(os.getenv("HOME"), '.Player', 'run', 'scan.sock')),
         max_workers=int(getattr(app, "scan_threads", 4)),
     )
+   """ 
 
     app.podcasts = []
     app.radios = []

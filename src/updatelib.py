@@ -267,20 +267,20 @@ class LibraryScannerService:
         
         # Aucun fichier à importer
         if total_files == 0:
-            self.notifier(
+            self.emit(
                 "library_scan_progress",
                 progress=100,
                 total=0,
                 completed=0,
-                message="100/100"
+                percent="100/100"
             )
         else:
-            self.notifier(
+            self.emit(
                 "library_scan_progress",
                 progress=0,
                 total=total_files,
                 completed=0,
-                message="0/100"
+                percent="0/100"
             )
       
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -307,12 +307,12 @@ class LibraryScannerService:
                     if progress > last_progress:
                         last_progress = progress
 
-                        self.notifier(
+                        self.emit(
                             "library_scan_progress",
                             progress=progress,
                             total=total_files,
                             completed=completed_files,
-                            message=f"{progress}/100"
+                            percent=f"{progress}/100"
                         )
         
         self._cleanup_missing_files()

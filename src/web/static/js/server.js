@@ -55,10 +55,46 @@ function on_ws_msg(data) {
     var val = data["value"];
     var id = data["id"];
 
-    if (msg == "library_scan_started") {
+    if (msg == "library_scan_started"  || msg == "library_scan_progress" )
+    {
       document.getElementById('scanning_img').style.opacity = 1;
       window.scanning = true;
       sessionStorage.setItem("Library Updating", "true");
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      //TODO: indicate progress in UI
+      //val="0/100"
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      //TODO: indicate progress in UI
+      //val="0/100"
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      //TODO: indicate progress in UI
+      //val="0/100"
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      //TODO: indicate progress in UI
+      //val="0/100"
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      /*TODO: indicate progress in UI*/
+      //val="0/100"
       return;
     }
 
@@ -330,9 +366,6 @@ function Unauth_state(s, e) {
   }
 }
 
-//function Server_Get_Addr(){
-//  return window.serverurl;
-//}
 
 function Server_Get_Coverurl(dirhash) {
   if (updatedimages.indexOf(dirhash) >= 0) {

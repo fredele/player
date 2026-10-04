@@ -14,6 +14,7 @@ class ScanSocketListener:
         "library_scan_stopped",
         "library_scan_finished",
         "library_file_importing",
+        "library_scan_progress"
     }
 
     def __init__(
@@ -22,12 +23,14 @@ class ScanSocketListener:
         library_scan_stopped=None,
         library_scan_finished=None,
         library_file_importing=None,
+        library_scan_progress=None
     ):
         self.callbacks = {
             "library_scan_started": library_scan_started,
             "library_scan_stopped": library_scan_stopped,
             "library_scan_finished": library_scan_finished,
             "library_file_importing": library_file_importing,
+            "library_scan_progress": library_scan_progress,
         }
 
         self.server = None
@@ -161,8 +164,16 @@ class ScanSocketListener:
                     event,
                     message.get("path")
                 )
-            else:
-                self._emit(event)
+                return
+ 
+            if event == "library_scan_progress":
+                self._emit(
+                    event,
+                    message.get("percent")
+                )
+                return
+                       
+            self._emit(event)
 
         except Exception as e:
             print(

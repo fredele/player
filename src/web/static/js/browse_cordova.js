@@ -578,7 +578,7 @@ function on_ws_msg(data) {
       }, 3000);
     }
 
-    if (msg == "library_scan_started") {
+    if (msg == "library_scan_started"  || msg == "library_scan_progress" ) || msg == "library_scan_progress" ) {
     {
       document.getElementById('scanning_img').style.opacity = 1;
       window.scanning = true;

@@ -13,7 +13,7 @@ function onload_player()
   }
 }
 
-
+/*
 function on_ws_msg(data)
 {
   if (olddata == data) {
@@ -82,7 +82,7 @@ function on_ws_msg(data)
    }
 
 
-  if (msg == "library_scan_started") 
+  if (msg == "library_scan_started"  || msg == "library_scan_progress" ) 
    {
      document.getElementById('scanning_img').style.opacity = 1;
      window.scanning = true;
@@ -144,7 +144,7 @@ function on_ws_msg(data)
    }
    } 
 }
-
+*/
 
 
 

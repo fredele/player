@@ -13,7 +13,9 @@ services:
       - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
 
       #- /home/fredele/.local/share/player/mediafiles:/home/player/.local/share/player/mediafiles
+      - ${HOME}/.config/player:/home/player/.config/player
       - ${HOME}/.player:/home/player/.local/share/player/mediafiles
+      
  
       # Musique
       - /mnt/Disque_1:/mnt/Disque_1

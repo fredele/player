@@ -1770,6 +1770,13 @@ function on_thumb_click_Search(thumb) {
   q = thumb.getAttribute("query")
   window.queryview_last_query = q
   Server_Get_Covers(q, after_Server_Get_Covers, null)
+  Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
+  Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
+  Server_Get_Files_query(q, query_track_info, after_Server_Get_Files, null);
+  Server_Get_SideFiles(q, after_Server_Get_SideFiles, null);
+  Server_Get_GetValues(q, "dirname;dirhash", after_Server_Get_Query_Overview_hidden, null);
+
+  
 }
 
 function after_Server_Get_Covers() {

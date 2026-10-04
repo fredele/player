@@ -327,6 +327,7 @@ function after_Server_get_State() {
   }
 }
 
+
 function on_ws_msg(data) {
 
   if (window.current_player == undefined) {
@@ -374,11 +375,25 @@ function on_ws_msg(data) {
     }
 
 
-    if (msg == "library_scan_started")
+    if (msg == "library_scan_started"  || msg == "library_scan_progress" )
     {
       document.getElementById('scanning_img').style.opacity = 1;
       window.scanning = true;
       sessionStorage.setItem("Library Updating", "true");
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      //TODO: indicate progress in UI
+      //val="0/100"
+      return;
+    }
+
+    if (msg == "library_scan_progress" )
+    {
+      //TODO: indicate progress in UI
+      //val="0/100"
       return;
     }
 
@@ -390,7 +405,7 @@ function on_ws_msg(data) {
       Server_Get_UpdatedImages(after_Get_UpdatedImages)
       return;
     }
-   
+
 
     if (msg == "Cover changed") {
       Server_Get_UpdatedImages(after_Get_UpdatedImages)
@@ -480,6 +495,8 @@ function on_ws_msg(data) {
     }
   }
 }
+
+
 
 function onload_browse() {
 

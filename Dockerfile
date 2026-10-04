@@ -43,7 +43,7 @@ ENV HOME=/home/player
 ENV XDG_RUNTIME_DIR=/run/user/1000
 
 # Configuration
-COPY init_template/ /home/player/MyPlayer/init_template/
+COPY player/init_template/ /home/player/MyPlayer/init_template/
 COPY libs /usr/lib/x86_64-linux-gnu/
 
 RUN mkdir -p \
@@ -73,7 +73,7 @@ USER player
 
 FROM base AS release
 
-COPY src/ /home/player/MyPlayer/src/
+COPY player/src/ /home/player/MyPlayer/src/
 
 CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/src/main.py"]
 

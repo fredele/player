@@ -50,7 +50,7 @@ var second_interval = null;
 var second_interval_5 = null;
 var init_player = true;
 var player_change_block = false;
-var tagedited = false;
+var queryedited = false;
 
 window.playhere = true;
 var mediastop = false;
@@ -725,10 +725,10 @@ function Goto_Browse() {
   document.getElementById('query_image').innerHTML = query_image_content;
   document.getElementById('query_text').innerHTML = "";
   document.getElementById('query_text').classList.remove("cls_query_text");
-  if (tagedited == true)
+  if (queryedited == true)
   {
   Server_find(lastquery, lastfield, lastsort, lastdisplay, 0, req_thumb_cout, after_Server_find, null)
-  tagedited = false;  
+  queryedited = false;  
   }
 }
 
@@ -987,6 +987,7 @@ function after_Get_UpdatedImages() {
 }
 
 function after_Upload_file() {
+  queryedited = true;
   res = JSON.parse(this.response);
   updatedimages = res
   /*Update the Queue List ...*/
@@ -2739,7 +2740,7 @@ function Set_tag_value() {
 
 function after_set_tag_value() {
  
-  tagedited = true;
+  queryedited = true;
   if (this.status != 200) {
     error = res["response"];
     document.getElementById('window.tageditormodal_error').innerHTML = "Error";

@@ -13,7 +13,6 @@
     "console": "integratedTerminal",
     "python": "${workspaceFolder}/../venv/bin/python",
     "preLaunchTask": "docker-compose-mongodb-up",
-    "postDebugTask": "docker-compose-mongodb-down",
     "justMyCode": true
 },
     {
@@ -24,6 +23,7 @@
       "console": "integratedTerminal",
       "python": "${workspaceFolder}/../venv/bin/python",
       "preLaunchTask": "docker-compose-mongodb-up"
+
       
     },
     {

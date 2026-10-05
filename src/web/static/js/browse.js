@@ -2510,7 +2510,7 @@ function browse_to_dirhash(dirhash) {
 
   q = encodeURIComponent(' {"$and":[ {"dirhash" : ' + dirhash + '}]}')
   lastqueryview = q;
-
+  queryview_last_query = q;
   Server_Get_Covers(q, after_Server_Get_Covers, null)
   Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
   Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);

@@ -2509,7 +2509,7 @@ def upload_cover():
 
     try:
         query = ast.literal_eval(
-            urllib.parse.unquote(query_string)
+            urllib.parse.unquote(query_string).strip()
         )
     except (ValueError, SyntaxError):
         return json_resp({
@@ -2681,7 +2681,7 @@ def upload_infos():
                 'response': 'Missing query'
             }), 400
 
-        query =  ast.literal_eval(request.args['query'])
+        query =  ast.literal_eval(request.args['query'].strip())
         cursor = app.db.mediafiles.find_one(query)
 
         if cursor is None:
@@ -2982,7 +2982,7 @@ def Library_Reimport():
 
     try:
         q = ast.literal_eval(
-            urllib.parse.unquote(request.args["query"])
+            urllib.parse.unquote(request.args["query"].strip())
         )
     except (ValueError, SyntaxError):
         return json_resp({

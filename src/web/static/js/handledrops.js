@@ -46,7 +46,7 @@ function uploadImage(file) {
       // réponse HTTP
       const url = new URL(response.url);
       const query = url.searchParams.get('query');
-      Server_Get_SideFiles(query, after_Server_Get_SideFiles, null);
+      //Server_Get_SideFiles(query, after_Server_Get_SideFiles, null);
       Server_Get_UpdatedImages(after_Upload_Image, null);
     })
     .catch(error => {

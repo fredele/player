@@ -242,7 +242,7 @@ def update_playlist():
                 for q in playlist:
                     if q['_id'] == str(id):
                         doc['_id'] = str(doc['_id'])
-                        doc['file'] = app.mediafiles_folder / str(doc['dirname']) / str(doc['filename']) + '.' + str(doc['extension'])
+                        doc['file'] = str(app.mediafiles_folder / str(doc['dirname']) / f"{doc['filename']}.{doc['extension']}")
                         playlist[i] = doc
                     i += 1
             GetPlayer(player['id']).queue = playlist

@@ -966,6 +966,7 @@ function after_Upload_Image() {
   res = JSON.parse(this.response);
   updatedimages = res
   /*Update the Queue List ...*/
+  Server_Get_Queue(after_Get_Queue, null);
   Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
   Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
   Server_Player_CurrentTrack(format_info, "", after_Format_Display, null);
@@ -2510,7 +2511,7 @@ function browse_to_dirhash(dirhash) {
 
   q = encodeURIComponent(' {"$and":[ {"dirhash" : ' + dirhash + '}]}')
   lastqueryview = q;
-  queryview_last_query = q;
+  window.queryview_last_query = q;
   Server_Get_Covers(q, after_Server_Get_Covers, null)
   Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
   Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
@@ -2700,9 +2701,7 @@ function after_set_tag_value() {
   current_selected_ids.length = 0
   ids = current_ids
   Server_GetValues(ids, query_tags, after_Server_Get_Query_Overview_and_Files, null)
-  // Reload last thumnnails view ...
-  q = window.queryview_last_query
-  //Server_Get_Covers(window.queryview_last_query, after_Server_Get_Covers, null)
+
 }
 
 

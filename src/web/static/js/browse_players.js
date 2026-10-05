@@ -741,6 +741,10 @@ function after_onload_browse() {
       document.getElementById('thumbs_container_2').addEventListener(eventName, preventDefaults, false);
     });
 
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.getElementById('query_topheader').addEventListener(eventName, preventDefaults, false);
+    });
+
     document.getElementById('playlist_cover').addEventListener('drop', handleDrop, false);
     const query_topheader = document.getElementById('query_topheader');
     query_topheader.addEventListener('dragover', (e) => {

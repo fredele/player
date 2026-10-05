@@ -668,6 +668,12 @@ function onload_browse() {
   }
 }
 
+function after_Get_UpdatedImages() {
+  res = JSON.parse(this.response);
+  updatedimages = res
+
+}
+
 function after_onload_browse() {
   var responseObject = JSON.parse(this.response);
 
@@ -736,18 +742,14 @@ function after_onload_browse() {
     });
 
     document.getElementById('playlist_cover').addEventListener('drop', handleDrop, false);
-    const queryCoverImg = document.getElementById('query_cover');
-    queryCoverImg.addEventListener('dragover', (e) => {
+    const query_topheader = document.getElementById('query_topheader');
+    query_topheader.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
     });
 
-    queryCoverImg.addEventListener('drop', handleDrop_query, false);
+    query_topheader.addEventListener('drop', handleDrop_query, false);
 
-
-
-    document.getElementById('thumbs_container_2').addEventListener('drop', handleDrop_import, false);
-    
   }
   document.getElementById('playlist_item_delete_img').addEventListener('dragend', playlist_item_delete, false);
   document.getElementById('playlist_item_delete_img').addEventListener('dragenter', playlist_item_dragenter);

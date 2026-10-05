@@ -837,7 +837,7 @@ function after_onload_browse() {
     });
 
     document.getElementById('playlist_cover').addEventListener('drop', handleDrop, false);
-    document.getElementById('query_cover').addEventListener('drop', handleDrop_query, false);
+    document.getElementById('query_topheader').addEventListener('drop', handleDrop_query, false);
     document.getElementById('thumbs_container_2').addEventListener('drop', handleDrop_import, false);
     document.getElementById('playlist_item_delete_img').addEventListener('dragend', playlist_item_delete, false);
     document.getElementById('playlist_item_delete_img').addEventListener('dragenter', playlist_item_dragenter);

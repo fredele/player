@@ -909,98 +909,6 @@ function uploadFile(file) {
 }
 
 
-function handleDrop_import(e) {
-
-  if (window.isAdmin == false) {
-    return;
-  }
-
-  let path = e.dataTransfer.files[0].path
-  // Test values ...
-  //path = "/home/fredele/.Player/mediafiles/Music/Disque 1/Classique/Orozco - Iberia, Albeniz"
-  //path = "smb://fredele.local/music/Disque 1/Classique/Orozco - Iberia, Albeniz/"
-
-  folder = ""
-  if (path.includes("/Music/") == true) {
-    folder = "Music/" + path.split("/Music/")[1];
-  }
-  if (path.includes("=music/") == true) {
-    folder = "Music/" + path.split("=music/")[1];
-  }
-  // Folder commence par 'Music/...'
-  if (folder != "") {
-    Server_Import_Drop(folder);
-  }
-}
-
-
-function handleDrop_query(e) {
-  if (window.isAdmin == false) {
-    return;
-  }
-  e.preventDefault();
-  e.stopPropagation();
-
-
-  let dt = e.dataTransfer
-  let files = dt.files
-
-  handleFiles_query(files)
-}
-
-function handleFiles_query(files) {
-  ([...files]).forEach(uploadFile_query)
-}
-
-function uploadFile_query(file) {
-
- authorizationBasic = ``;
-  if (token != null ) {
-  authorizationBasic = `Bearer ` + token;
-  }
-  let url = window.addr + "/v1/UpdateCover?query=" + lastqueryview;
-
-  let formData = new FormData()
-
-  formData.append('file', file)
-  fetch(url, {
-    method: 'POST',
-    body: formData,
-     headers: {
-      'Authorization': authorizationBasic
-    }
-  })
-    .then(() => {
-      Server_Get_UpdatedImages(after_Upload_file, null);
-    })
-    .catch(() => {
-      /* Error. Inform the user */
-    })
-}
-
-
-
-function after_Get_UpdatedImages() {
-  res = JSON.parse(this.response);
-  updatedimages = res
-
-}
-
-function after_Upload_file() {
-  queryedited = true;
-  res = JSON.parse(this.response);
-  updatedimages = res
-  /*Update the Queue List ...*/
-  Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
-  Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
-  Server_Player_CurrentTrack(format_info, "", after_Format_Display, null);
-
-  if (lastqueryview != undefined && lastqueryview != "") {
-    Server_Get_Covers(lastqueryview, after_Server_Get_Covers, null)
-  }
-}
-
-
 
 function after_CurrentTrack_Playlist() {
   if (this.response == undefined) {
@@ -1047,6 +955,32 @@ function correctdisplay(display, name) {
 
 }
 
+function after_Get_UpdatedImages() {
+  res = JSON.parse(this.response);
+  updatedimages = res
+
+}
+
+function after_Upload_Image() {
+  queryedited = true;
+  res = JSON.parse(this.response);
+  updatedimages = res
+  /*Update the Queue List ...*/
+  Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
+  Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
+  Server_Player_CurrentTrack(format_info, "", after_Format_Display, null);
+
+  if ( window.queryview_last_query != undefined &&  window.queryview_last_query != "") {
+    Server_Get_Covers( window.queryview_last_query, after_Server_Get_Covers, null)
+  }
+}
+
+
+
+function after_Upload_Infos() {
+  res = JSON.parse(this.response);
+
+ } 
 
 function mark_track() {
   var playliste = document.getElementById('playlist');
@@ -2746,7 +2680,8 @@ function Set_tag_value() {
 
 
 function after_set_tag_value() {
- 
+  //Server_ClearQueries(null, null);
+  //TODO :clear history ...
   queryedited = true;
   if (this.status != 200) {
     error = res["response"];

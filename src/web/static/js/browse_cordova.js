@@ -959,7 +959,7 @@ function after_onload_browse() {
     });
 
     document.getElementById('playlist_cover').addEventListener('drop', handleDrop, false);
-    document.getElementById('query_cover').addEventListener('drop', handleDrop_query, false);
+    document.getElementById('query_topheader').addEventListener('drop', handleDrop_query, false);
     document.getElementById('thumbs_container_2').addEventListener('drop', handleDrop_import, false);
    
   }

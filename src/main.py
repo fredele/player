@@ -2479,53 +2479,233 @@ def Library_Restore():
 def updated_clbk():
     pass
 
-@app.route('/v1/UpdateCover', methods = ['GET', 'POST'])
-#@app.tokenauth.login_required
+@app.route('/v1/UpdateCover', methods=['POST'])
 @adminlogrequired
-def upload_file():
+def upload_cover():
+
+    # Vérification du fichier
+    f = request.files.get('file')
+
+    if f is None:
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'No file provided'
+        }), 400
+
+    if not f.filename:
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Empty filename'
+        }), 400
+
+    # Récupération et validation de la query
+    query_string = request.args.get('query')
+
+    if not query_string:
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Missing query'
+        }), 400
+
+    try:
+        query = ast.literal_eval(
+            urllib.parse.unquote(query_string)
+        )
+    except (ValueError, SyntaxError):
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Invalid query'
+        }), 400
+
+    # Recherche dans MongoDB
+    cursor = app.db.mediafiles.find_one(query)
+
+    if cursor is None:
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Media not found'
+        }), 404
+
+    # Vérification des données MongoDB
+    if 'dirname' not in cursor or 'dirhash' not in cursor:
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Invalid media record'
+        }), 500
+
+    path = cursor['dirname']
+    dirhash = cursor['dirhash']
+
+    # Gestion des sous-dossiers CD...
+    c_folder = os.path.basename(os.path.normpath(path))
+
+    subfolder = any(
+        c_folder.startswith(prefix)
+        for prefix in app.album_sub_folder
+    )
+
+    if subfolder:
+        path = os.path.normpath(
+            os.path.join(path, os.pardir)
+        )
+
+    # Construction du répertoire cible
+    target_dir = os.path.join(
+        app.mediafiles_folder,
+        path
+    )
+
+    # Vérification que le chemin reste dans mediafiles_folder
+    target_dir = os.path.abspath(target_dir)
+    mediafiles_folder = os.path.abspath(app.mediafiles_folder)
+
+    if os.path.commonpath(
+        [target_dir, mediafiles_folder]
+    ) != mediafiles_folder:
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Invalid path'
+        }), 400
+
+    # Nom définitif
+    npath = os.path.join(target_dir, 'cover.jpg')
+
+    # Création d'un fichier temporaire
+    temp_path = npath + '.tmp'
+
+    try:
+        logging.info(f'Saving temporary image to: {temp_path}')
+
+        f.save(temp_path)
+
+        # Vérification et traitement de l'image
+        with Image.open(temp_path) as im:
+
+            # Vérifie réellement que Pillow peut lire l'image
+            im.verify()
+
+        # Il faut rouvrir l'image après verify()
+        with Image.open(temp_path) as im:
+
+            size = (256, 256)
+            im.thumbnail(size, Image.LANCZOS)
+
+            buffered = BytesIO()
+
+            im.convert('RGB').save(
+                buffered,
+                format='JPEG'
+            )
+
+        # Encodage de la miniature
+        thumb_encoded_string = base64.b64encode(
+            buffered.getvalue()
+        ).decode()
+
+        # Remplacement atomique de l'ancien cover.jpg
+        os.replace(temp_path, npath)
+
+    except (OSError, Image.UnidentifiedImageError) as e:
+
+        logging.warning(
+            f'Invalid image uploaded: {e}'
+        )
+
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Invalid image'
+        }), 400
+
+    except Exception:
+        logging.exception(
+            'Error while processing uploaded cover'
+        )
+
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return json_resp({
+            'response': 'ERROR',
+            'message': 'Error while processing image'
+        }), 500
+
+    # Chemin relatif pour MongoDB
+    relative_path = os.path.relpath(
+        npath,
+        app.mediafiles_folder
+    )
+
+    # Mise à jour de la base
+    app.db.thumbnails.update_one(
+        {'dirhash': dirhash},
+        {
+            '$set': {
+                'last_modified_epoch': int(time.time()),
+                'dirhash': dirhash,
+                'cover_256': thumb_encoded_string,
+                'path': relative_path
+            }
+        },
+        upsert=True
+    )
+
+    # Réponse
+    res = {
+        'dirhash': dirhash,
+        'response': 'OK'
+    }
+
+    return json_resp(res)
+
+
+@app.route('/v1/UpdateInfos', methods=['GET', 'POST'])
+@adminlogrequired
+def upload_infos():
 
     res = {}
+
     if request.method == 'POST':
-      f = request.files['file']
-      if 'query' in request.args:
-          query =eval(urllib.parse.unquote(request.args["query"]))
-          cursor = app.db.mediafiles.find_one(query)
-          path = cursor["dirname"]
-          dirhash = cursor["dirhash"]
 
-      # Test if folder begins with "CD" ...
-      c_folder = os.path.basename(os.path.normpath(path))
-      subfolder = True if True in [c_folder.startswith(i) for i in app.album_sub_folder] else False
-      if subfolder == True:
-          path = os.path.normpath(os.path.join(path, os.pardir))
-      path = os.path.join(app.mediafiles_folder, path,f.filename)
+        f = request.files.get('file')
 
-      #Save the renamed file to disk
-      npath = path.replace(os.path.basename(path), "cover.jpg")
-      if (os.path.exists(npath)):
-          os.remove(npath)
+        if f is None:
+            return json_resp({
+                'response': 'Missing file'
+            }), 400
 
-      logging.info(f'Saving Image to: {npath}')
-      f.save(npath)
-      time.sleep(2)
-      # Update the cover in the database
-      im = Image.open(npath)
-      size = 256, 256
-      im.thumbnail(size, Image.ANTIALIAS)
-      buffered = BytesIO()
-      im.convert('RGB').save(buffered, format="JPEG")
-      # encode the image
-      thumb_encoded_string = base64.b64encode(buffered.getvalue()).decode()
-      npath = os.path.relpath(npath, app.mediafiles_folder)
+        if 'query' not in request.args:
+            return json_resp({
+                'response': 'Missing query'
+            }), 400
 
-      # updatedb
-      app.db.thumbnails.update_one({"dirhash": dirhash},{"$set": {"last_modified_epoch": round(time.time()), "dirhash": dirhash,
-                                                        "cover_256": thumb_encoded_string, "path": npath}},upsert=True)
+        query =  ast.literal_eval(request.args['query'])
+        cursor = app.db.mediafiles.find_one(query)
 
-      res['dirhash'] = dirhash
-      res['response'] = 'OK'
-      return json_resp(res)
+        if cursor is None:
+            return json_resp({
+                'response': 'Media not found'
+            }), 404
 
+        path = cursor['dirname']
+        dirhash = cursor['dirhash']
+
+        npath = os.path.join(
+            app.mediafiles_folder,
+            path,
+            'infos.md'
+        )
+
+        logging.info(f'Saving Infos to: {npath}')
+
+        f.save(npath)
+
+        res['dirhash'] = dirhash
+        res['response'] = 'OK'
+
+        return json_resp(res)
 
 
 @app.route("/v1/Library/Scan/Music")
@@ -2907,7 +3087,8 @@ def Library_Scan_Status():
 
         return json_resp({'running': bool(s.is_running), 'current_folder': getattr(s, 'current_folder', ''), 'current_scan': current, 'queue_size': queue_size})
     
-    if hasattr(app, "scanprocess") and app.scanprocess.poll() is None:
+    process = getattr(app, "scanprocess", None)
+    if process is not None and process.poll() is None:
         return json_resp({'running': True})
 
     return json_resp({'running': False})

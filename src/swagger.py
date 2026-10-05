@@ -79,7 +79,8 @@ def register_swagger_routes(api, ns):
         thumb_epoch,
         transcodedfile,
         transcodedfile_query_legacy,
-        upload_file,
+        upload_cover,
+        upload_infos,
         zipdirhash,
     )
 

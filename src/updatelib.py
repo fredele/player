@@ -82,6 +82,145 @@ def get_cover_names(image_names, image_extension):
     extensions = list(set(extensions))
     return [name + '.' + ext for ext in extensions for name in names]
 
+def add_navigation_fields(dic):
+    """
+    Ajoute aux métadonnées les champs auxiliaires utilisés
+    pour la navigation et le classement dans la bibliothèque.
+
+    Les champs ajoutés sont notamment :
+        - date_decade
+        - album_alphabet
+        - artist_alphabet
+        - composer_invert
+        - conductor_invert
+        - group_artist
+        - group_album
+
+    Les calculs de navigation utilisant plusieurs valeurs sont effectués
+    sur les listes originales avant que les champs principaux d'affichage
+    ne soient réduits à leur première valeur.
+
+    La fonction modifie directement le dictionnaire fourni et
+    retourne également ce dictionnaire pour faciliter sa réutilisation.
+    """
+
+    # Store the decade for valid years (e.g. 1987 -> 1980).
+    date_value = dic.get("date")
+
+    try:
+        if isinstance(date_value, (list, tuple)):
+            date_value = date_value[0] if date_value else None
+
+        date_int = int(date_value)
+
+        if date_int > 1900:
+            dic["date_decade"] = int(
+                str(date_int)[:-1] + "0"
+            )
+
+    except (TypeError, ValueError, IndexError):
+        pass
+
+    # Conserve les valeurs originales avant de réduire les champs
+    # d'affichage principaux à leur première valeur.
+    #
+    # Cela est particulièrement important pour "artist" :
+    # un fichier peut contenir plusieurs artistes et tous doivent
+    # participer au calcul des champs de navigation.
+    raw_artists = dic.get("artist")
+    raw_album = dic.get("album")
+
+    # Calcule la première lettre alphabétique d'une valeur.
+    def first_alphabetic_upper(value):
+        """Return the first alphabetic character of a metadata value."""
+
+        if value is None:
+            return None
+
+        # Mutagen may expose a tag as a list, even when it contains one value.
+        if isinstance(value, (list, tuple)):
+            value = value[0] if value else None
+
+        if value is None:
+            return None
+
+        value = str(value).strip()
+
+        if not value:
+            return None
+
+        first = value[0]
+
+        return first.upper() if first.isalpha() else None
+
+    # Calcule l'initiale de chaque artiste.
+    #
+    # La liste originale est utilisée ici, avant que "artist" ne soit
+    # réduit à sa première valeur.
+    artists = raw_artists
+
+    if not isinstance(artists, (list, tuple)):
+        artists = [artists]
+
+    artist_alphabets = []
+
+    for artist in artists:
+        initial = first_alphabetic_upper(artist)
+
+        if initial is not None and initial not in artist_alphabets:
+            artist_alphabets.append(initial)
+
+    # Stocke les initiales des artistes si au moins une a été trouvée.
+    if artist_alphabets:
+        dic["artist_alphabet"] = artist_alphabets
+
+    # Calcule l'initiale de l'album.
+    album_alphabet = first_alphabetic_upper(raw_album)
+
+    if album_alphabet is not None:
+        dic["album_alphabet"] = album_alphabet
+
+    def invert(value):
+        """Return 'First Last' as 'Last, First' for a name value."""
+
+        if isinstance(value, (list, tuple)):
+            value = value[0] if value else ""
+
+        if value is None:
+            return ""
+
+        value = str(value).strip()
+
+        if " " in value:
+            parts = value.split()
+
+            return (
+                parts[-1]
+                + ", "
+                + " ".join(parts[:-1])
+            )
+
+        return value
+
+    # Crée une version inversée des noms de compositeur et de chef d'orchestre.
+    #
+    # Exemple :
+    #   "John Williams" -> "Williams, John"
+    for field in ("composer", "conductor"):
+        if field in dic:
+            dic[field + "_invert"] = invert(
+                dic[field]
+            )
+
+    # Crée les groupes alphabétiques utilisés pour la navigation.
+    # Pour chaque album et artist
+    
+    dic = alphagroup(dic, "artist", groupnumber=3)
+
+    # Même principe pour album.
+    alphagroup(dic, "album", groupnumber=3)
+
+    return dic
 
 @dataclass
 class ScanRequest:
@@ -90,7 +229,6 @@ class ScanRequest:
     overwrite: bool = False
     rebuild: bool = False
     scanfolder: bool = False
-
 
 class LibraryScannerService:
     """Autonomous music-library scan service.
@@ -378,214 +516,398 @@ class LibraryScannerService:
             logging.exception("Thumbnail generation failed for %s", img_path)
 
     def _import_audio_file(self, root, file_name, overwrite):
+
+        # Si une demande d'arrêt de l'importation a été reçue,
+        # on abandonne immédiatement le traitement de ce fichier.
         if self._stop_event.is_set():
             return
 
+        # Sépare le nom du fichier de son extension.
+        # Exemple : "01 - Song.mp3" -> "01 - Song", ".mp3"
         filename, file_extension = os.path.splitext(file_name)
+
+        # Normalise l'extension :
+        # - passage en minuscules
+        # - suppression du point initial
+        # Exemple : ".MP3" -> "mp3"
         ext = file_extension.lower().lstrip(".")
+
+        # Ignore les fichiers dont l'extension ne fait pas partie
+        # des formats audio pris en charge.
         if ext not in self.audio_extensions:
             return
 
+        # Construit le chemin absolu du fichier.
         full_path = os.path.join(root, file_name)
-        relative_dir = os.path.relpath(os.path.dirname(full_path), self.media_root)
+
+        # Calcule le chemin du dossier contenant le fichier,
+        # relativement à la racine de la bibliothèque musicale.
+        relative_dir = os.path.relpath(
+            os.path.dirname(full_path),
+            self.media_root
+        )
+
+        # Utilise toujours "/" comme séparateur de dossiers,
+        # quelle que soit la plateforme utilisée.
         relative_dir = relative_dir.replace(os.sep, "/")
+
+        # Si le fichier se trouve directement dans media_root,
+        # "." représente le dossier courant : on le remplace par une chaîne vide.
         if relative_dir == ".":
             relative_dir = ""
+
+        # Refuse les chemins qui commencent par "." ou qui contiennent "/."
+        # afin d'éviter notamment les dossiers cachés ou certains chemins
+        # particuliers.
         if relative_dir.startswith(".") or "/." in relative_dir:
             return
 
-        query = {"dirname": relative_dir, "filename": filename, "extension": ext}
+        # Identifie un fichier dans la base grâce à son dossier,
+        # son nom et son extension.
+        query = {
+            "dirname": relative_dir,
+            "filename": filename,
+            "extension": ext
+        }
+
+        # Si le fichier existe déjà et que l'écrasement n'est pas demandé,
+        # on ne réimporte pas le fichier.
         if self.db.mediafiles.count_documents(query) > 0 and not overwrite:
             return
 
-        self.emit("library_file_importing", path=full_path, folder=relative_dir)
+        # Informe les autres composants de l'application que
+        # l'importation de ce fichier commence.
+        self.emit(
+            "library_file_importing",
+            path=full_path,
+            folder=relative_dir
+        )
 
+        # Récupère le nom du dossier actuellement parcouru.
         c_folder = os.path.basename(os.path.normpath(root))
-        subfolder = any(c_folder.startswith(prefix) for prefix in self.album_sub_folder)
-        if subfolder:
-            dirhash = binascii.crc32(os.path.abspath(os.path.join(relative_dir, os.pardir)).encode("UTF-8")) & 0xFFFFFFFF
-        else:
-            dirhash = binascii.crc32(relative_dir.encode("UTF-8")) & 0xFFFFFFFF
 
+        # Détermine si le fichier se trouve dans un sous-dossier
+        # correspondant à l'un des préfixes définis dans album_sub_folder.
+        subfolder = any(
+            c_folder.startswith(prefix)
+            for prefix in self.album_sub_folder
+        )
+
+        # Calcule une empreinte CRC32 du dossier.
+        #
+        # Cas normal :
+        #   l'empreinte est basée sur relative_dir.
+        #
+        # Cas "subfolder" :
+        #   l'empreinte est basée sur le dossier parent.
+        #
+        # Cette valeur sert d'identifiant compact du répertoire,
+        # notamment pour associer les pochettes et les informations de dossier.
+        if subfolder:
+            dirhash = binascii.crc32(
+                os.path.abspath(
+                    os.path.join(relative_dir, os.pardir)
+                ).encode("UTF-8")
+            ) & 0xFFFFFFFF
+        else:
+            dirhash = binascii.crc32(
+                relative_dir.encode("UTF-8")
+            ) & 0xFFFFFFFF
+
+        # Accès protégé aux informations partagées entre plusieurs threads.
         with self._shared_state_lock:
+
+            # Mémorise ce dossier comme ayant déjà été rencontré
+            # pendant l'importation.
             if dirhash not in self.imported_dirhashs:
                 self.imported_dirhashs.append(dirhash)
 
+        # Demande à Mutagen d'ouvrir le fichier audio afin d'en récupérer
+        # les informations techniques et les métadonnées.
         media_file = mutagen.File(full_path)
+
+        # Si Mutagen ne peut pas lire le fichier, ou ne fournit pas
+        # d'informations de flux audio, le fichier est considéré comme illisible.
         if media_file is None or getattr(media_file, "info", None) is None:
-            logging.warning("Skipping unreadable media file: %s", full_path)
+            logging.warning(
+                "Skipping unreadable media file: %s",
+                full_path
+            )
             return
 
+        # Construit les informations générales qui seront enregistrées
+        # avec le fichier dans MongoDB.
         info = {
+            # Type général du média.
             "mediatype": "audio",
+
+            # Sous-type : ici, uniquement de la musique.
             "mediasubtype": "music",
+
+            # Date de dernière modification du fichier sur le disque.
             "last_modified_timestamp": Timestamp_modified(full_path),
+
+            # Date d'importation sous forme de date exploitable.
             "date_imported": Excel_Now(),
+
+            # Date d'importation sous forme de timestamp.
             "date_imported_timestamp": Timestamp_Now(),
+
+            # Chemin relatif du dossier dans la bibliothèque.
             "dirname": relative_dir,
+
+            # Identifiant CRC32 du dossier.
             "dirhash": int(dirhash),
+
+            # Nom du fichier sans extension.
             "filename": filename,
+
+            # Indique initialement qu'aucune pochette n'a été trouvée.
             "cover": False,
+
+            # Extension du fichier.
             "extension": ext,
+
+            # Taille du fichier en octets.
             "size": os.stat(full_path).st_size,
         }
 
+        # Récupère les informations techniques du flux audio.
         stream_info = media_file.info
+
+        # Copie dans "info" les caractéristiques disponibles :
+        # nombre de canaux, fréquence d'échantillonnage, durée et débit.
         for key in ["channels", "sample_rate", "length", "bitrate"]:
             if hasattr(stream_info, key):
                 info[key] = getattr(stream_info, key)
 
+        # Initialise à nouveau explicitement l'indicateur de pochette.
         info["cover"] = False
-        for image_name in get_cover_names(self.image_names, self.image_extensions):
+
+        # Recherche les noms de fichiers susceptibles de contenir
+        # une pochette dans le dossier concerné.
+        for image_name in get_cover_names(
+            self.image_names,
+            self.image_extensions
+        ):
+
+            # Par défaut, recherche la pochette dans le dossier du fichier audio.
             candidate = os.path.join(root, image_name)
+
+            # Pour un album stocké dans un sous-dossier particulier,
+            # la pochette est recherchée dans le dossier parent.
             if subfolder:
-                candidate = os.path.abspath(os.path.join(root, os.pardir, image_name))
+                candidate = os.path.abspath(
+                    os.path.join(root, os.pardir, image_name)
+                )
+
+            # La recherche est insensible à la casse.
             if isfile_insensitive(candidate):
+
+                # Une pochette a été trouvée.
                 info["cover"] = True
+
+                # Génère/met à jour la miniature de cette pochette.
                 self._thumbnailer(candidate, dirhash, overwrite)
+
+                # Une seule pochette suffit.
                 break
 
+        # Si aucune pochette n'a été trouvée, crée/met à jour une entrée
+        # dans la collection des miniatures afin d'indiquer le dirhash concerné.
         if not info["cover"]:
-            self.db.thumbnails.update_one({"dirhash": int(dirhash)}, {"$set": {"dirhash": int(dirhash)}}, upsert=True)
+            self.db.thumbnails.update_one(
+                {"dirhash": int(dirhash)},
+                {"$set": {"dirhash": int(dirhash)}},
+                upsert=True
+            )
 
+        # Dictionnaire qui contiendra les tags musicaux.
         tags = {}
+
         try:
+
+            # Pour les MP3, utilise EasyMP3 pour obtenir une représentation
+            # simplifiée des tags.
             if ext == "mp3":
+
+                # Ouvre d'abord le fichier avec Mutagen afin d'inspecter
+                # les tags TXXX personnalisés.
                 file_tags = mutagen.File(full_path)
+
                 if file_tags is not None and file_tags.tags is not None:
-                    txxx_tags = [tag.desc.lower() for tag in file_tags.tags.getall("TXXX")]
+
+                    # Récupère les descriptions des tags TXXX
+                    # et les convertit en minuscules.
+                    txxx_tags = [
+                        tag.desc.lower()
+                        for tag in file_tags.tags.getall("TXXX")
+                    ]
+
+                    # Enregistre les noms de tags TXXX rencontrés.
                     for tag in txxx_tags:
-                        self._register_txxx_key(tag, self._shared_state_lock)
+                        self._register_txxx_key(
+                            tag,
+                            self._shared_state_lock
+                        )
+
+                # Lit les tags MP3 sous une forme simplifiée.
                 tags = EasyMP3(full_path)
+
+            # Pour les fichiers M4A, utilise le lecteur de tags spécifique.
             elif ext == "m4a":
                 tags = EasyMP4(full_path)
+
+            # Pour les autres formats, utilise Mutagen directement.
             else:
                 tags = mutagen.File(full_path) or {}
+
         except Exception:
-            logging.exception("Error reading tags for %s", full_path)
+
+            # Une erreur de lecture des tags empêche l'importation
+            # de ce fichier.
+            logging.exception(
+                "Error reading tags for %s",
+                full_path
+            )
             return
 
-        materialized = {**convert(tags), **convert(info)}
+        # Fusionne les métadonnées musicales ("tags") et les informations
+        # techniques/générales ("info") dans un seul dictionnaire.
+        #
+        # En cas de clé identique, les valeurs provenant de "info"
+        # prennent le dessus.
+        materialized = {
+            **convert(tags),
+            **convert(info)
+        }
 
+        # Normalise le numéro de piste.
+        #
+        # Certains formats stockent par exemple :
+        #   "1"
+        #   "1/12"
+        #   "1 - quelque chose"
+        #
+        # Seule la première partie numérique est conservée.
         if "tracknumber" in materialized and materialized["tracknumber"]:
-            try:
-                materialized["tracknumber"] = int(re.split(r"[\s,.|/|\|-|_]+", str(materialized["tracknumber"][0]))[0])
-            except Exception:
-                materialized["tracknumber"] = 0
-
+            if len(materialized["tracknumber"]) > 0:
+                try:
+                    materialized["tracknumber"] = int(re.split(r'[\s,.|/|\|-|_]+', materialized["tracknumber"][0])[0])
+                except:
+                    materialized["tracknumber"] = 0
+                
+        # Même principe pour le nombre total de pistes.
         if "totaltracks" in materialized and materialized["totaltracks"]:
-            try:
-                materialized["totaltracks"] = int(re.split(r"[\s,.|/|\|-|_]+", str(materialized["totaltracks"][0]))[0])
-            except Exception:
-                materialized["totaltracks"] = 0
+            if len(dic["totaltracks"]) > 0:
+                try:
+                    materialized["totaltracks"] = int(re.split(r'[\s,.|/|\|-|_]+', materialized["totaltracks"][0])[0])
+                except:
+                    materialized["totaltracks"] = 0
 
+        # Normalise le numéro de disque.
+        #
+        # Exemple :
+        #   "2/3" -> 2
         if "discnumber" in materialized and materialized["discnumber"]:
-            try:
-                disc_elems = re.split(r"[\s,.|/|\|-|_]+", str(materialized["discnumber"][0]))
-                materialized["discnumber"] = int(disc_elems[0]) if disc_elems else 0
-            except Exception:
-                materialized["discnumber"] = 0
+            if len(materialized["discnumber"]) > 0:
+                elems = re.split(r'[\s,.|/|\|-|_]+', materialized["discnumber"][0])
+                try:
+                    if len(elems) != 0:
+                        materialized["discnumber"] = int(elems[0])
+                except:
+                    materialized["discnumber"] = 0
 
+        # Normalise le champ "date".
+        #
+        # Recherche une année à quatre chiffres, par exemple :
+        #   "1987" -> 1987
+        #   "1987-05-12" -> 1987
+        #
+        # Si aucune année n'est trouvée, le champ est supprimé.
         if "date" in materialized and materialized["date"]:
-            match = re.findall(r"(?<!\d)\d{4}(?!\d)", str(materialized["date"]))
-            if match:
-                materialized["date"] = int(match[0])
-            else:
-                materialized.pop("date", None)
+            if len(materialized["date"]) > 0:
+                v = re.findall(r"(?<!\d)\d{4,4}(?!\d)", str(materialized["date"]))
+                if len(v) > 0:
+                    materialized["date"] = int(v[0])
+                else:
+                    materialized.pop("date", None)
 
+        # Convertit récursivement les chaînes de caractères en ReprInt.
+        #
+        # Cette conversion est appliquée :
+        # - aux dictionnaires imbriqués ;
+        # - aux éléments des listes ;
+        # - directement aux chaînes.
+        #
+        # L'objectif est donc de normaliser la représentation des valeurs
+        # avant leur stockage dans MongoDB.
         def normalize_to_int(tree):
+
             for key, value in list(tree.items()):
+
+                # Parcours récursif des dictionnaires.
                 if isinstance(value, dict):
                     normalize_to_int(value)
+
+                # Conversion de chaque élément d'une liste.
                 elif isinstance(value, list):
-                    tree[key] = [ReprInt(item) for item in value]
+                    tree[key] = [
+                        ReprInt(item)
+                        for item in value
+                    ]
+
+                # Conversion des chaînes individuelles.
                 elif isinstance(value, str):
                     tree[key] = ReprInt(value)
+
             return tree
 
+        # Applique la normalisation à toutes les métadonnées.
         materialized = normalize_to_int(materialized)
 
-        # Store the decade for valid years (e.g. 1987 -> 1980).
-        date_value = materialized.get("date")
-        try:
-            if isinstance(date_value, (list, tuple)):
-                date_value = date_value[0] if date_value else None
-            date_int = int(date_value)
-            if date_int > 1900:
-                materialized["date_decade"] = int(str(date_int)[:-1] + "0")
-        except (TypeError, ValueError, IndexError):
-            pass
+        # À partir de ce point, toute la génération des champs auxiliaires
+        # de navigation est regroupée dans une fonction indépendante.
+        materialized = add_navigation_fields(materialized)
 
-        raw_artists = materialized.get("artist")
+        # Insère ou met à jour le fichier dans la collection mediafiles.
+        #
+        # "query" identifie le fichier.
+        # "$set" remplace/met à jour les champs fournis.
+        # "upsert=True" crée le document s'il n'existe pas.
+        self.db.mediafiles.update_one(
+            query,
+            {"$set": materialized},
+            upsert=True
+        )
 
-        for tag in ["albumartist", "artist", "album", "title"]:
-            if tag in materialized and isinstance(materialized[tag], list) and materialized[tag]:
-                # Keep the existing behavior for the main display fields.
-                materialized[tag] = materialized[tag][0]
+        # Vérifie si un document existe déjà pour ce dossier.
+        if self.db.mediadirs.find_one(
+            {"dirhash": int(dirhash)}
+        ) is None:
 
-        def first_alphabetic_upper(value):
-            """Return the first alphabetic character of a metadata value."""
-            if value is None:
-                return None
+            # Construit un document représentant le dossier.
+            #
+            # Certains champs spécifiques au fichier sont volontairement
+            # exclus car ils appartiennent au fichier et non au dossier.
+            dir_document = {
+                key: value
+                for key, value in materialized.items()
+                if key not in [
+                    "filename",
+                    "extension",
+                    "size",
+                    "cover"
+                ]
+            }
 
-            # Mutagen may expose a tag as a list, even when it contains one value.
-            if isinstance(value, (list, tuple)):
-                value = value[0] if value else None
-
-            if value is None:
-                return None
-
-            value = str(value).strip()
-            if not value:
-                return None
-
-            first = value[0]
-            return first.upper() if first.isalpha() else None
-
-        album_alphabet = first_alphabetic_upper(materialized.get("album"))
-        if album_alphabet is not None:
-            materialized["album_alphabet"] = album_alphabet
-
-        # Store one initial for each artist name when the tag contains several artists.
-        artists = raw_artists
-        if not isinstance(artists, (list, tuple)):
-            artists = [artists]
-
-        artist_alphabets = []
-        for artist in artists:
-            initial = first_alphabetic_upper(artist)
-            if initial is not None and initial not in artist_alphabets:
-                artist_alphabets.append(initial)
-
-        if artist_alphabets:
-            materialized["artist_alphabet"] = artist_alphabets
-
-        def invert(value):
-            """Return 'First Last' as 'Last, First' for a name value."""
-            if isinstance(value, (list, tuple)):
-                value = value[0] if value else ""
-            if value is None:
-                return ""
-            value = str(value).strip()
-            if " " in value:
-                parts = value.split()
-                return parts[-1] + ", " + " ".join(parts[:-1])
-            return value
-
-        for field in ("composer", "conductor"):
-            if field in materialized:
-                materialized[field + "_invert"] = invert(materialized[field])
-
-        # Create navigation groups for artist and album using groups of 3 letters.
-        alphagroup(materialized, "artist", groupnumber=3)
-        alphagroup(materialized, "album", groupnumber=3)
-
-        self.db.mediafiles.update_one(query, {"$set": materialized}, upsert=True)
-
-        if self.db.mediadirs.find_one({"dirhash": int(dirhash)}) is None:
-            dir_document = {key: value for key, value in materialized.items() if key not in ["filename", "extension", "size", "cover"]}
-            self.db.mediadirs.update_one({"dirhash": int(dirhash)}, {"$set": dir_document}, upsert=True)
-
+            # Crée le document du dossier dans mediadirs.
+            self.db.mediadirs.update_one(
+                {"dirhash": int(dirhash)},
+                {"$set": dir_document},
+                upsert=True
+            )
+                       
     def close(self):
         self.request_stop()
         if self.mongo_client is not None:
@@ -609,8 +931,7 @@ class LibraryScannerService:
 
                 except Exception as e:
                     pass
-            
-            
+                         
 def Update_Music_Folders(dirnames, mongo_uri: Optional[str] = None, db=None, media_root: Optional[str] = None,
                          notifier: Optional[Callable] = None, max_workers: int = 4, overwrite: bool = False,
                          rebuild: bool = False):
@@ -638,8 +959,6 @@ def Update_Music_Folders(dirnames, mongo_uri: Optional[str] = None, db=None, med
         scanner.close()
     except Exception:
         pass
-
-
 
 def build_parser():
 

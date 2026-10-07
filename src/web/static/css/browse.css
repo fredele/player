@@ -825,34 +825,46 @@ select {
 #previous_btn{
   left: 80px;
   bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #scanning_img{
   right: 0px;
   opacity: 0;
-   bottom:0px;
+  bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #mic_img{
   right: -100px;
   opacity: 80%;
   bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #play_btn{
   left: 140px;
   bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #next_btn{
   left: 200px;
   bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 
 #volume_btn{
   left: 270px;
   bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 
@@ -862,25 +874,30 @@ select {
   width: 100%;
   height: 80px;
   bottom:0px;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #library_btn{
   width: 100%;
   height: 80px;
   background-color:#c9c9c94f;
-
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #podcast_btn{
   width: 100%;
   height: 80px;
-
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 #radio_btn{
   width: 100%;
   height: 80px;
-
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 
@@ -981,6 +998,8 @@ select {
   height:80px;
   object-fit: contain;
   z-index:5;
+  -webkit-user-drag: none;
+  user-drag: none;
     }
 
 #query_queue_btn{
@@ -988,6 +1007,8 @@ select {
   height:80px;
   object-fit: contain;
   z-index:5;
+  -webkit-user-drag: none;
+  user-drag: none;
     }
     
 
@@ -1663,17 +1684,16 @@ button_set_value{
     box-shadow:none;
 }
 
-.btn:active {
-  background-color: #1b54af;     /* fond pendant clic */
-  border-color: #1b54af;         /* bordure pendant clic */
-}
-
 .btn:focus {
     background-color: #333;
-    transition: 0s;
     border: 2px solid transparent;
-    color:white;
-    box-shadow:none;
+    color: white;
+    box-shadow: none;
+}
+
+.btn:active {
+    background-color: #1b54af;
+    border-color: #1b54af;
 }
 
 

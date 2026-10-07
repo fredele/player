@@ -727,11 +727,14 @@ function Goto_Browse() {
   document.getElementById('query_text').classList.remove("cls_query_text");
   if (queryedited == true)
   {
+    queryedited = false; 
+    if ( lastfield.includes("time_") || lastfield == ""){
+      return
+    };
   Server_find(lastquery, lastfield, lastsort, lastdisplay, 0, req_thumb_cout, after_Server_find, null)
-  queryedited = false;  
+  
   }
 }
-
 
 function goto_param() {
   document.getElementById("header_container").innerHTML = "";

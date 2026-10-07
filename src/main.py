@@ -38,6 +38,7 @@ from os import listdir
 from os.path import isfile, join
 import urllib.parse
 from updatesavedqueries import Update_Queries
+from updatelib import add_navigation_fields
 from requestfind import Requestfind
 from scanlistener import ScanSocketListener
 from upnpclient.discover_upnp import get_upnp_renderers
@@ -2759,16 +2760,24 @@ def Set_Tag():
 
             value = value[0] if len(value) == 1 or tag in app.SingleValueTags else value
 
-            cursor = app.db.mediafiles.find( {"_id": {"$in": ids}})
-            dirhashs = app.db.mediafiles.find( {"_id": {"$in": ids}}).distinct("dirhash")
+            cursor = app.db.mediafiles.find({"_id": {"$in": ids}})
+            dirhashs = app.db.mediafiles.find({"_id": {"$in": ids}}).distinct("dirhash")
             dirnames = app.db.mediafiles.find({"_id": {"$in": ids}}).distinct("dirname")
 
             app.plugins_action('before_library_settag', tag, dirnames)
 
             if value in EmptyValue:
-                app.db.mediafiles.update_many({"_id": {"$in": ids}}, {"$unset": tag}, upsert=False)
+                app.db.mediafiles.update_many(
+                    {"_id": {"$in": ids}},
+                    {"$unset": tag},
+                    upsert=False
+                )
             else:
-                app.db.mediafiles.update_many({"_id": {"$in": ids}}, {"$set": {tag : value}}, upsert=False)
+                app.db.mediafiles.update_many(
+                    {"_id": {"$in": ids}},
+                    {"$set": {tag: value}},
+                    upsert=False
+                )
 
             for i in [f for f in cursor]:
                 try:
@@ -2776,9 +2785,49 @@ def Set_Tag():
                 except:
                     pass
 
+            # Recalcule les champs auxiliaires de navigation pour les fichiers
+            # sélectionnés après la modification du tag.
+            for i in app.db.mediafiles.find({"_id": {"$in": ids}}):
+                try:
+                    navigation_fields = add_navigation_fields(dict(i))
+
+                    # Ne réécrit que les champs calculés par
+                    # add_navigation_fields(), tout en conservant les autres
+                    # données déjà présentes dans le document.
+                    navigation_update = {}
+
+                    for field in [
+                        "date_decade",
+                        "album_alphabet",
+                        "artist_alphabet",
+                        "composer_invert",
+                        "conductor_invert",
+                        "group_artist",
+                        "group_album"
+                    ]:
+                        if field in navigation_fields:
+                            navigation_update[field] = navigation_fields[field]
+
+                    if navigation_update:
+                        app.db.mediafiles.update_one(
+                            {"_id": i["_id"]},
+                            {"$set": navigation_update},
+                            upsert=False
+                        )
+
+                except:
+                    pass
+
             for dirhash in dirhashs:
-                alltagvalues = app.db.mediafiles.find({"dirhash":  dirhash}).distinct(tag)
-                mr = app.db.mediadirs.update_one({"dirhash" : dirhash}, {'$set' : { tag : alltagvalues }}, upsert=True)
+                alltagvalues = app.db.mediafiles.find(
+                    {"dirhash": dirhash}
+                ).distinct(tag)
+
+                mr = app.db.mediadirs.update_one(
+                    {"dirhash": dirhash},
+                    {'$set': {tag: alltagvalues}},
+                    upsert=True
+                )
                 pass
 
             time.sleep(1)
@@ -2793,6 +2842,7 @@ def Set_Tag():
     app.send_message_value("Tags Edited")
 
     return json_resp(res)
+
 
 @app.route("/v1/Library/GetValues", methods = ['GET', 'POST'])
 @app.tokenauth.login_required

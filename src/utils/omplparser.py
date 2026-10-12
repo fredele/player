@@ -4,20 +4,24 @@ from flask import request
 import configparser
 import urllib.parse
 from utils.web import get_adresse_ip_locale
+from paths import mediafiles_folder, config_folder 
 
-_config = configparser.ConfigParser()
-inifile =os.path.join(os.getenv("HOME"), '.Player', 'config', 'config.ini')
-if os.path.isfile(inifile):
-     _config.read(inifile)
-     port = _config['Server']['httpport']
-     host = get_adresse_ip_locale()
+
 
 
 
 def read_opml(file, levels):
-
+    
+    _config = configparser.ConfigParser()
+    inifile = os.path.join(config_folder, 'config.ini')
+    if os.path.isfile(inifile):
+        _config.read(inifile)
+        port = _config['Server']['httpport']
+        host = get_adresse_ip_locale()
+     
+     
     f = file
-    file = os.path.join(os.getenv("HOME"), '.Player','mediafiles','Podcasts', file)
+    file = os.path.join(mediafiles_folder,'Podcasts', file)
     items = []
     if os.path.isfile(file):
         o = opml.parse(file)
@@ -32,7 +36,7 @@ def read_opml(file, levels):
             dic['covers']= [myaddr +urllib.parse.quote('v1/Mediafile/Podcasts/'+ attrib.get('image',''))]
             dic['display']= attrib.get('text','')
             dic['keyval'] = j
-            dic['query'] = 'file=' + f + '&levels='+levels
+            dic['query'] = 'file=' + str(f) + '&levels='+levels
             if attrib.get('type')=='rss':
                 dic['query'] = attrib.get('xmlUrl')
             dic['url'] = attrib.get('xmlUrl', '')

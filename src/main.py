@@ -3690,13 +3690,10 @@ if __name__ == '__main__':
     else:
         reactor.listenTCP(int(app.httpport), site, interface="0.0.0.0")
 
-    path = os.path.join(
-        os.getenv("HOME"),
-        "MyPlayer",
-        "player",
-        "src",
-        "coherence"
-    )
+ 
+    
+    path = Path(__file__).resolve().parent / "coherence"
+
     config = {'plugins': [], 'logging': {}}
 
     def set_upnp_config(config):

@@ -1,7 +1,7 @@
 services:
   myplayer:
     user: "${HOST_UID}:${HOST_GID}"
-    image: myplayer
+    image: ghcr.io/fredele/myplayer:latest
     network_mode: host
     volumes:
       - ${HOME}/.Player:/home/player/.Player

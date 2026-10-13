@@ -417,13 +417,12 @@ color:#ffffff;
 .thumbimg
 {
  width: 100%;
- height:140px;
+ aspect-ratio: 1 / 1;
  object-fit: contain;
  -webkit-user-drag: none;  /* Pour Chrome, Safari, Edge */
-  -khtml-user-drag: none;   /* Ancien Safari */
-  -moz-user-drag: none;     /* Firefox (moins nécessaire aujourd'hui) */
+ -khtml-user-drag: none;   /* Ancien Safari */
+ -moz-user-drag: none;     /* Firefox (moins nécessaire aujourd'hui) */
  user-drag: none;
- 
 }
 
 

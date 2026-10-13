@@ -30,7 +30,6 @@ var pressTimer;
 var snapstream = null;
 var ws_snapstream_addr = null;
 var query_image_content = `<div id="query_image_btn_previous" onclick="previousimg()"></div><div id="query_image_img_div" ><img  class="yall_lazy" id="query_image_img" src="" ></div><div id="query_image_btn_next" onclick="nextimg()"></div>`;
-var isAndroid = false
 var invdictranslation;
 var lastquery = "";
 var lastfield = "";
@@ -51,7 +50,7 @@ var second_interval_5 = null;
 var init_player = true;
 var player_change_block = false;
 var queryedited = false;
-
+var invtranslated = {};
 window.playhere = true;
 var mediastop = false;
 var flipflopelapsedbool = false;
@@ -294,6 +293,13 @@ Completes pagination on Windows sizing
     //Server_find(thumb_q,field_q,sort_q,display_q, page_nbr +1,req_thumb_cout,after_Server_find,null)
 
   }
+}
+
+function isCordovaAndroid() {
+    return (
+        typeof window.cordova !== "undefined" &&
+        window.cordova.platformId === "android"
+    );
 }
 
 function isandroid() {
@@ -819,11 +825,11 @@ function setDisplay() {
   if (localStorage.hasOwnProperty('thumb_width')) {
     var w = parseInt(localStorage.getItem('thumb_width'));
     document.querySelectorAll('div.thumb').forEach(el => {
-    //el.style.width = w;
+    el.style.width = w;
     });
     w = Math.round(w * 1.12);
     document.querySelectorAll('div.thumb').forEach(el => {
-    //el.style.height = w;
+    el.style.height = w;
 });
   }
 }
@@ -2253,89 +2259,84 @@ function after_Server_Get_Query_Overview_and_Files() {
 
 
 function after_Server_Get_Query_Overview_select() {
-  //Fills query overview
-  var jsonresponse = JSON.parse(this.response);
-  response = jsonresponse["values"]
-  i = 0
-  l = response.length
-  translated = {}
-  for (var tag in response) {
-    translated[translate(tag)] = tag
-  }
-  translated = Object.keys(translated).sort()
-  invtranslated = {}
-  for (var tag in response) {
-    invtranslated[translate(tag)] = tag
-  }
-  var scontent = "";
-  for (var tag of translated) {
-    i += 1
-    t = response[invtranslated[tag]];
-
-    var value = "";
-    var value2 = "";
-    values = t["common_tags"].sort();
-    for (const v of values) {
-      value += '<span class="' + invtranslated[tag] + " " + "overview_element_" + invtranslated[tag] + '">' + v + '</span>, ';
-      value2 += v;
-    }
-
-    value = value.slice(0, -2);
-
-    if (value != "") {
-      if (value2.startsWith('http') == false) {
-        scontent += `<div class="overview_element"  tag="` + invtranslated[tag] + `" onclick="show_tag_editor('` + invtranslated[tag] + `')" ><div  class="overview_tag">${translate(tag)}: </div><div class="overview_tag_value " >${value}</div></div>`;
-      } else {
-        scontent += '<a class="overview_element" target="_blank" href="' + value2 + '" tag="' + tag + '">' + translate(tag) + '</a>';
-      }
-    }
-  }
-  document.getElementById('query_overview').innerHTML = scontent;
-
+  after_Server_Get_Query_Overview.call(this);
 }
 
 function after_Server_Get_Query_Overview() {
-  //Fills query overview
-  var jsonresponse = JSON.parse(this.response);
-  response = jsonresponse["values"]
-  i = 0
-  l = response.length
+// Fills query overview
+var jsonresponse = JSON.parse(this.response);
+var response = jsonresponse["values"];
 
-  translated = {}
-  for (var tag in response) {
-    translated[translate(tag)] = tag
-  }
-  translated = Object.keys(translated).sort()
-  invtranslated = {}
-  for (var tag in response) {
-    invtranslated[translate(tag)] = tag
-  }
-  var scontent = "";
-  for (var tag of translated) {
-    i += 1
-    t = response[invtranslated[tag]];
-    var value = "";
-    var value2 = "";
-    values = t["common_tags"].sort();
-    for (const v of values) {
-      value += '<span class="' + invtranslated[tag] + " " + "overview_element_" + invtranslated[tag] + '">' + v + '</span>, ';
-      value2 += v;
-    }
-    value = value.slice(0, -2);
-    if (value != "") {
-      if (value2.startsWith('http') == false) {
-        scontent += `<div class="overview_element"  tag="` + invtranslated[tag] + `" onclick="show_tag_editor('` + invtranslated[tag] + `')" ><div  class="overview_tag">${translate(tag)}: </div><div class="overview_tag_value " >${value}</div></div>`;
-      } else {
-        scontent += '<a class="overview_element" target="_blank" href="' + value2 + '" tag="' + tag + '">' + translate(tag) + '</a>';
-      }
-    }
-  }
-  document.getElementById('query_overview').innerHTML = scontent;
+var translated = {};
+for (var tag in response) {
+translated[translate(tag)] = tag;
+}
+translated = Object.keys(translated).sort();
 
-  if (!isCordova()) {
-    history.pushState(this.response, "", null);
+var invtranslated = {};
+for (var tag in response) {
+invtranslated[translate(tag)] = tag;
+}
+
+var scontent = "";
+
+for (var tag of translated) {
+var t = response[invtranslated[tag]];
+
+var value = "";
+var value2 = "";
+var values = t["common_tags"].sort();
+
+for (const v of values) {
+  value += '<span class="' + invtranslated[tag] + ' overview_element_' +
+    invtranslated[tag] + '">' + v + '</span>, ';
+  value2 += v;
+}
+
+value = value.slice(0, -2);
+
+if (value != "") {
+  if (!value2.startsWith('http')) {
+    scontent +=
+      '<div class="overview_element" tag="' + invtranslated[tag] +
+      '" onclick="show_tag_editor(\'' + invtranslated[tag] + '\')">' +
+      '<div class="overview_tag">' + translate(tag) + ': </div>' +
+      '<div class="overview_tag_value">' + value + '</div></div>';
+  } else {
+    if (isCordovaAndroid()) {
+      // Cordova: open in InAppBrowser
+      scontent +=
+        '<a class="overview_element cordova_external_link" ' +
+        'href="' + value2 + '" tag="' + tag + '">' +
+        translate(tag) + '</a>';
+    } else {
+      // Standard browser: open in a new tab
+      scontent +=
+        '<a class="overview_element" target="_blank" ' +
+        'rel="noopener noreferrer" href="' + value2 +
+        '" tag="' + tag + '">' + translate(tag) + '</a>';
+    }
   }
-  //-Server_Get_Files_query(q, query_track_info, after_Server_Get_Files, null);
+}
+
+}
+
+document.getElementById('query_overview').innerHTML = scontent;
+
+if (isCordovaAndroid()) {
+document.querySelectorAll('.cordova_external_link').forEach(function(link) {
+link.addEventListener('click', function(event) {
+event.preventDefault();
+
+    cordova.InAppBrowser.open(
+      this.href,
+      '_blank',
+      'location=yes'
+    );
+  });
+});
+
+}
 }
 
 

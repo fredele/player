@@ -437,9 +437,11 @@ function on_ws_msg(data) {
 
     if (msg == "audio changed") {
       // Reload the infos
+      setTimeout(() => {
       Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
       Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist);
       Server_Player_CurrentTrack(format_info, " ", after_Format_Display);
+      }, 400);
       setTimeout(() => { Server_Player_CurrentPosition(after_Player_CurrentPosition, null); }, 4000);
       setTimeout(() => { Server_Player_CurrentPosition(after_Player_CurrentPosition, null); }, 10000);
       //Remise a zero en pause

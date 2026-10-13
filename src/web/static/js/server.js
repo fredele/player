@@ -293,56 +293,105 @@ function after_Ports() {
   if (res.server == "True") { server_mode = true } else { server_mode = false }
 }
 
+
+window.pendingRequests = window.pendingRequests || {};
+
 function SendCommand(ApiEntry, Callback, state) {
-  current_address = window.location.href;
-  if (current_address.includes("https")) { prot = "https://" }
-  else { prot = "http://" }
+  var current_address = window.location.href;
+
+  var prot = current_address.includes("https")
+    ? "https://"
+    : "http://";
+
   if (window.serverurl != undefined) {
     window.addr = getBaseUrl(window.serverurl);
   } else {
     window.addr = getBaseUrl(current_address);
     window.serverurl = getBaseUrl(current_address);
   }
-  var request = new XMLHttpRequest();
-  var url = addr + ApiEntry
+
+  var url = window.addr + ApiEntry;
 
   if (url.includes("/Player/") || url.includes("/Queue/")) {
+    var player_id;
+
     if (window.current_player != undefined) {
-      player_id = window.current_player["id"]
-    }
-    else {
-      if (localStorage.getItem("current_player") !== null && localStorage.getItem("current_player") !== "here") {
-        window.current_player = JSON.parse(localStorage.getItem("current_player"));
-        player_id = window.current_player.id
-      }
-      else {
+      player_id = window.current_player.id;
+    } else {
+      var storedPlayer = localStorage.getItem("current_player");
+
+      if (storedPlayer !== null && storedPlayer !== "here") {
+        window.current_player = JSON.parse(storedPlayer);
+        player_id = window.current_player.id;
+      } else {
         player_id = 1;
       }
-
     }
-    if (url.indexOf('?') > -1) {
-      url += "&player_id=" + player_id
+
+    if (url.indexOf("?") > -1) {
+      url += "&player_id=" + player_id;
     } else {
-      url += "?player_id=" + player_id
+      url += "?player_id=" + player_id;
     }
-
   }
 
   if (token == null) {
     return;
   }
-  
-  request.open('GET', url, true);
+
+  // Normalisation de l'URL : tri des paramètres
+  var parsedUrl = new URL(url);
+  parsedUrl.searchParams.sort();
+
+  var requestKey =
+    parsedUrl.origin +
+    parsedUrl.pathname +
+    "?" +
+    parsedUrl.searchParams.toString();
+
+  // Bloquer les requêtes identiques encore en cours
+  if (window.pendingRequests[requestKey]) {
+    return;
+  }
+
+  var request = new XMLHttpRequest();
+
+  window.pendingRequests[requestKey] = true;
+
+  request.open("GET", url, true);
   request.setRequestHeader("Authorization", "Bearer " + token);
-  request.addEventListener('load', Callback);
-  request.addEventListener('readystatechange', state);
+
+  // Premier callback : libérer la requête, puis exécuter Callback après 800 ms
+  request.addEventListener("load", function (event) {
+    try {
+      if (Callback) {
+        Callback.call(this, event);
+      }
+    } finally {
+      setTimeout(function () {
+        delete window.pendingRequests[requestKey];
+      }, 800);
+    }
+  });
+
+  request.addEventListener("readystatechange", state);
+
+  // Libérer la clé en cas d'erreur ou d'interruption
+  function releaseRequest() {
+    delete window.pendingRequests[requestKey];
+  }
+
+  request.addEventListener("error", releaseRequest);
+  request.addEventListener("abort", releaseRequest);
+  request.addEventListener("timeout", releaseRequest);
+
   try {
     request.send();
-  } catch {
-
+  } catch (e) {
+    releaseRequest();
+    console.error("Erreur lors de l'envoi de la requête :", e);
   }
 }
-
 
 function SendCommandPOST(ApiEntry, Callback, state) {
   window.addr = prot + document.location.hostname + ":" + document.location.port;

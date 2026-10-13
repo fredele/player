@@ -1,0 +1,33 @@
+services:
+  myplayer:
+    user: "${HOST_UID}:${HOST_GID}"
+    image: ghcr.io/fredele/myplayer:latest
+    pull_policy: always
+    network_mode: host
+    mem_limit: 1.5g
+    memswap_limit: 1.5g
+
+    volumes:
+      - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
+      - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
+      - ${HOME}/.config/player:/home/player/.config/player
+      - ${HOME}/.player:/home/player/.local/share/player/mediafiles
+      - /mnt/Disque_1:/mnt/Disque_1
+      - /mnt/Disque_2:/mnt/Disque_2
+
+    environment:
+      PULSE_SERVER: ${XDG_RUNTIME_DIR}/pulse/native
+
+    group_add:
+      - "${AUDIO_GID}"
+
+  mongo:
+    user: "${HOST_UID}:${HOST_GID}"
+    image: mongo:3.6
+    restart: unless-stopped
+    network_mode: host
+    mem_limit: 3.1g
+    memswap_limit: 3.1g
+    command: mongod --wiredTigerCacheSizeGB 3
+    volumes:
+      - /mnt/Disque_1/DB_Player/database:/data/db

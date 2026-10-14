@@ -108,7 +108,7 @@ class Device(CallActionMixin):
         content = resp.content.decode("utf-8")
 
         content = content.replace(' urn:microsoft-com:wmc-1-0','urn:microsoft-com:wmc-1-0')
-        root = etree.fromstring(content)
+        root = etree.fromstring(content.encode("utf-8"))
 
         findtext = partial(root.findtext, namespaces=root.nsmap, default="")
 

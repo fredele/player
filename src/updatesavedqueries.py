@@ -78,7 +78,6 @@ class Update_Queries(Thread):
         max_workers: int = 4,
     ):
         super().__init__(daemon=True)
-        print("Update_Queries initialized")
 
         self.mongo_client = MongoClient(mongo_uri)
         self.owner = self.mongo_client.player
@@ -128,12 +127,10 @@ class Update_Queries(Thread):
                     views = json.load(f)
 
                 music_views = views.get("music", [])
-                print(f"Recalculating {len(music_views)} music views")
 
                 for view in music_views:
                     levels = view.get("levels", [])
                     if not levels or len(levels[0]) < 3:
-                        print(f"Invalid first level for view {view.get('name')}")
                         continue
 
                     field_spec, sort_spec, display = levels[0]
@@ -156,7 +153,6 @@ class Update_Queries(Thread):
                         "full": full,
                     }
 
-                    print(f"recalculate view: {view.get('name')}")
                     self.func(request, self.owner, None)
 
             except Exception as exc:
@@ -165,9 +161,6 @@ class Update_Queries(Thread):
                     self.notifier(f"Update_Queries error: {exc}")
 
         #recalculate_music_views()
-
-        # DO NOT REMOVE: wait until the IMPORT process has finished
-        #time.sleep(10)
 
         def worker() -> None:
             while True:

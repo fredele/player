@@ -142,7 +142,6 @@ class USBCopyMonitor(threading.Thread):
         try:
             loop.run()
         except KeyboardInterrupt:
-            print("\nArrêt du moniteur USB.")
             loop.quit()
 
 
@@ -153,7 +152,6 @@ if __name__ == "__main__":
     monitor = USBCopyMonitor()
     monitor.start()  # Démarre le thread
 
-    print("Moniteur lancé en arrière-plan. Appuyez sur Ctrl+C pour arrêter.")
     try:
         # Garde le programme principal vivant
         while True:

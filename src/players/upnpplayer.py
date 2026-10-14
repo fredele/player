@@ -273,12 +273,16 @@ class UpnpPlayer:
             uri = uri.replace(str(self.app.mediafiles_folder), "")
             uri = urllib.parse.quote(uri)
             uri = self.app.webadr + uri
+            player = next((p for p in self.app.players if str(p.get('id')) == str(self.id)), None)
+            if player is not None:
+                codec = str(player.get('codec', getattr(getattr(self.app, 'player', None), 'transcode_codec', 'mp3'))).lower()
             dic['uri'] = uri
             if self.transcode:
                 source_name = os.path.basename(dic.get('file', 'track'))
                 source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
-                player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
-                dic["uri"] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
+                #player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
+                player_id = self.id
+                dic["uri"] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{codec}"
 
         meta = set_TrackMetaData(self.app, dic)
 
@@ -346,12 +350,16 @@ class UpnpPlayer:
         uri = uri.replace(str(self.app.mediafiles_folder), "")
         uri = urllib.parse.quote(uri)
         uri = self.app.webadr + uri
+        player = next((p for p in self.app.players if str(p.get('id')) == str(self.id)), None)
+        if player is not None:
+            codec = str(player.get('codec', getattr(getattr(self.app, 'player', None), 'transcode_codec', 'mp3'))).lower()
         dic["uri"] = uri
         if self.transcode:
             source_name = os.path.basename(dic.get('file', 'track'))
             source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
-            player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
-            dic["uri"] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
+            #player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
+            player_id = self.id
+            dic["uri"] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{codec}"
 
         yield self.set_uri(dic, position)
 
@@ -448,7 +456,7 @@ class UpnpPlayer:
         try:
             dic = self.queue[self.queue_position + 1]
             self.audio_changed(self.id)
-            logging.info(f"Audio changed to: {dic}")
+            #logging.info(f"Audio changed to: {dic}")
         except IndexError:
             return
 
@@ -458,12 +466,16 @@ class UpnpPlayer:
             uri = uri.replace(str(self.app.mediafiles_folder), "")
             uri = urllib.parse.quote(uri)
             uri = f"{self.app.webadr}{uri}"
+            player = next((p for p in self.app.players if str(p.get('id')) == str(self.id)), None)
+            if player is not None:
+                codec = str(player.get('codec', getattr(getattr(self.app, 'player', None), 'transcode_codec', 'mp3'))).lower()
             dic['uri'] = uri
             if self.transcode:
                 source_name = os.path.basename(dic.get('file', 'track'))
                 source_ext = os.path.splitext(source_name)[1].lstrip('.') or 'mp3'
-                player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
-                dic['uri'] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
+                #player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
+                player_id = self.id
+                dic['uri'] = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{codec}"
 
         meta = set_TrackMetaData(self.app, dic)
         try:

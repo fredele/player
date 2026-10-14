@@ -109,8 +109,6 @@ def replacetags(display_str, tagsval_dic, separator):
                 s = s.replace(';' + ti + '$', '')
 
             s = s.replace('$' + tag + '$', '')
-    #print(s)
-    #print(clean(s))
     return(clean(s))
 
 

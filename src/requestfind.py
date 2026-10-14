@@ -107,7 +107,6 @@ def Requestfind(request: dict, db, query_hash = None) -> dict:
             + full
         )
         has = query_hash or hashlib.sha256(s.encode("utf-8")).hexdigest()
-        print(f"hash:{has}" )
         
     except Exception:
         return {"key": key, "result": [], "page_nbr": page_nbr, "query": strquery}
@@ -306,7 +305,6 @@ def Requestfind(request: dict, db, query_hash = None) -> dict:
             },
             upsert=True,
         )
-        print(f"Updated hash: {has}")
     except Exception as e:
         print(f"Failed to save query {has}: {e}")
 

@@ -62,9 +62,7 @@ class GPlayer():
         self.old_state = [None, None]
 
     def handle_message(self,bus, message):
-        #print(str(bus.name))
         if message.type == Gst.MessageType.ELEMENT:
-            #print(str(message.src))
             struct = Gst.Message.get_structure(message)
             if 'spectrum' == Gst.Structure.get_name(struct):
                 magn = struct.get_list('magnitude').array
@@ -246,13 +244,13 @@ class GPlayer():
         p = str(self.app.mediafiles_folder)
         h = self.app.http_server_adr
         uri = uri.replace(p, h)
-        print(f"set_uri: {uri}")
         self.playbin.set_property("uri", uri)
         if self.transcode == True:
             source_path = str(dic.get('file', 'track'))
-            source_ext = os.path.splitext(os.path.basename(source_path))[1].lstrip('.') or 'mp3'
-            player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
-            uri = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
+            player = next((p for p in self.app.players if str(p.get('id')) == str(self.id)), None)
+            if player is not None:
+                codec = str(player.get('codec', getattr(getattr(self.app, 'player', None), 'transcode_codec', 'mp3'))).lower()
+            uri = f"{self.app.webadr}/v1/Transcode/{self.id}/{dic['_id']}.{codec}"
         self.playbin.set_property("uri", uri)
 
     def set_uri(self,dic,position = None):
@@ -264,10 +262,10 @@ class GPlayer():
         self.playbin.set_property("uri",uri)
         if self.transcode == True:
             source_path = str(dic.get('file', 'track'))
-            source_ext = os.path.splitext(os.path.basename(source_path))[1].lstrip('.') or 'mp3'
-            player_id = getattr(self, 'id', getattr(self.app, 'player_id', '0'))
-            uri = f"{self.app.webadr}/v1/Transcode/{player_id}/{dic['_id']}.{source_ext}"
-        print(f"set_uri: {uri}")
+            player = next((p for p in self.app.players if str(p.get('id')) == str(self.id)), None)
+            if player is not None:
+                codec = str(player.get('codec', getattr(getattr(self.app, 'player', None), 'transcode_codec', 'mp3'))).lower()
+            uri = f"{self.app.webadr}/v1/Transcode/{self.id}/{dic['_id']}.{codec}"
         self.playbin.set_property("uri", uri)
 
     def set_play_uri(self):

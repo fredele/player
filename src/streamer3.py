@@ -91,12 +91,18 @@ class TranscodeToFileThread(threading.Thread):
         self.lock_file = lock_file
 
     def run(self):
-        encoders = {"mp3": "lamemp3enc", "flac": "flacenc", "ogg": "vorbisenc", "opus": "opusenc"}
+        encoders = {
+            "mp3": f"lamemp3enc target=1 bitrate={self.bitrate}",
+            "flac": "flacenc quality=5",
+            "ogg": f"vorbisenc bitrate={self.bitrate}",
+            "opus": f"opusenc bitrate={self.bitrate}",
+        }
+
         pipeline_str = f"""
             filesrc location="{self.input_path}" !
             decodebin !
             audioconvert ! audioresample !
-            {encoders[self.codec]} target=1 bitrate={self.bitrate} !
+            {encoders[self.codec]} !
             filesink location="{self.output_path}" append=false
         """
         try:
@@ -150,6 +156,10 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
         return abort(404)
 
     source_path = os.path.join(app.mediafiles_dir, doc["dirname"], f"{doc['filename']}.{doc['extension']}")
+    duration = float(doc.get("length") or 0)
+    estimated_size = None
+    if codec in ("mp3", "ogg", "opus") and duration > 0:
+        estimated_size = int(duration * bitrate * 1000 / 8)
     file = hashlib.sha256((fileid + codec + str(bitrate)).encode('utf-8')).hexdigest()
     cached_file = os.path.join(CACHE_DIR, f"{file}.{codec}")
     tmp_file = f"{cached_file}.tmp"
@@ -209,50 +219,105 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
     def generate():
         wait_started = time.time()
         prebuffer_bytes = 8192
-        while True:
-            target = cached_file if os.path.exists(cached_file) else tmp_file
-            if not os.path.exists(target):
-                if transcoder is not None and transcoder.is_alive():
-                    if time.time() - wait_started > 30:
+        sent_bytes = 0
+
+        print(f"[http:start] {cache_key}")
+
+        try:
+            while True:
+                target = cached_file if os.path.exists(cached_file) else tmp_file
+
+                if not os.path.exists(target):
+                    if transcoder is not None and transcoder.is_alive():
+                        if time.time() - wait_started > 30:
+                            print(f"[http:timeout-no-file] {cache_key}")
+                            break
+                        time.sleep(0.1)
+                        continue
+
+                    print(f"[http:no-file] {cache_key}")
+                    break
+
+                file_size = os.path.getsize(target)
+
+                if file_size == 0:
+                    if transcoder is None or not transcoder.is_alive():
+                        print(f"[http:empty-file] {cache_key}")
                         break
-                    time.sleep(0.1)
-                    continue
-                break
 
-            file_size = os.path.getsize(target)
-            if file_size == 0:
-                if transcoder is None or not transcoder.is_alive():
-                    break
-                if time.time() - wait_started > 30:
-                    break
-                time.sleep(0.1)
-                continue
+                    if time.time() - wait_started > 30:
+                        print(f"[http:timeout-empty-file] {cache_key}")
+                        break
 
-            if file_size < prebuffer_bytes and (transcoder is not None and transcoder.is_alive()):
-                if time.time() - wait_started > 30:
-                    pass
-                else:
                     time.sleep(0.1)
                     continue
 
-            try:
-                with open(target, "rb") as f:
-                    f.seek(start)
-                    pos = start
-                    while True:
-                        if end is not None and pos > end:
-                            break
-                        chunk = f.read(4096)
-                        if not chunk:
-                            if transcoder is not None and transcoder.is_alive():
-                                time.sleep(0.1)
-                                continue
-                            break
-                        yield chunk
-                        pos += len(chunk)
-            except OSError:
+                if (
+                    file_size < prebuffer_bytes
+                    and transcoder is not None
+                    and transcoder.is_alive()
+                ):
+                    if time.time() - wait_started > 30:
+                        pass
+                    else:
+                        time.sleep(0.1)
+                        continue
+
+                try:
+                    with open(target, "rb") as f:
+                        f.seek(start)
+                        pos = start
+
+                        while True:
+                            if end is not None and pos > end:
+                                break
+
+                            chunk = f.read(4096)
+
+                            if not chunk:
+                                if transcoder is not None and transcoder.is_alive():
+                                    time.sleep(0.1)
+                                    continue
+                                break
+
+                            sent_bytes += len(chunk)
+                            pos += len(chunk)
+
+                            if sent_bytes % (1024 * 1024) < len(chunk):
+                                print(
+                                    f"[http:progress] {cache_key} "
+                                    f"sent={sent_bytes} "
+                                    f"file_size={os.path.getsize(target)}"
+                                )
+
+                            yield chunk
+
+                except GeneratorExit:
+                    raise
+                except OSError as exc:
+                    print(f"[http:read-error] {cache_key} {exc}")
+                    break
+
                 break
-            break
+
+        except GeneratorExit:
+            print(
+                f"[http:generator-closed] {cache_key} "
+                f"sent={sent_bytes} "
+                f"elapsed={time.time() - wait_started:.1f}s"
+            )
+            raise
+
+        except Exception as exc:
+            print(f"[http:error] {cache_key} {exc}")
+            raise
+
+        finally:
+            print(
+                f"[http:end] {cache_key} "
+                f"sent={sent_bytes} "
+                f"elapsed={time.time() - wait_started:.1f}s"
+            )
 
     if os.path.exists(cached_file):
         file_size = os.path.getsize(cached_file)
@@ -278,11 +343,17 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
         except Exception:
             return Response(status=416, headers={"Content-Range": f"bytes */{file_size}"})
 
+  
+    
     headers = {
-        "Content-Type": SUPPORTED_CODECS[codec],
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "Transfer-Encoding": "chunked"
+    "Content-Type": SUPPORTED_CODECS[codec],
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
     }
+
+    if estimated_size is not None:
+        headers["X-Estimated-Content-Length"] = str(estimated_size)
+    else:
+        headers["Transfer-Encoding"] = "chunked"
 
     return Response(generate(), status=200, headers=headers)

@@ -5,7 +5,8 @@ var second_interval_5 = null;
 var token
 var server_mode = true;
 var try_reconnect_ws = 0;
-
+window.playerStateFailures = 0;
+window.serverOffline = false;
 
 function getBaseUrl(url) {
   try {
@@ -294,9 +295,35 @@ function after_Ports() {
 }
 
 
+
+
+
 window.pendingRequests = window.pendingRequests || {};
 
 function SendCommand(ApiEntry, Callback, state) {
+
+  function handlePlayerStateResult(success) {
+    if (!parsedUrl.pathname.endsWith("/v1/Player/State")) return;
+
+    if (success) {
+      window.playerStateFailures = 0;
+
+      if (window.serverOffline) {
+        window.serverOffline = false;
+        window.location.reload();
+      }
+
+      return;
+    }
+
+    window.playerStateFailures++;
+
+    if (window.playerStateFailures >= 4) {
+      window.serverOffline = true;
+      console.warn("Serveur indisponible. Nouvelle tentative en cours.");
+    }
+  }
+
   var current_address = window.location.href;
 
   var prot = current_address.includes("https")
@@ -343,6 +370,7 @@ function SendCommand(ApiEntry, Callback, state) {
   var parsedUrl = new URL(url);
   parsedUrl.searchParams.sort();
 
+
   var requestKey =
     parsedUrl.origin +
     parsedUrl.pathname +
@@ -363,6 +391,7 @@ function SendCommand(ApiEntry, Callback, state) {
 
   // Premier callback : libérer la requête, puis exécuter Callback après 800 ms
   request.addEventListener("load", function (event) {
+    handlePlayerStateResult( request.status >= 200 && request.status < 300);
     try {
       if (Callback) {
         Callback.call(this, event);
@@ -379,8 +408,12 @@ function SendCommand(ApiEntry, Callback, state) {
   // Libérer la clé en cas d'erreur ou d'interruption
   function releaseRequest() {
     delete window.pendingRequests[requestKey];
+    handlePlayerStateResult(false);
+
+
   }
 
+  request.timeout = 10000;
   request.addEventListener("error", releaseRequest);
   request.addEventListener("abort", releaseRequest);
   request.addEventListener("timeout", releaseRequest);
@@ -544,12 +577,8 @@ function Server_LibraryScanMusicFolders(clbk, state) {
 }
 
 function Server_Player_CurrentTrack(displaystr, separator, clbk, state) {
-  sep = encodeURIComponent(separator);
-  //if(sep ==""){sep = "json"}
-  SendCommand("/v1/Player/CurrentTrack?displaystr=" + encodeURIComponent(displaystr) + "&separator=" + sep, clbk, state);
-
   // Retrieve info on Current Track
-  SendCommand("/v1/Player/CurrentTrack?displaystr=" + encodeURIComponent(displaystr) + "&separator=" + encodeURIComponent(sep), clbk, state);
+  SendCommand("/v1/Player/CurrentTrack?displaystr=" + encodeURIComponent(displaystr) + "&separator=" + encodeURIComponent(separator), clbk, state);
 }
 
 function Server_Player_CurrentPosition(clbk, state) {
@@ -628,14 +657,10 @@ function Server_TrackInfo(id, displaystr, separator, clbk, state) {
 }
 
 function Server_Get_Files_query(q, displaystr, clbk, state) {
-  var trackliste = document.getElementById('query_tracklist');
-  try { trackliste.innerHTML = ""; } catch { }
   SendCommand("/v1/Display/Files?query=" + q + "&displaystr=" + encodeURIComponent(displaystr), clbk, state);
 }
 
 function Server_Get_Files_ids(ids, displaystr, clbk, state) {
-  var trackliste = document.getElementById('query_tracklist');
-  try { trackliste.innerHTML = ""; } catch { }
   SendCommand("/v1/Display/Files?ids=" + ids + "&displaystr=" + encodeURIComponent(displaystr), clbk, state);
 }
 

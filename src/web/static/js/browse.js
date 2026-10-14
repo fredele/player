@@ -1740,7 +1740,6 @@ function after_Server_Get_Covers() {
   for (i = 0; i < divs.length; ++i) {
     divs[i].src = Server_Get_ThumbUrl(dirhash)
   }
-  //- Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
 }
 
 function tagmodal() {
@@ -2699,9 +2698,11 @@ function after_set_tag_value() {
     document.getElementById('edit_tag').value = "";
   }
   tracklist = document.getElementById('query_tracklist');
+  
   for (var i = 0; i < tracklist.childElementCount; i++) {
     tracklist.children[i].classList.remove("query_track_item_selected")
   }
+  
   current_selected_ids.length = 0
   ids = current_ids
   Server_GetValues(ids, query_tags, after_Server_Get_Query_Overview_and_Files, null)

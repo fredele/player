@@ -415,7 +415,6 @@ def audio_changed(id):
     WSServerProtocol.broadcast_message(msg)
 
 def queue_changed(id,a):
-    #print('queue changed')
     msg = {}
     msg['message'] = 'playlist changed'
     msg['id'] = id
@@ -428,12 +427,10 @@ def dsp_changed(id):
     WSServerProtocol.broadcast_message(msg)
 
 def state_changed(id,state):
-    #print('state changed')
     msg = {}
     msg['message'] = 'state changed'
     msg['value'] = str(state)
     msg['id'] = id
-    print(f"message:state changed value:{msg['value']}")
     WSServerProtocol.broadcast_message(msg)
     time.sleep(.1)
 
@@ -450,9 +447,7 @@ class WSServerProtocol(WebSocketServerProtocol):
 
     def onOpen(self):
         self.connections.append(self)
-        #print(self.peer)
-        #print('Connection numbers : ' + str(len(self.connections)))
-
+ 
     @classmethod
     def broadcast_message(cls, data):
         payload = json.dumps(data, ensure_ascii = False).encode('utf8')
@@ -562,8 +557,6 @@ def slskd_webhook():
         relative_path
     )
 
-    print(f"DownloadDirectoryComplete: {local_path}")
-
     # Lancement asynchrone : ne bloque pas la requête HTTP
     process = subprocess.Popen(
         [
@@ -574,8 +567,6 @@ def slskd_webhook():
         stderr=subprocess.DEVNULL,
         start_new_session=True
     )
-
-    print("correctcomplete launched, PID:", process.pid)
 
     # Réponse immédiate à slskd
     return {
@@ -609,7 +600,6 @@ def transcodedfile(player_id, filename):
         codec = str(getattr(app.player, 'transcode_codec', 'mp3')).lower()
         bitrate = int(getattr(app.player, 'transcode_bitrate', 128))
 
-    print(f"range_header:{range_header}")
     return send_audio_file(app, fileid, codec, bitrate, range_header)
 
 
@@ -621,7 +611,6 @@ def transcodedfile_query_legacy(fileid):
     codec = request.args.get('codec', 'mp3')
     bitrate = request.args.get('bitrate', '128')
     range_header = request.headers.get('Range', None)
-    print(f"range_header:{range_header}")
     return send_audio_file(app, fileid, codec, bitrate, range_header)
 
 
@@ -629,7 +618,6 @@ def transcodedfile_query_legacy(fileid):
 @app.route("/v1/Zip/<dirhash>")
 def zipdirhash(dirhash):
     range_header = request.headers.get('Range', None)
-    print(f"range_header:{range_header}")
     return streamdirhash(app,dirhash,range_header)
 
 
@@ -767,7 +755,6 @@ def upnp_subscription(playerid):
         return abort(404)
 
 def on_upnp_started():
-    #print("upnp started ...")
     pass
 
 @app.route('/v1/Players/Get')
@@ -1446,7 +1433,6 @@ def LibrarySearch():
                 res['response'] = 'OK'
           
     except Exception as e:
-        print(f"Error in LibrarySearch: {e}")
         res['response'] = 'Error'
         return json_resp(res)
     res = json_resp(res)
@@ -2028,7 +2014,6 @@ def get_uri_from_path(dic,position = None):
     p = app.mediafiles_folder
     h = app.http_server_adr
     uri = uri.replace(p, h)
-    print(f"set_uri: {uri}")
     return uri
 
 def _play(player_id,fromqueueadd = False):
@@ -2716,7 +2701,6 @@ def Library_Scan_Music_Update_Folders():
     """Scan the music folders and update the database"""
     res = {}
     if app.scanprocess is not None:
-        print("SCAN PID =", app.scanprocess.pid)
         if app.scanprocess.poll() is None:
             return json_resp({
                 "result": "OK",
@@ -2730,7 +2714,6 @@ def Library_Scan_Music_Update_Folders():
         cwd=app.root_path
     )
 
-    print("SCAN PID =", app.scanprocess.pid)
     res['response'] = 'OK'
     return json_resp(res)
 
@@ -2997,7 +2980,6 @@ def Library_import():
     folder = request.args["folder"]
 
     if app.scanprocess is not None:
-        print("SCAN PID =", app.scanprocess.pid)
 
         if app.scanprocess.poll() is None:
             return json_resp({
@@ -3085,7 +3067,6 @@ def Library_Reimport():
         }), 200
 
     if app.scanprocess is not None:
-        print("SCAN PID =", app.scanprocess.pid)
         if app.scanprocess.poll() is None:
             return json_resp({
                 "result": "OK",
@@ -3100,7 +3081,6 @@ def Library_Reimport():
         cwd=os.chdir(app.root_path)
     )
 
-    print("SCAN PID =", app.scanprocess.pid)
     res['response'] = 'OK'
     return json_resp(res)
 

@@ -12,13 +12,19 @@ gi.require_version('Gst', '1.0')
 gi.require_version('GstPbutils', '1.0')
 from gi.repository import Gst, GstPbutils
 import time
+import math
 
 CACHE_DIR = app.transcoded_folder
 os.makedirs(CACHE_DIR, exist_ok=True)
 TRANSCODE_LOCKS = {}
 TRANSCODE_LOCKS_GUARD = threading.Lock()
-SUPPORTED_CODECS = {"mp3": "audio/mpeg", "flac": "audio/flac", "ogg": "audio/ogg", "opus": "audio/opus"}
-
+SUPPORTED_CODECS = {
+    "mp3": "audio/mpeg",
+    "flac": "audio/flac",
+    "ogg": "audio/ogg",
+    "opus": "audio/opus",
+    "wav": "audio/wav",
+}
 
 def normalize_codec(codec):
     codec_name = str(codec or "mp3").lower().strip()
@@ -92,12 +98,14 @@ class TranscodeToFileThread(threading.Thread):
 
     def run(self):
         encoders = {
-            "mp3": f"lamemp3enc target=1 bitrate={self.bitrate}",
+            "mp3": f"lamemp3enc target=1 cbr=true bitrate={self.bitrate}",
             "flac": "flacenc quality=5",
             "ogg": f"vorbisenc bitrate={self.bitrate}",
             "opus": f"opusenc bitrate={self.bitrate}",
+            "wav": "audio/x-raw,format=S16LE,rate=44100,channels=2 ! wavenc",
         }
 
+        
         pipeline_str = f"""
             filesrc location="{self.input_path}" !
             decodebin !
@@ -105,6 +113,7 @@ class TranscodeToFileThread(threading.Thread):
             {encoders[self.codec]} !
             filesink location="{self.output_path}" append=false
         """
+        
         try:
             self.pipeline = Gst.parse_launch(pipeline_str)
             self.pipeline.set_state(Gst.State.PLAYING)
@@ -157,9 +166,23 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
 
     source_path = os.path.join(app.mediafiles_dir, doc["dirname"], f"{doc['filename']}.{doc['extension']}")
     duration = float(doc.get("length") or 0)
+    
     estimated_size = None
     if codec in ("mp3", "ogg", "opus") and duration > 0:
         estimated_size = int(duration * bitrate * 1000 / 8)
+        
+    if codec == "wav":
+        bitrate = 1411  # 16 bits * 44100 Hz * 2 channels / 1000
+        def estimate_wav_size(duration, sample_rate=44100,
+                            channels=2, bits=16):
+            bytes_per_frame = channels * (bits // 8)
+            frames = math.floor(duration * sample_rate)
+            frames -= frames % 1  # Nombre entier de trames
+
+            data_size = frames * bytes_per_frame
+            return 44 + data_size
+        estimated_size = estimate_wav_size(duration)
+
     file = hashlib.sha256((fileid + codec + str(bitrate)).encode('utf-8')).hexdigest()
     cached_file = os.path.join(CACHE_DIR, f"{file}.{codec}")
     tmp_file = f"{cached_file}.tmp"
@@ -215,16 +238,17 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
     else:
         start = 0
         end = None
-
-    def generate():
+        
+        
+    def generate(estimated_size=None):
         wait_started = time.time()
         prebuffer_bytes = 8192
         sent_bytes = 0
 
-        print(f"[http:start] {cache_key}")
+        print(f"[http:start] {cache_key} estimated_size={estimated_size}")
 
         try:
-            while True:
+            while estimated_size is None or sent_bytes < estimated_size:
                 target = cached_file if os.path.exists(cached_file) else tmp_file
 
                 if not os.path.exists(target):
@@ -256,23 +280,33 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
                     file_size < prebuffer_bytes
                     and transcoder is not None
                     and transcoder.is_alive()
+                    and time.time() - wait_started <= 30
                 ):
-                    if time.time() - wait_started > 30:
-                        pass
-                    else:
-                        time.sleep(0.1)
-                        continue
+                    time.sleep(0.1)
+                    continue
 
                 try:
                     with open(target, "rb") as f:
-                        f.seek(start)
-                        pos = start
+                        f.seek(start + sent_bytes)
 
-                        while True:
+                        while estimated_size is None or sent_bytes < estimated_size:
+                            pos = start + sent_bytes
+
                             if end is not None and pos > end:
                                 break
 
-                            chunk = f.read(4096)
+                            remaining = (
+                                4096 if estimated_size is None
+                                else estimated_size - sent_bytes
+                            )
+
+                            if end is not None:
+                                remaining = min(remaining, end - pos + 1)
+
+                            if remaining <= 0:
+                                break
+
+                            chunk = f.read(min(4096, remaining))
 
                             if not chunk:
                                 if transcoder is not None and transcoder.is_alive():
@@ -281,24 +315,35 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
                                 break
 
                             sent_bytes += len(chunk)
-                            pos += len(chunk)
 
-                            if sent_bytes % (1024 * 1024) < len(chunk):
-                                print(
-                                    f"[http:progress] {cache_key} "
-                                    f"sent={sent_bytes} "
-                                    f"file_size={os.path.getsize(target)}"
-                                )
+                            #if sent_bytes % (1024 * 1024) < len(chunk):
+                                #print(
+                                #    f"[http:progress] {cache_key} "
+                                #    f"sent={sent_bytes} "
+                                #    f"file_size={os.path.getsize(target)}"
+                                #)
 
                             yield chunk
 
-                except GeneratorExit:
-                    raise
+                except FileNotFoundError:
+                    # Le fichier temporaire a pu être renommé entre
+                    # la sélection de son chemin et son ouverture.
+                    if os.path.exists(cached_file):
+                        continue
+                    if transcoder is not None and transcoder.is_alive():
+                        time.sleep(0.1)
+                        continue
+                    print(f"[http:read-error] {cache_key}: fichier introuvable")
+                    break
+
                 except OSError as exc:
                     print(f"[http:read-error] {cache_key} {exc}")
                     break
 
-                break
+                # Si le fichier est terminé, on sort.
+                # Sinon, la boucle externe reprendra au bon offset.
+                if transcoder is None or not transcoder.is_alive():
+                    break
 
         except GeneratorExit:
             print(
@@ -316,8 +361,10 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
             print(
                 f"[http:end] {cache_key} "
                 f"sent={sent_bytes} "
+                f"estimated_size={estimated_size} "
                 f"elapsed={time.time() - wait_started:.1f}s"
             )
+ 
 
     if os.path.exists(cached_file):
         file_size = os.path.getsize(cached_file)
@@ -352,8 +399,10 @@ def send_audio_file(app, fileid, codec, bitrate, range_header):
     }
 
     if estimated_size is not None:
-        headers["X-Estimated-Content-Length"] = str(estimated_size)
+        headers["Content-Length"] = str(estimated_size)
+        return Response(generate(estimated_size), status=200, headers=headers)
     else:
         headers["Transfer-Encoding"] = "chunked"
+        return Response(generate(), status=200, headers=headers)
 
-    return Response(generate(), status=200, headers=headers)
+    

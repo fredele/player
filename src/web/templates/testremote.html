@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnostic télécommande</title>
+<style>
+  body {
+    background: #181818;
+    color: white;
+    font: 20px sans-serif;
+    padding: 24px;
+  }
+  #status {
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+  #events {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 16px monospace;
+  }
+</style>
+</head>
+<body>
+<h1>Diagnostic télécommande</h1>
+<div id="status">Appuie sur une touche...</div>
+<div id="events"></div>
+
+<script>
+const status = document.querySelector("#status");
+const output = document.querySelector("#events");
+
+let pressed = new Map();
+let history = [];
+
+function log(data) {
+  history.unshift(
+    new Date().toLocaleTimeString() + " " +
+    JSON.stringify(data)
+  );
+  history = history.slice(0, 25);
+  output.textContent = history.join("\n");
+}
+
+document.addEventListener("keydown", event => {
+  if (!pressed.has(event.code)) {
+    pressed.set(event.code, performance.now());
+  }
+
+  status.textContent =
+    `DOWN : ${event.key} (${event.code})`;
+
+  log({
+    type: "keydown",
+    key: event.key,
+    code: event.code,
+    keyCode: event.keyCode,
+    repeat: event.repeat,
+    time: Math.round(performance.now())
+  });
+});
+
+document.addEventListener("keyup", event => {
+  const start = pressed.get(event.code);
+  const duration = start === undefined
+    ? null
+    : Math.round(performance.now() - start);
+
+  pressed.delete(event.code);
+
+  status.textContent =
+    `UP : ${event.key} — durée : ${duration} ms`;
+
+  log({
+    type: "keyup",
+    key: event.key,
+    code: event.code,
+    keyCode: event.keyCode,
+    duration
+  });
+});
+
+window.addEventListener("blur", () => {
+  log({ type: "blur" });
+  pressed.clear();
+});
+
+document.addEventListener("visibilitychange", () => {
+  log({ type: "visibilitychange",
+        state: document.visibilityState });
+});
+</script>
+</body>
+</html>
+

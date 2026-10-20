@@ -98,6 +98,7 @@ function renderUpnpPlayers(players) {
         <option value="mp3" ${p.codec === 'mp3' || p.codec === 'MP3' ? 'selected' : ''}>mp3</option>
         <option value="ogg" ${p.codec === 'ogg' || p.codec === 'OGG' ? 'selected' : ''}>ogg</option>
         <option value="flac" ${p.codec === 'flac' || p.codec === 'FLAC' ? 'selected' : ''}>flac</option>
+        <option value="wav" ${p.codec === 'wav' || p.codec === 'WAV' ? 'selected' : ''}>wav</option>
       </select>
 
       <div class="field-label bitrate-label">Bitrate</div>

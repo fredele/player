@@ -145,34 +145,53 @@ function renderQuery(item) {
     let operator = "";
     let val = "";
 
-    if (typeof value === "object" && value !== null) {
-      if ("$exists" in value) {
-        operator = "exists"
-        val = value["$exists"];
-      } else if ("$gt" in value) {
-        operator = ">";
-        val = value["$gt"];
-      } else if ("$lt" in value) {
-        operator = "<";
-        val = value["$lt"];
-      } else if ("$gte" in value) {
-        operator = ">=";
-        val = value["$gte"];
-      } else if ("$lte" in value) {
-        operator = "<=";
-        val = value["$lte"];
-      }
-    } else {
-      operator = "=";
-      val = value;
-    }
+if (typeof value === "object" && value !== null) {
+  if ("$exists" in value) {
+    operator = "exists";
+    val = value.$exists;
+  } else if ("$gt" in value) {
+    operator = ">";
+    val = value.$gt;
+  } else if ("$gte" in value) {
+    operator = ">=";
+    val = value.$gte;
+  } else if ("$lt" in value) {
+    operator = "<";
+    val = value.$lt;
+  } else if ("$lte" in value) {
+    operator = "<=";
+    val = value.$lte;
+  } else if ("$ne" in value) {
+    operator = "!=";
+    val = value.$ne;
+  } else if ("$in" in value) {
+    operator = "in";
+    val = value.$in;
+  } else if ("$nin" in value) {
+    operator = "nin";
+    val = value.$nin;
+  } else if ("$eq" in value) {
+    operator = "=";
+    val = value.$eq;
+  } else {
+    // unknown operator object – decide what you want to do
+    operator = null;
+    val = value;
+  }
+} else {
+  operator = "=";
+  val = value;
+}
 
     // Créer les composants éditables
     const fieldSelect = editableTagSelect(query_tags, "");
     fieldSelect.classList.add("query-field");
     fieldSelect.querySelector("input").value = fieldName;
 
-    const operatorSelect = editableTagSelect([ "=",">","<",">=","<=","exists"],"");
+    const operatorSelect = editableTagSelect(
+      ["=", ">", ">=", "<", "<=", "!=", "in", "nin", "exists"],
+      ""
+    );
     operatorSelect.classList.add("query-operator");
     operatorSelect.querySelector("input").value = operator;
     if (operator === "exists"){
@@ -509,26 +528,36 @@ function extractQueryFromDOM() {
     let condition = {};
 
     switch (op) {
-      case "exists":
-        condition[field] = { "$exists": val };
-        break;
-      case ">":
-        condition[field] = { "$gt": val };
-        break;
-      case "<":
-        condition[field] = { "$lt": val };
-        break;
-      case ">=":
-        condition[field] = { "$gte": val };
-        break;
-      case "<=":
-        condition[field] = { "$lte": val };
-        break;
-      case "=":
-      default:
-        condition[field] = val;
-        break;
-    }
+  case "exists":
+    condition[field] = { "$exists": val };
+    break;
+  case ">":
+    condition[field] = { "$gt": val };
+    break;
+  case ">=":
+    condition[field] = { "$gte": val };
+    break;
+  case "<":
+    condition[field] = { "$lt": val };
+    break;
+  case "<=":
+    condition[field] = { "$lte": val };
+    break;
+  case "!=":
+    condition[field] = { "$ne": val };
+    break;
+  case "in":
+    condition[field] = { "$in": val };
+    break;
+  case "nin":
+    condition[field] = { "$nin": val };
+    break;
+  case "=":
+  default:
+    // plain equality (or unknown operator → treat as equality)
+    condition[field] = val;
+    break;
+}
 
     conditions.push(condition);
   });

@@ -1902,8 +1902,8 @@ def queue_add():
     player = GetPlayer(player_id)
     try:
         # For UnP Players NOT online at startup
-        player.set_volume(app.volumelevel)
-
+        #player.set_volume(app.volumelevel)
+        pass
     except:
         pass
 
@@ -3087,15 +3087,24 @@ def Library_Reimport():
 @app.route("/v1/Display/Covers")
 @app.tokenauth.login_required
 def Display_Covers():
+    
+    if 'ids' in request.args:
+        ids = urllib.parse.unquote(request.args["ids"]).split(";")
+        try:
+            ids = [ObjectId(id) for id in ids]
+        except:
+            return json_resp({'response': 'Error'})
+        query = {"_id": {"$in": ids}}
+        
     if 'query' in request.args:
         query = request.args['query']
         query = eval(urllib.parse.unquote(query))
-        f = app.db.mediafiles.find_one(query)
-        if f == None:
-            return json_resp({'response': 'No dirhash', 'dirhash': []})
-        return json_resp({'response': 'OK', 'dirhash': f['dirhash'] , 'dirname': f['dirname'], 'query' : urllib.parse.quote(str(query))})
-    else:
-        return json_resp({'response': 'No query', 'dirhash': []})
+    f = app.db.mediafiles.find_one(query)
+    
+    if f == None:
+        return json_resp({'response': 'No dirhash', 'dirhash': []})
+    return json_resp({'response': 'OK', 'dirhash': f['dirhash'] , 'dirname': f['dirname'], 'query' : urllib.parse.quote(str(query))})
+
 
 
 @app.route("/v1/Library/Scan/Status")
@@ -3314,7 +3323,7 @@ def Output_Set():
         logging.debug("current_output : " + str(app.current_output))
         output = app.outputs[app.current_output]["gstpipeline"]
         icon = app.config_folder  / "player.xpm"
-        output = output.replace("$icon$",icon )
+        output = output.replace("$icon$",str(icon ))
         try:
             GetPlayer(player_id).set_pipeline(output)
         except:

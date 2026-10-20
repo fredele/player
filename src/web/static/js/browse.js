@@ -6,7 +6,6 @@ var spectrumcanvas = null;
 var elem = document.documentElement;
 var current_ids = [];
 var current_player;
-var files_queried = [];
 var current_selected_ids = [];
 var myTimeOut
 var header_line = []
@@ -52,9 +51,23 @@ var player_change_block = false;
 var queryedited = false;
 var invtranslated = {};
 window.playhere = true;
+window.files_queried = [];
 var mediastop = false;
 var flipflopelapsedbool = false;
-flexContainer = document.getElementById('thumbs_container_2');
+const flexContainer = document.getElementById('thumbs_container_2');
+
+
+
+flexContainer.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const scrollAmount = flexContainer.clientHeight * 0.95;
+    if (event.deltaY > 0) {
+        flexContainer.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    } else {
+        flexContainer.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+    }
+    }, { passive: false }); 
+
 
 var uan = navigator.userAgent.toLowerCase();
 
@@ -219,57 +232,52 @@ function iframeclick() {
   }
 }
 
-function setkeydownhandler() {
-  window.addEventListener("keydown", function (inEvent) {
-    if (typing == true) {
-      return;
-    };
-    if (window.event) {
-      keycode = inEvent.keyCode;
-    } else if (e.which) {
-      keycode = inEvent.which;
-    }
-    switch (keycode) {
-      //case 461: doBack(); break;  
-      case 38:
-        Previous();
-        break; //  arrow up
-      case 40:
-        Next();
-        break; //  arrow down
-      //case 19: doPause(); break;
-      case 415:
-        Play();
-        break;
-      case 32:
-        Play();
-        break; // space bar
-      case 403:
-        doRed();
-        break;
-      case 404:
-        doGreen();
-        break;
-      case 405:
-        doYellow();
-        break;
-      case 406:
-        doBlue();
-        break;
-      case 13:
-        menu_display();
-        break;
-      case 33:
-        inEvent.preventDefault();
-        ScrollUpthumbs();
-        break; //pageUp
-      case 34:
-        inEvent.preventDefault();
-        ScrollDownthumbs();
-        break; //pageDown
-    }
-  });
+if (isCordovaAndroid() ==false)
+{
+setkeydownhandler();
 }
+
+
+
+function setkeydownhandler() {
+    window.addEventListener("keydown", function (inEvent) {
+
+        const el = document.activeElement;
+
+        if (
+            el.matches("input, textarea, select") ||
+            el.isContentEditable
+        ) {
+            return;
+        }
+
+        switch (inEvent.key) {
+            case "8":
+                menu_display();
+                break;
+            case "2":
+                move_panels();
+                break;
+            case "4":
+                show_outputs();
+                break;
+            case "9":
+                inEvent.preventDefault();
+                showsearch();
+                search_txt.focus();
+                break;
+            case "PageUp":
+                inEvent.preventDefault();
+                ScrollUpthumbs();
+                break;
+            case "PageDown":
+                inEvent.preventDefault();
+                ScrollDownthumbs();
+                break;
+        }
+    });
+}
+
 
 function calc_queueelapse() {
   queueelapse = 0
@@ -322,11 +330,16 @@ function isandroid() {
 }
 
 function showsearch() {
-  typing = true;
 
+  if (window.searchmodal.style.display == "block")
+  {
+    window.searchmodal.style.display = "none";
+  }
+  typing = true;
+ 
   window.searchmodal.style.display = "block";
   document.getElementById('search_btn').disabled = false;
-  document.getElementById('search_txt').focus();
+  //document.getElementById('search_txt').focus();
 }
 
 function exit_search() {
@@ -360,11 +373,22 @@ function After_Search_value() {
     coverurl = thumburl
     display = res["Result"][i]["album"]
     query = "%7B%27%24and%27%3A+%5B%7B%27dirhash%27%3A+" + dirhash + "%7D%5D%7D"
-    content = '<div class="thumb" onclick="on_thumb_click_Search(this)" dirhash="' + dirhash + '" covers="' + coverurl + '" query="' + query + '" style="width: 135px; height: 151px;"><img class="yall_lazy thumbimg" data-src="' + thumburl + `" onerror="this.src='img/cd.png' draggable='false' "> <div class="thumbtitle"><span class=` + `album` + `_display >${display}</span></div></div>`
+
+    content = '<div class="thumb" onclick="on_thumb_click_Search(this)" dirhash="' + dirhash +
+    '" covers="' + coverurl +
+    '" query="' + query +
+    '"><img class="yall_lazy thumbimg" data-src="' + thumburl +
+    '" onerror="this.src=\'img/cd.png\'" draggable="false">' +
+    '<div class="thumbtitle"><span class="album_display">' +
+    display +
+    '</span></div></div>';
+    
     allcontent = allcontent + content;
-    thumbs_box.innerHTML = allcontent;
-    lazyload.run();
+    
   }
+  thumbs_box.innerHTML = allcontent;
+    lazyload.run();
+    setDisplay();
 }
 
 function reload_ui() {
@@ -713,7 +737,7 @@ function Goto_Browse_after_Reimport() {
 
 function Goto_Browse() {
 
-  files_queried = [];
+  window.files_queried = [];
   current_selected_ids = [];
 
   document.getElementById('query_all').scrollTop = 0;
@@ -825,11 +849,11 @@ function setDisplay() {
   if (localStorage.hasOwnProperty('thumb_width')) {
     var w = parseInt(localStorage.getItem('thumb_width'));
     document.querySelectorAll('div.thumb').forEach(el => {
-    el.style.width = w;
+    el.style.width = w+"px";
     });
-    w = Math.round(w * 1.12);
+    w = Math.round(w * 1.2);
     document.querySelectorAll('div.thumb').forEach(el => {
-    el.style.height = w;
+    el.style.height = w+"px";
 });
   }
 }
@@ -975,10 +999,18 @@ function after_Upload_Image() {
   res = JSON.parse(this.response);
   updatedimages = res
   /*Update the Queue List ...*/
-  Server_Get_Queue(after_Get_Queue, null);
-  Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
-  Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
-  Server_Player_CurrentTrack(format_info, "", after_Format_Display, null);
+  if (window.current_player == "here")
+  {
+    //TODO:update covers in playlist and play bar ..
+  }
+  else
+  {
+    Server_Get_Queue(after_Get_Queue, null);
+    Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
+    Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
+    Server_Player_CurrentTrack(format_info, "", after_Format_Display, null);
+
+  }
 
   if ( window.queryview_last_query != undefined &&  window.queryview_last_query != "") {
     Server_Get_Covers( window.queryview_last_query, after_Server_Get_Covers, null)
@@ -1780,7 +1812,6 @@ function browse_to_level(lev) {
 // Fonction commune : injection des thumbs
 // ============================================================
 function render_thumbs(res, key) {
-
   var thumbs_box = document.getElementById("thumbs_box");
   thumbs_box.innerHTML = '';
 
@@ -1797,14 +1828,13 @@ function render_thumbs(res, key) {
     }
 
     var thumb = document.createElement('div');
-
+    
     // Propriétés communes
     thumb.setAttribute('class', 'thumb');
     thumb.setAttribute('onclick', 'on_thumb_click_Library(this)');
     thumb.setAttribute('query', res[i]["query"]);
     thumb.setAttribute('keyval', res[i]["keyval"]);
     thumb.setAttribute('covers', res[i]["covers"]);
-    thumb.setAttribute('style', 'width: 135px; height: 151px;');
 
     thumb.innerHTML =
       `
@@ -1998,6 +2028,10 @@ function menu_display() {
   var query = document.getElementById('query_container');
   left = query.style.left;
   if (left == "" || left == "-150%") {
+    
+    playlist.style.left = "-150%";
+    thumbs.style.left = "0%";
+    
     document.getElementById("menu_container").style.width = "100%";
     document.getElementById("menu_items").style.width = "100%";
     document.getElementById("menu_all").style.width = "80px";
@@ -2131,6 +2165,7 @@ function after_Server_Get_SideFiles() {
 
 
 function after_Server_Get_Files() {
+  window.files_queried = []
   current_ids = []
   var trackliste = document.getElementById('query_tracklist');
   try {
@@ -2153,7 +2188,7 @@ function after_Server_Get_Files() {
     title = track["display"];
     track["file_addr"] = addr + "/" + track["dirname"] + "/" + track["filename"] + "." + track["extension"]
 
-    files_queried.push(track)
+    window.files_queried.push(track)
     imgurl = ""
     if ("dirhash" in track) {
       if (updatedimages.indexOf(track["dirhash"]) >= 0) {
@@ -2250,7 +2285,7 @@ function after_Server_Get_Query_Overview_and_Files() {
   // Fills the track list in the Query view
   Server_Get_Files_ids(current_ids.join(";"), query_track_info, after_Server_Get_Files, null);
   Server_Get_Group_Ids(current_ids.join(";"), query_album_info, "json", after_Server_Get_Group_Ids, null);
-
+  Server_Get_Covers_Ids(current_ids.join(";"),after_Server_Get_Covers,null);
   Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
   Server_Player_CurrentTrack(track_info_1, "json", after_CurrentTrack_Playlist, null);
   Server_Player_CurrentTrack(format_info, "", after_Format_Display, null);
@@ -2450,7 +2485,7 @@ function after_Server_Reimport_Query() {
 
 function after_Server_Get_Group_Query() {
   //Fills query Title
-  files_queried = []
+  //window.files_queried = []
   document.getElementById('query_all').scrollTop = 0;
   var responseObject = JSON.parse(this.response);
   display = responseObject["display"];
@@ -2569,24 +2604,22 @@ function show_dsp_editor() {
 
 function show_outputs() {
 
+  if (window.outputmodal.style.display == "block")
+  {
+    window.outputmodal.style.display = "none";
+    return;
+  }  
+
   if (localStorage.hasOwnProperty('web_transcode_active')) {
   } else {
     localStorage.setItem('web_transcode_active', false);
   }
 
-  if (localStorage.hasOwnProperty('web_transcode_codec')) {
-  } else {
-    localStorage.setItem('web_transcode_codec', 'mp3');
-  }
+window.web_codec = localStorage.getItem("web_transcode_codec") || "mp3";
+window.web_bitrate = localStorage.getItem("web_transcode_bitrate") || "320";
 
-  if (localStorage.hasOwnProperty('web_transcode_bitrate')) {
-  } else {
-    localStorage.setItem('web_transcode_bitrate', '128');
-  }
-
-
-  document.getElementById("streaming_quality").value = localStorage.getItem("web_transcode_bitrate");
-  document.getElementById("activate_streaming").checked = localStorage.getItem("web_transcode_active") === "true";
+document.getElementById("streaming_quality").value = `${window.web_codec}|${window.web_bitrate}`;  
+document.getElementById("activate_streaming").checked = localStorage.getItem("web_transcode_active") === "true";
 
   if (!isCordova()) {
     document.getElementById('activate_streaming').disabled = true;
@@ -2706,7 +2739,13 @@ function after_set_tag_value() {
   current_selected_ids.length = 0
   ids = current_ids
   Server_GetValues(ids, query_tags, after_Server_Get_Query_Overview_and_Files, null)
-
+  // Reload last thumnnails view ...
+  q = window.queryview_last_query
+  //Server_Get_Covers(window.queryview_last_query, after_Server_Get_Covers, null)
+  id = queue[current_playing_position]["_id"]
+  Server_TrackInfo(id, current_track_info, "json", after_current_track_info)
+  Server_TrackInfo(id, track_info_1, "json", after_track_info_1)
+  Server_TrackInfo(id, format_info, "", after_Format_Display, null);
 }
 
 
@@ -2916,7 +2955,9 @@ function playerschangeweb(item) {
   document.getElementById("outputgstdropbtn").disabled = true;
   document.getElementById("chooseoutput").style.display = "none";
   document.getElementById("choosestreaming").style.display = "block";
-  document.getElementById("streaming_quality").value = localStorage.getItem("web_transcode_bitrate");
+
+  document.getElementById("streaming_quality").value = `${window.web_codec}|${window.web_bitrate}`;  
+
   document.getElementById("activate_streaming").checked = localStorage.getItem("web_transcode_active") === "true";
   if (localStorage.hasOwnProperty('web_transcode_codec')) {
     window.web_codec = localStorage.getItem('web_transcode_codec');
@@ -2930,15 +2971,15 @@ function playerschangeweb(item) {
     window.web_bitrate = localStorage.getItem('web_transcode_bitrate');
   }
   else {
-    localStorage.setItem('web_transcode_bitrate', '128');
-    window.web_bitrate = '128';
+    localStorage.setItem('web_transcode_bitrate', '320');
+    window.web_bitrate = '320';
   }
   window.current_player = "here";
   localStorage.setItem("current_player", "here");
   document.getElementById("status").innerHTML = "status : OK"
   document.getElementById('activate_streaming').checked = true;
   document.getElementById('activate_streaming').disabled = true;
-  document.getElementById("streaming_quality").value = window.web_bitrate;
+  document.getElementById("streaming_quality").value = `${window.web_codec}|${window.web_bitrate}`;  
 
   loadScript("js/browse_web.js", function () {
     onload_browse();
@@ -2957,7 +2998,7 @@ function playerschangeandroid(item) {
   document.getElementById("outputgstdropbtn").disabled = true;
   document.getElementById("chooseoutput").style.display = "none";
   document.getElementById("choosestreaming").style.display = "block";
-  document.getElementById("streaming_quality").value = localStorage.getItem("web_transcode_bitrate");
+  document.getElementById("streaming_quality").value = `${window.web_codec}|${window.web_bitrate}`;  
   document.getElementById("activate_streaming").checked = localStorage.getItem("web_transcode_active") === "true";
   if (localStorage.hasOwnProperty('web_transcode_codec')) {
     window.web_codec = localStorage.getItem('web_transcode_codec');
@@ -2971,8 +3012,8 @@ function playerschangeandroid(item) {
     window.web_bitrate = localStorage.getItem('web_transcode_bitrate');
   }
   else {
-    localStorage.setItem('web_transcode_bitrate', '128');
-    window.web_bitrate = '128';
+    localStorage.setItem('web_transcode_bitrate', '320');
+    window.web_bitrate = '320';
   }
   document.getElementById("outputgstdropbtn").disabled = true;
   document.getElementById("chooseoutput").style.display = "none";
@@ -3159,10 +3200,14 @@ function clear_ui() {
 }
 
 function handleQualityChange() {
-  val = document.getElementById("streaming_quality").value;
-  window.web_bitrate = val;
-  localStorage.setItem("web_transcode_bitrate", val);
-};
+    const [codec, bitrate] = document.getElementById("streaming_quality").value.split("|");
+
+    window.web_codec = codec;
+    window.web_bitrate = bitrate;
+
+    localStorage.setItem("web_transcode_codec", codec);
+    localStorage.setItem("web_transcode_bitrate", bitrate);
+}
 
 
 function toggleStreaming() {

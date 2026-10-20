@@ -284,14 +284,14 @@ function query_play() {
 
   if (current_selected_ids.length > 0) {
     queue = []
-    for (var i = 0; i < files_queried.length; i++) {
-      if (current_selected_ids.includes(files_queried[i]["_id"])) {
-        queue.push(files_queried[i]);
+    for (var i = 0; i < window.files_queried.length; i++) {
+      if (current_selected_ids.includes(window.files_queried[i]["_id"])) {
+        queue.push(window.files_queried[i]);
       }
     }
   }
   else {
-    queue = files_queried
+    queue = window.files_queried
   }
   Fill_Queue()
   reset_query_container()
@@ -337,14 +337,14 @@ function query_queue() {
 
 
   if (current_selected_ids.length > 0) {
-    for (var i = 0; i < files_queried.length; i++) {
+    for (var i = 0; i < window.files_queried.length; i++) {
       if (current_selected_ids.includes(files_queried[i]["_id"])) {
-        queue.push(files_queried[i]);
+        queue.push(window.files_queried[i]);
       }
     }
   }
   else {
-    queue = queue.concat(files_queried);
+    queue = queue.concat(window.files_queried);
   }
   Fill_Queue()
   reset_query_container()
@@ -646,8 +646,8 @@ function onload_browse() {
     window.web_bitrate = localStorage.getItem('web_transcode_bitrate');
   }
   else {
-    localStorage.setItem('web_transcode_bitrate', '128');
-    window.web_bitrate = '128';
+    localStorage.setItem('web_transcode_bitrate', '320');
+    window.web_bitrate = '320';
   }
 
   var elementToChange = document.getElementsByTagName("body")[0];
@@ -676,6 +676,7 @@ function onload_browse() {
 
   window.oncontextmenu = function (event) {
     s = event.srcElement.src;
+    if (s == undefined) {return;}
     if (s.includes("play.png")) { stop(); }
     if (s.includes("pause.png")) { stop(); }
     if (s.includes("volume.png")) { stop(); }
@@ -820,10 +821,12 @@ function after_onload_browse() {
   // Updated images
   Server_Get_UpdatedImages(after_Get_UpdatedImages, null);
 
+  window.dispatchEvent(new Event('resize'));
+  window.onpopstate = ("popstate", function (e) {
+    browsepopstate();
+  });
 
-  window.onpopstate = ("popstate", function (e) { browsepopstate(); });
-
-
+  if (!isAndroid) {
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
       document.getElementById('playlist_cover').addEventListener(eventName, preventDefaults, false);
     });
@@ -836,12 +839,20 @@ function after_onload_browse() {
       document.getElementById('thumbs_container_2').addEventListener(eventName, preventDefaults, false);
     });
 
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.getElementById('query_topheader').addEventListener(eventName, preventDefaults, false);
+    });
+
     document.getElementById('playlist_cover').addEventListener('drop', handleDrop, false);
-    document.getElementById('query_topheader').addEventListener('drop', handleDrop_query, false);
-    document.getElementById('thumbs_container_2').addEventListener('drop', handleDrop_import, false);
-    document.getElementById('playlist_item_delete_img').addEventListener('dragend', playlist_item_delete, false);
-    document.getElementById('playlist_item_delete_img').addEventListener('dragenter', playlist_item_dragenter);
-  
+    const query_topheader = document.getElementById('query_topheader');
+    query_topheader.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    query_topheader.addEventListener('drop', handleDrop_query, false);
+
+  }
   Server_Get_Players_Detected(after_Get_Players_Detected);
   //Server_Get_Players_Detect(after_Get_Players_Detect);
   Server_LibraryScanStatus(after_ScanStatus, null);

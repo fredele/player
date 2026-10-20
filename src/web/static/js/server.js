@@ -643,6 +643,12 @@ function Server_Get_Covers(q, clbk, state) {
   SendCommand("/v1/Display/Covers?query=" + q, clbk, state);
 }
 
+function Server_Get_Covers_Ids(ids, clbk, state) {
+  ids = current_ids.join(';')
+  SendCommand("/v1/Display/Covers?ids=" + ids, clbk, state);
+}
+
+
 function Server_Get_Group_Query(q, displaystr, separator, clbk, state) {
   SendCommand("/v1/Display/Group?query=" + q + "&displaystr=" + encodeURIComponent(displaystr) + "&separator=" + encodeURIComponent(separator), clbk, state);
 }

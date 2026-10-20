@@ -45,6 +45,14 @@
       "preLaunchTask": "docker-compose-mongodb-up" 
       
     },
+        {
+      "name": "Debug estimate",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/help/snippets/estimatesize.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/../venv/bin/python",
+    },
      {
       "name": "Debug querybuilder",
       "type": "debugpy",

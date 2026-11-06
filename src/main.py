@@ -1124,6 +1124,72 @@ def homeweb():
     res = render_template("/browseweb.html")
     return  res
 
+
+def get_latest_log_path():
+    log_dir = getattr(app, "logs_folder", None)
+    if log_dir is None:
+        from paths import logs_folder
+        log_dir = logs_folder
+
+    log_path = Path(log_dir) / "log.txt"
+    if log_path.exists():
+        return log_path
+
+    candidates = sorted(Path(log_dir).glob("log.txt*"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if candidates:
+        return candidates[0]
+    return log_path
+
+
+@app.route("/logs")
+@app.tokenauth.login_required
+def logs_page():
+    return render_template("/log_view.html")
+
+
+@app.route("/v1/Logs/Content")
+@app.tokenauth.login_required
+def logs_content():
+    try:
+        lines = request.args.get("lines", default=200, type=int)
+        lines = max(1, min(lines, 10000))
+        log_path = get_latest_log_path()
+
+        if not log_path.exists():
+            return json_error(f"Log file not found: {log_path}", 404)
+
+        with open(log_path, "r", encoding="utf-8", errors="replace") as log_file:
+            all_lines = log_file.readlines()
+
+        tail = all_lines[-lines:] if lines else all_lines
+        return json_resp({
+            "response": "OK",
+            "path": str(log_path),
+            "lines": len(tail),
+            "log": "".join(tail),
+        })
+    except Exception as exc:
+        return json_error(f"Unable to read log file: {exc}", 500)
+
+
+@app.route("/v1/Logs/Download")
+@app.tokenauth.login_required
+def download_log():
+    try:
+        log_path = get_latest_log_path()
+        if not log_path.exists():
+            return json_error(f"Log file not found: {log_path}", 404)
+
+        return send_file(
+            str(log_path),
+            as_attachment=True,
+            download_name="log.txt",
+            mimetype="text/plain"
+        )
+    except Exception as exc:
+        return json_error(f"Unable to download log file: {exc}", 500)
+
+
 @app.route("/embded/<dirhash>")
 def embded_dirhash(dirhash):
     res = render_template("/embded.html")

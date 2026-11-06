@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player logs</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111111;
+      --panel: #1b1b1b;
+      --muted: #bfc6d0;
+      --text: #f3f3f3;
+      --border: #2d2d2d;
+      --button: #1b54af;
+      --button-hover: #2d69c6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      background: var(--button);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background: var(--button-hover);
+    }
+
+    #log-lines {
+      width: 90px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+      color: var(--text);
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+
+    pre {
+      flex: 1;
+      overflow: auto;
+      margin: 0;
+      padding: 16px;
+      background: #090909;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="refresh-log" type="button">Refresh</button>
+    <button id="download-log" type="button">Download</button>
+    <label for="log-lines">Lines</label>
+    <input id="log-lines" type="number" min="50" max="10000" value="200">
+    <div id="status" class="status"></div>
+  </div>
+
+  <pre id="log-output">Loading log…</pre>
+
+  <script src="/js/log_view.js"></script>
+</body>
+</html>

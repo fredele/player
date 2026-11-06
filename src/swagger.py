@@ -63,6 +63,8 @@ def register_swagger_routes(api, ns):
         get_players,
         get_queue,
         get_radio,
+        download_log,
+        logs_content,
         login,
         menu,
         parse_podcast,
@@ -95,6 +97,25 @@ def register_swagger_routes(api, ns):
         @ns.doc(summary="Simple health check", description=API_RESPONSE_CONTRACT + "Simple health check")
         def get(self):
             return test()
+
+    @ns.route("/Logs/Content")
+    class LogsContentResource(Resource):
+        @ns.doc(
+            summary="Read the latest application log entries",
+            description=API_RESPONSE_CONTRACT + "Returns the latest lines of the active application log file.",
+            params={"lines": "Maximum number of log lines to return. Default: 200"}
+        )
+        def get(self):
+            return logs_content()
+
+    @ns.route("/Logs/Download")
+    class LogsDownloadResource(Resource):
+        @ns.doc(
+            summary="Download the application log file",
+            description="Downloads the current application log file as a text attachment."
+        )
+        def get(self):
+            return download_log()
 
     @ns.route("/Players/Get")
     class PlayersGetResource(Resource):

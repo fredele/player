@@ -1037,7 +1037,14 @@ function showsearch() {
  
   window.searchmodal.style.display = "block";
   document.getElementById('search_btn').disabled = false;
-  //document.getElementById('search_txt').focus();
+
+  setTimeout(function () {
+    const searchInput = document.getElementById('search_txt');
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  }, 0);
 }
 
 function exit_search() {

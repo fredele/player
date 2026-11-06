@@ -54,6 +54,8 @@ window.playhere = true;
 window.files_queried = [];
 var mediastop = false;
 var flipflopelapsedbool = false;
+var coverurl = null;
+var coverurl2 = null;
 const flexContainer = document.getElementById('thumbs_container_2');
 
 
@@ -989,8 +991,8 @@ function correctdisplay(display, name) {
 }
 
 function after_Get_UpdatedImages() {
-  res = JSON.parse(this.response);
-  updatedimages = res
+  const parsed = JSON.parse(this.response);
+  updatedimages = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : []);
 
 }
 
@@ -1106,7 +1108,8 @@ function after_CurrentTrack() {
   // Set the cover for each class="cover"
 
   if ("dirhash" in responseObject) {
-    if (updatedimages.indexOf(responseObject["dirhash"]) >= 0) {
+    const hasUpdatedImage = Array.isArray(updatedimages) && updatedimages.includes(responseObject["dirhash"]);
+    if (hasUpdatedImage) {
       Array.from(document.getElementsByClassName('cover')).forEach(el => {
         el.src = Server_Get_Coverurl(responseObject.dirhash);
       });
@@ -1145,12 +1148,15 @@ function after_CurrentTrack() {
   display = responseObject.display;
   correctdisplay(display, 'display_str');
 
+  coverurl = null;
+  coverurl2 = null;
+
   if ("dirhash" in responseObject) {
     coverurl = Server_Get_Coverurl(responseObject.dirhash) + "?uploadTime=" + Math.floor(Date.now() / 1000 / 10) * 10;
     coverurl2 = Server_Get_Coverurl(responseObject.dirhash)
   }
   if ("covers" in responseObject) {
-    if (updatedimages.indexOf(responseObject["dirhash"]) >= 0) {
+    if (Array.isArray(updatedimages) && updatedimages.indexOf(responseObject["dirhash"]) >= 0) {
       coverurl2 = responseObject.covers[0] + "?uploadTime=" + Math.floor(Date.now() / 1000 / 10) * 10;
     } else {
       coverurl2 = responseObject.covers[0]
@@ -1159,9 +1165,11 @@ function after_CurrentTrack() {
     coverurl = null;
   }
 
-  Array.from(document.getElementsByClassName('cover-bckg')).forEach(el => {
-    el.src = encodeURI(coverurl2);
-  });
+  if (coverurl2) {
+    Array.from(document.getElementsByClassName('cover-bckg')).forEach(el => {
+      el.src = encodeURI(coverurl2);
+    });
+  }
   Array.from(document.getElementsByClassName('cover')).forEach(el => {
     try {
       if (coverurl != null) { el.style.src = coverurl; }
@@ -2191,7 +2199,8 @@ function after_Server_Get_Files() {
     window.files_queried.push(track)
     imgurl = ""
     if ("dirhash" in track) {
-      if (updatedimages.indexOf(track["dirhash"]) >= 0) {
+      const hasUpdatedImage = Array.isArray(updatedimages) && updatedimages.includes(track["dirhash"]);
+      if (hasUpdatedImage) {
         imgurl = Server_Get_ThumbUrl(track["dirhash"]);
       } else {
         imgurl = Server_Get_ThumbUrl(track["dirhash"]);
@@ -3219,12 +3228,15 @@ function thumbsbox_overflow() {
   /*
   Completes pagination while scrolling
   */
-  flexContainer = document.getElementById('thumbs_container_2');
-  const isOverflowing = flexContainer.scrollHeight > flexContainer.clientHeight;
+  const currentFlexContainer = document.getElementById('thumbs_container_2');
+  if (!currentFlexContainer) {
+    return;
+  }
+  const isOverflowing = currentFlexContainer.scrollHeight > currentFlexContainer.clientHeight;
   if (isOverflowing == false) {
     //Server_find(thumb_q,field_q,sort_q,display_q, page_nbr +1,req_thumb_cout,after_Server_find,null)
   }
-  const isScrolledToBottom = flexContainer.scrollTop + flexContainer.clientHeight === flexContainer.scrollHeight;
+  const isScrolledToBottom = currentFlexContainer.scrollTop + currentFlexContainer.clientHeight >= currentFlexContainer.scrollHeight;
   if (isOverflowing && isScrolledToBottom) {
     // Code to execute when the flexbox is scrolled to its maximum down
     //Server_find(thumb_q,field_q,sort_q,display_q, page_nbr +1,req_thumb_cout,after_Server_find,null)
@@ -3233,8 +3245,11 @@ function thumbsbox_overflow() {
 
 function set_overflow() {
   /*Completes pagination on Windows sizing*/
-  flexContainer = document.getElementById('thumbs_container_2');
-  const isOverflowing = flexContainer.scrollHeight > flexContainer.clientHeight;
+  const currentFlexContainer = document.getElementById('thumbs_container_2');
+  if (!currentFlexContainer) {
+    return;
+  }
+  const isOverflowing = currentFlexContainer.scrollHeight > currentFlexContainer.clientHeight;
   if (isOverflowing == false) {
 
   }

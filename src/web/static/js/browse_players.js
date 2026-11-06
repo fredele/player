@@ -671,8 +671,8 @@ function onload_browse() {
 }
 
 function after_Get_UpdatedImages() {
-  res = JSON.parse(this.response);
-  updatedimages = res
+  const parsed = JSON.parse(this.response);
+  updatedimages = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : []);
 
 }
 

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
+    <style>
+      body {
+        margin: 0;
+        background: #f5f7fb;
+      }
+      #swagger-ui {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
+    <script>
+      (function () {
+        const savedToken = localStorage.getItem('token');
+
+        const ui = SwaggerUIBundle({
+          url: '{{ spec_url }}',
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
+          plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+          layout: 'BaseLayout',
+          persistAuthorization: true,
+          requestInterceptor: function (req) {
+            const token = localStorage.getItem('token');
+            if (token && (!req.headers || !req.headers.Authorization)) {
+              req.headers = req.headers || {};
+              req.headers.Authorization = 'Bearer ' + token;
+            }
+            return req;
+          },
+          onComplete: function () {
+            if (savedToken) {
+              try {
+                this.preauthorizeApiKey('Authorization', 'Bearer ' + savedToken);
+              } catch (e) {
+                console.warn('Swagger token pre-authorization failed:', e);
+              }
+            }
+          }
+        });
+
+        window.ui = ui;
+      })();
+    </script>
+  </body>
+</html>

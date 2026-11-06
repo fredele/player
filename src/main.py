@@ -49,7 +49,7 @@ import random
 from bson.objectid import ObjectId
 from flask_restx import Api, Resource as RestXResource
 from flask import g ,Response, stream_with_context
-from flask import send_file, redirect
+from flask import send_file, redirect, jsonify
 from pymongo import MongoClient,ASCENDING, TEXT
 from datetime import datetime
 from time import sleep
@@ -347,12 +347,58 @@ def _writetags(i,field,value,mode):
     except:
         pass
 
-def json_resp(data):
+def normalize_api_response(data):
+    """Normalize all API responses to a single contract.
+
+    Success format:
+        {"response": "OK", ...}
+    Error format:
+        {"response": "error", "message": "..."}
     """
-    Format the response in JSON
+    if data is None:
+        return {"response": "OK"}
+
+    if not isinstance(data, dict):
+        return {"response": "OK", "data": data}
+
+    payload = dict(data)
+
+    if "error" in payload and "response" not in payload:
+        payload["response"] = "error"
+        payload["message"] = payload.pop("error")
+
+    if "response" in payload and isinstance(payload["response"], str):
+        normalized_response = payload["response"].strip().lower()
+        if normalized_response in ("ok", "okay", "success"):
+            payload["response"] = "OK"
+        elif normalized_response in ("error", "failed", "err", "ko"):
+            payload["response"] = "error"
+
+    if "response" not in payload:
+        payload["response"] = "OK"
+
+    if payload.get("response") == "error" and "message" not in payload:
+        payload["message"] = "Error"
+
+    return payload
+
+
+def json_resp(data, status=200):
     """
+    Format the response in JSON using the unified response contract.
+    """
+    payload = normalize_api_response(data)
     return app.response_class(
-            response=json.dumps(data,iterable_as_array=True),status=200, mimetype='application/json' )
+            response=json.dumps(payload, iterable_as_array=True),
+            status=status,
+            mimetype='application/json')
+
+
+def json_error(message, status=400, **extra):
+    payload = {"response": "error", "message": str(message)}
+    payload.update(extra)
+    return json_resp(payload, status=status)
+
 
 def getfiles(dir):
     """
@@ -396,7 +442,7 @@ def custom_401(error):
     :param error:
     :return: json response
     """
-    return Response( json.dumps({"response":'Not authenticated as Admin !'}), 401, "",mimetype='application/json') #{'WWW-Authenticate':'Basic realm="Login Required"'}
+    return json_error("Not authenticated as Admin !", status=401)
     return abort(404)
 
 def spectrum(el,id,vals):
@@ -726,22 +772,6 @@ def stats():
 
     return json_resp(res)
 
-
-@app.route('/v1/<string:dirhash>/<string:filename>')
-def file_listing(dirhash,filename):
-    try:
-        c = app.db.mediafiles.find_one({"dirhash": int(dirhash)})
-        if c is not None:
-            path = str(c["dirname"])
-            path = app.mediafiles_folder / path / filename
-            if os.path.exists(path):
-                return send_file(path)
-            else:
-                return abort(404)
-        else:
-            return abort(404)
-    except:
-        return abort(404)
 
 @app.route('/upnp/<string:playerid>', methods=['NOTIFY'])
 def upnp_subscription(playerid):
@@ -1430,17 +1460,17 @@ def AlbumStats(dirhash):
 def LibrarySearch():
     res = {}
     try:
-        if  'value' in request.args and 'query' in request.args:
+        if 'value' in request.args and 'query' in request.args:
             if app.ram_search.available:
                 results = app.ram_search.search(request.args['value'], limit=100)
                 res['Result'] = results
                 res['response'] = 'OK'
-          
+                return json_resp(res)
+
+        return json_error("No search result available", status=404)
+
     except Exception as e:
-        res['response'] = 'Error'
-        return json_resp(res)
-    res = json_resp(res)
-    return res
+        return json_error(str(e), status=500)
 
 
 
@@ -1451,7 +1481,7 @@ def radiomode():
     if "player_id" in request.args:
         player_id = request.args["player_id"]
     else:
-        return abort(404)
+        return json_error("Missing player_id", status=400)
     if "query" in request.args:
         cursor = app.db.mediafiles.find(eval(urllib.parse.unquote(request.args["query"]))) #.limit(10000)
     if "ids" in request.args:
@@ -1485,10 +1515,10 @@ def radiomode():
 @app.route("/v1/Player/DSP/Get")
 @app.tokenauth.login_required
 def dsp_get():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     dsps = eval( urllib.parse.unquote(request.args['props']))
     for dsp in dsps:
         for prop in dsp['props'] :
@@ -1511,10 +1541,10 @@ def dsp_get():
 @app.route("/v1/Player/DSP/Set")
 @app.tokenauth.login_required
 def dsp_set():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     if is_number(request.args['value']) == True:
         val = float(request.args['value'])
     if BoolStr(request.args['value']) is not None:
@@ -1529,10 +1559,10 @@ def dsp_set():
 @app.route("/v1/Player/Next")
 @app.tokenauth.login_required
 def Next():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     GetPlayer(player_id).set_next()
     res =  _info(GetPlayer(player_id))
     return json_resp(res)
@@ -1540,10 +1570,10 @@ def Next():
 @app.route("/v1/Player/Previous")
 @app.tokenauth.login_required
 def Previous():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     GetPlayer(player_id).set_previous()
     res =  _info(GetPlayer(player_id))
     return json_resp(res)
@@ -1551,10 +1581,10 @@ def Previous():
 @app.route("/v1/Player/Seek/Set")
 @app.tokenauth.login_required
 def Set():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     state = GetPlayer(player_id).get_state()
     if 'SeekAt' in request.args:
         seek_ns = 1000000 * int(request.args['SeekAt'])
@@ -1585,10 +1615,10 @@ def Restartqueue():
     '''
     Set the restart queue
     '''
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res = {}
     if 'val' in request.args:
         app.restartqueue = BoolStr(request.args['val'])
@@ -1613,10 +1643,10 @@ def Volume_Set():
     '''
     Set the volume in a range of 0 - 1
     '''
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res = {}
     if 'val' in request.args:
         val =float(request.args['val'])
@@ -1646,10 +1676,10 @@ def Volume_Set():
 @app.route("/v1/Player/CurrentPosition")
 @app.tokenauth.login_required
 def CurrentPosition():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res = {}
     res["response"] = "OK"
     try:
@@ -1673,6 +1703,9 @@ def CurrentPosition():
 @app.tokenauth.login_required
 def TrackInfo():
     """Compute display for a given id """
+    if "id" not in request.args:
+        return json_error("Missing id", status=400)
+
     id = urllib.parse.unquote(request.args["id"])
     displaystr = ""
     separator = ", "
@@ -1693,10 +1726,10 @@ def TrackInfo():
 @app.route("/v1/Player/CurrentTrack")
 @app.tokenauth.login_required
 def Info():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     displaystr = ""
     separator = ", "
     if 'displaystr' in request.args:
@@ -1756,10 +1789,10 @@ def _info(player,displaystr ="", separator= ", "):
 @app.route("/v1/Player/State")
 @app.tokenauth.login_required
 def State():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res ={}
     res =  _state(GetPlayer(player_id))
     return json_resp(res)
@@ -1787,10 +1820,10 @@ def _state(player):
 @app.route("/v1/Queue/Get")
 @app.tokenauth.login_required
 def get_queue():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     if GetPlayer(player_id) == None:
         return abort(404)
     if 'displaystr' in request.args:
@@ -1801,10 +1834,10 @@ def get_queue():
 @app.route("/v1/Queue/Clear")
 @app.tokenauth.login_required
 def clear_queue():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res = {}
     if 'ids' in request.args:
         indexes = [int(x) for x in request.args['ids'].split(';')]
@@ -1833,10 +1866,10 @@ def clear_queue():
 @app.route("/v1/Queue/Delete")
 @app.tokenauth.login_required
 def queue_delete():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     if 'id' in request.args :
         id = int(request.args["id"])
         queue = GetPlayer(player_id).queue
@@ -1855,10 +1888,10 @@ def queue_delete():
 @app.route("/v1/Queue/Move")
 @app.tokenauth.login_required
 def queue_move():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     if 'from' in request.args and 'to' in request.args:
         id_from = int(request.args["from"])
         id_to = int(request.args["to"])
@@ -1896,10 +1929,10 @@ def queue_move():
 @app.route("/v1/Queue/Add")
 @app.tokenauth.login_required
 def queue_add():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res = {}
     action =''
     app.addqueue = True
@@ -1988,10 +2021,10 @@ def queue_add():
 @app.route("/v1/Player/Stop")
 @app.tokenauth.login_required
 def Stop():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     GetPlayer(player_id).playbin.set_property("uri","")
     time.sleep(.1)
     GetPlayer(player_id).set_stop()
@@ -2001,10 +2034,10 @@ def Stop():
 @app.route("/v1/Player/Play")
 @app.tokenauth.login_required
 def Play():
-    if "player_id" in request.args:
-        player_id = request.args["player_id"]
-    else:
-        return abort(404)
+    if "player_id" not in request.args:
+        return json_error("Missing player_id", status=400)
+
+    player_id = request.args["player_id"]
     res = {}
     _play(player_id)
     res = _info(GetPlayer(player_id))
@@ -2093,6 +2126,22 @@ def _play(player_id,fromqueueadd = False):
                     GetPlayer(player_id).set_pause() #  play/pause button
     res =  _info(GetPlayer(player_id))
     return json_resp(res)
+
+@app.route('/v1/<string:dirhash>/<string:filename>')
+def file_listing(dirhash,filename):
+    try:
+        c = app.db.mediafiles.find_one({"dirhash": int(dirhash)})
+        if c is not None:
+            path = str(c["dirname"])
+            path = app.mediafiles_folder / path / filename
+            if os.path.exists(path):
+                return send_file(path)
+            else:
+                return abort(404)
+        else:
+            return abort(404)
+    except:
+        return abort(404)
 
 @app.route("/v1/Mediafile/<media>/<filename>")
 def get_mediafile(media,filename):
@@ -2956,12 +3005,12 @@ def find( ):
     used by Control player view
     """
     try:
-        res = Requestfind(request.args,app.db)
+        res = Requestfind(request.args, app.db)
         if res == "error":
-            return json_resp({"response": "No more pages"})
+            return json_error("No more pages", status=404)
         return json_resp({'response': 'OK', 'key': res["key"],'page_nbr': res["page_nbr"] , 'result': res["result"], 'query' : res["query"] })
-    except:
-        json_resp({'response': 'Error'})
+    except Exception as e:
+        return json_error(str(e), status=500)
 
 
 
@@ -2979,7 +3028,7 @@ def Library_import():
     """Import a folder in the Library"""
 
     if "folder" not in request.args:
-        return json_resp({"error": "missing folder"}), 400
+        return json_error("missing folder", status=400)
 
     folder = request.args["folder"]
 
@@ -3011,20 +3060,14 @@ def Library_import():
 def Library_Reimport():
 
     if "query" not in request.args:
-        return json_resp({
-            "response": "Error",
-            "message": "missing query"
-        }), 400
+        return json_error("missing query", status=400)
 
     try:
         q = ast.literal_eval(
             urllib.parse.unquote(request.args["query"].strip())
         )
     except (ValueError, SyntaxError):
-        return json_resp({
-            "response": "Error",
-            "message": "invalid query"
-        }), 400
+        return json_error("invalid query", status=400)
 
     # Suppression de la saved query
     last_query = copy.deepcopy(q)["$and"].pop()
@@ -3091,23 +3134,23 @@ def Library_Reimport():
 @app.route("/v1/Display/Covers")
 @app.tokenauth.login_required
 def Display_Covers():
-    
+
     if 'ids' in request.args:
         ids = urllib.parse.unquote(request.args["ids"]).split(";")
         try:
             ids = [ObjectId(id) for id in ids]
-        except:
-            return json_resp({'response': 'Error'})
+        except Exception as e:
+            return json_error(str(e), status=400)
         query = {"_id": {"$in": ids}}
-        
+
     if 'query' in request.args:
         query = request.args['query']
         query = eval(urllib.parse.unquote(query))
     f = app.db.mediafiles.find_one(query)
-    
-    if f == None:
-        return json_resp({'response': 'No dirhash', 'dirhash': []})
-    return json_resp({'response': 'OK', 'dirhash': f['dirhash'] , 'dirname': f['dirname'], 'query' : urllib.parse.quote(str(query))})
+
+    if f is None:
+        return json_resp({'response': 'OK', 'dirhash': [], 'message': 'No dirhash'})
+    return json_resp({'response': 'OK', 'dirhash': f['dirhash'], 'dirname': f['dirname'], 'query': urllib.parse.quote(str(query))})
 
 
 
@@ -3146,7 +3189,7 @@ def Display_Group():
     if 'separator' in request.args:
         separator = request.args['separator']
 
-    if  'displaystr' in request.args:
+    if 'displaystr' in request.args:
         displaystr = urllib.parse.unquote(request.args['displaystr'])
         tags = gettags(displaystr)
 
@@ -3164,18 +3207,18 @@ def Display_Group():
         ids = urllib.parse.unquote(request.args["ids"]).split(";")
         try:
             ids = [ObjectId(id) for id in ids]
-        except:
-            return json_resp({'response': 'Error'})
-        query = {"_id": {"$in": ids}}
-        for tag in tags:
-            m = app.db.mediafiles.find(query).distinct(tag)
-            if separator == "json":
-                res[tag] = json.dumps(sorted([str(i) for i in m]))
-            else:
-                res[tag] = separator.join(sorted([str(i) for i in m]))
+            query = {"_id": {"$in": ids}}
+            for tag in tags:
+                m = app.db.mediafiles.find(query).distinct(tag)
+                if separator == "json":
+                    res[tag] = json.dumps(sorted([str(i) for i in m]))
+                else:
+                    res[tag] = separator.join(sorted([str(i) for i in m]))
+        except Exception as e:
+            return json_error(str(e), status=400)
 
     if 'query' in request.args:
-        query =urllib.parse.unquote(request.args['query'])
+        query = urllib.parse.unquote(request.args['query'])
         query = eval(urllib.parse.unquote(str(query)))
 
         for tag in tags:
@@ -3810,8 +3853,40 @@ if __name__ == '__main__':
         monitor = USBCopyMonitor(app)
         monitor.start()
         
-    api = Api(app, version="1.0", title="MyPlayer API", description="MyPlayer REST API", doc="/swagger/")
+    api = Api(
+        app,
+        version="1.0",
+        title="MyPlayer API",
+        description="MyPlayer REST API",
+        doc=False,
+        authorizations={
+            "BearerAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Authorization",
+                "description": "Jeton Bearer stocké dans le navigateur (ex. Bearer <token>)"
+            }
+        },
+        security=[],
+        swagger_ui_parameters={
+            "persistAuthorization": True,
+            "displayRequestDuration": True,
+            "tryItOutEnabled": True,
+        },
+    )
     ns = api.namespace("v1", description="MyPlayer API endpoints")
+
+    @app.route("/swagger/")
+    def swagger_ui():
+        return render_template(
+            "swagger-ui.html",
+            spec_url="/swagger.json",
+            title="MyPlayer API Swagger"
+        )
+
+    @app.route("/swagger.json")
+    def swagger_spec():
+        return jsonify(api.specs())
 
     from swagger import register_swagger_routes
     register_swagger_routes(api, ns)

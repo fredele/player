@@ -300,6 +300,37 @@ function after_Ports() {
 
 window.pendingRequests = window.pendingRequests || {};
 
+function parseApiResponse(xhr) {
+  try {
+    if (!xhr || !xhr.responseText) {
+      return null;
+    }
+    const parsed = JSON.parse(xhr.responseText);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (error) {
+    console.warn('Réponse API invalide.', error, xhr && xhr.responseText);
+    return null;
+  }
+}
+
+function handleApiResponseError(xhr, label = 'API') {
+  if (!xhr) {
+    return false;
+  }
+
+  const payload = parseApiResponse(xhr);
+  if (!payload || payload.response !== 'error') {
+    return false;
+  }
+
+  if (xhr.status >= 200 && xhr.status < 400) {
+    return false;
+  }
+
+  console.warn(label + ' error:', payload.message || 'Erreur inconnue');
+  return true;
+}
+
 function SendCommand(ApiEntry, Callback, state) {
 
   function handlePlayerStateResult(success) {
@@ -391,7 +422,8 @@ function SendCommand(ApiEntry, Callback, state) {
 
   // Premier callback : libérer la requête, puis exécuter Callback après 800 ms
   request.addEventListener("load", function (event) {
-    handlePlayerStateResult( request.status >= 200 && request.status < 300);
+    handlePlayerStateResult(request.status >= 200 && request.status < 300);
+    handleApiResponseError(this, 'API');
     try {
       if (Callback) {
         Callback.call(this, event);
@@ -432,7 +464,12 @@ function SendCommandPOST(ApiEntry, Callback, state) {
   var url = addr + ApiEntry
   request.open('POST', url, true);
   request.setRequestHeader("Authorization", "Bearer " + token);
-  request.addEventListener('load', Callback);
+  request.addEventListener('load', function (event) {
+    handleApiResponseError(this, 'API POST');
+    if (Callback) {
+      Callback.call(this, event);
+    }
+  });
   request.addEventListener('readystatechange', state);
   try {
     request.send();
@@ -450,7 +487,8 @@ function Unauth_state(s, e) {
 
 
 function Server_Get_Coverurl(dirhash) {
-  if (updatedimages.indexOf(dirhash) >= 0) {
+  const imageSet = Array.isArray(updatedimages) ? updatedimages : [];
+  if (imageSet.indexOf(dirhash) >= 0) {
     return window.serverurl + "/v1/Covers/" + dirhash + ".jpg" + "?uploadTime=" + Math.floor(Date.now() / 1000 / 10) * 10 + "&thumbnail=" + window.sideimage_width;
   }
   else {
@@ -459,7 +497,8 @@ function Server_Get_Coverurl(dirhash) {
 }
 
 function Server_Get_ThumbUrl(dirhash) {
-  if (updatedimages.indexOf(dirhash) >= 0) {
+  const imageSet = Array.isArray(updatedimages) ? updatedimages : [];
+  if (imageSet.indexOf(dirhash) >= 0) {
     return window.serverurl + "/v1/Thumbnails/" + dirhash + ".jpg" + "?uploadTime=" + Math.floor(Date.now() / 1000 / 10) * 10; //+"&thumbnail=150"  
   }
   else {

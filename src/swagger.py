@@ -1,5 +1,11 @@
 from flask_restx import Resource
 
+API_RESPONSE_CONTRACT = """
+Common response contract:
+- success: {\"response\": \"OK\", ...}
+- error: {\"response\": \"error\", \"message\": \"...\"}
+"""
+
 
 def register_swagger_routes(api, ns):
     """Register RESTX resources for the public API endpoints."""
@@ -86,13 +92,13 @@ def register_swagger_routes(api, ns):
 
     @ns.route("/test")
     class TestResource(Resource):
-        @ns.doc(summary="Simple health check", description="Simple health check")
+        @ns.doc(summary="Simple health check", description=API_RESPONSE_CONTRACT + "Simple health check")
         def get(self):
             return test()
 
     @ns.route("/Players/Get")
     class PlayersGetResource(Resource):
-        @ns.doc(summary="List configured players", description="Returns the list of configured players and their current metadata.")
+        @ns.doc(summary="List configured players", description=API_RESPONSE_CONTRACT + "Returns the list of configured players and their current metadata.")
         def get(self):
             return get_players()
 
@@ -104,19 +110,27 @@ def register_swagger_routes(api, ns):
 
     @ns.route("/Player/State")
     class PlayerStateResource(Resource):
-        @ns.doc(summary="Get current player state", description="Returns the active player state and related playback status.")
+        @ns.doc(summary="Get current player state", description=API_RESPONSE_CONTRACT + "Returns the active player state and related playback status.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return State()
 
     @ns.route("/Player/CurrentTrack")
     class CurrentTrackResource(Resource):
-        @ns.doc(summary="Get current track metadata", description="Returns the metadata of the track currently playing.")
+        @ns.doc(
+            summary="Get current track metadata",
+            description=API_RESPONSE_CONTRACT + "Returns the metadata of the track currently playing.",
+            params={"player_id": "Player identifier to inspect"}
+        )
         def get(self):
             return Info()
 
     @ns.route("/Player/CurrentPosition")
     class CurrentPositionResource(Resource):
-        @ns.doc(summary="Get current playback position", description="Returns the current playback position and timing information.")
+        @ns.doc(
+            summary="Get current playback position",
+            description="Returns the current playback position and timing information.",
+            params={"player_id": "Player identifier to inspect"}
+        )
         def get(self):
             return CurrentPosition()
 
@@ -171,31 +185,39 @@ def register_swagger_routes(api, ns):
 
     @ns.route("/Player/TrackInfo")
     class TrackInfoResource(Resource):
-        @ns.doc(summary="Get track display information", description="Returns the display-ready track information for the current playback context.")
+        @ns.doc(
+            summary="Get track display information",
+            description="Returns the display-ready track information for a given media file ID.",
+            params={
+                "id": "Required Mongo ObjectId for a media file. Example: 507f1f77bcf86cd799439011",
+                "displaystr": "Optional display template used to format the track information.",
+                "separator": "Optional separator used when formatting multiple metadata values. Default: ', '"
+            }
+        )
         def get(self):
             return TrackInfo()
 
     @ns.route("/Player/Next")
     class PlayerNextResource(Resource):
-        @ns.doc(summary="Skip to the next track", description="Moves playback to the next item in the current queue.")
+        @ns.doc(summary="Skip to the next track", description="Moves playback to the next item in the current queue.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Next()
 
     @ns.route("/Player/Previous")
     class PlayerPreviousResource(Resource):
-        @ns.doc(summary="Go to the previous track", description="Moves playback back to the previous item in the current queue.")
+        @ns.doc(summary="Go to the previous track", description="Moves playback back to the previous item in the current queue.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Previous()
 
     @ns.route("/Player/Seek/Set")
     class PlayerSeekSetResource(Resource):
-        @ns.doc(summary="Seek in the current track", description="Seeks to the requested playback position in the current track.")
+        @ns.doc(summary="Seek in the current track", description="Seeks to the requested playback position in the current track.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Set()
 
     @ns.route("/Player/RestartQueue")
     class PlayerRestartQueueResource(Resource):
-        @ns.doc(summary="Restart the current player queue", description="Restarts the current played queue from its beginning.")
+        @ns.doc(summary="Restart the current player queue", description="Restarts the current played queue from its beginning.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Restartqueue()
 
@@ -207,37 +229,37 @@ def register_swagger_routes(api, ns):
 
     @ns.route("/Player/Volume/Set")
     class PlayerVolumeSetResource(Resource):
-        @ns.doc(summary="Set player volume", description="Sets the player volume to the requested value.")
+        @ns.doc(summary="Set player volume", description="Sets the player volume to the requested value.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Volume_Set()
 
     @ns.route("/Player/Play")
     class PlayerPlayResource(Resource):
-        @ns.doc(summary="Play or pause the current track", description="Toggles playback or resumes the current track depending on the player state.")
+        @ns.doc(summary="Play or pause the current track", description="Toggles playback or resumes the current track depending on the player state.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Play()
 
     @ns.route("/Player/Stop")
     class PlayerStopResource(Resource):
-        @ns.doc(summary="Stop playback", description="Stops the current playback immediately.")
+        @ns.doc(summary="Stop playback", description="Stops the current playback immediately.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return Stop()
 
     @ns.route("/Player/Radio")
     class PlayerRadioResource(Resource):
-        @ns.doc(summary="Play a radio selection", description="Starts or switches the player to the chosen radio source.")
+        @ns.doc(summary="Play a radio selection", description="Starts or switches the player to the chosen radio source.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return radiomode()
 
     @ns.route("/Player/DSP/Get")
     class PlayerDSPGetResource(Resource):
-        @ns.doc(summary="Get DSP parameters", description="Returns the current DSP configuration and tuning values.")
+        @ns.doc(summary="Get DSP parameters", description="Returns the current DSP configuration and tuning values.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return dsp_get()
 
     @ns.route("/Player/DSP/Set")
     class PlayerDSPSetResource(Resource):
-        @ns.doc(summary="Set DSP parameters", description="Updates the DSP configuration values sent by the client.")
+        @ns.doc(summary="Set DSP parameters", description="Updates the DSP configuration values sent by the client.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return dsp_set()
 
@@ -273,37 +295,44 @@ def register_swagger_routes(api, ns):
 
     @ns.route("/Queue/Get")
     class QueueGetResource(Resource):
-        @ns.doc(summary="Get the current queue", description="Returns the items currently queued for playback.")
+        @ns.doc(summary="Get the current queue", description="Returns the items currently queued for playback.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return get_queue()
 
     @ns.route("/Queue/Clear")
     class QueueClearResource(Resource):
-        @ns.doc(summary="Clear the current queue", description="Removes all items from the current playback queue.")
+        @ns.doc(summary="Clear the current queue", description="Removes all items from the current playback queue.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return clear_queue()
 
     @ns.route("/Queue/Delete")
     class QueueDeleteResource(Resource):
-        @ns.doc(summary="Delete one queue item", description="Deletes a specific item from the current queue.")
+        @ns.doc(summary="Delete one queue item", description="Deletes a specific item from the current queue.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return queue_delete()
 
     @ns.route("/Queue/Move")
     class QueueMoveResource(Resource):
-        @ns.doc(summary="Move a queue item", description="Moves a queue item to a new position in the current queue.")
+        @ns.doc(summary="Move a queue item", description="Moves a queue item to a new position in the current queue.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return queue_move()
 
     @ns.route("/Queue/Add")
     class QueueAddResource(Resource):
-        @ns.doc(summary="Add items to the queue", description="Adds one or more media items to the current playback queue.")
+        @ns.doc(summary="Add items to the queue", description="Adds one or more media items to the current playback queue.", params={"player_id": "Player identifier to inspect"})
         def get(self):
             return queue_add()
 
     @ns.route("/Library/Search")
     class LibrarySearchResource(Resource):
-        @ns.doc(summary="Search the library", description="Searches the media library using the provided query.")
+        @ns.doc(
+            summary="Search the library",
+            description="Searches the in-memory index for a text value, restricted to the provided Mongo query. Both value and query are required.",
+            params={
+                "value": "Text to search for, for example Miles Davis or Kind of Blue",
+                "query": "URL-encoded MongoDB filter used to restrict the search. Example: %7B%22artist%22%3A%20%22Miles%20Davis%22%7D"
+            }
+        )
         def get(self):
             return LibrarySearch()
 
@@ -322,14 +351,26 @@ def register_swagger_routes(api, ns):
     @ns.route("/Library/Import")
     @ns.route("/Library/Scan/Import")
     class LibraryImportResource(Resource):
-        @ns.doc(summary="Import a folder into the library", description="Imports the specified folder into the media library.")
+        @ns.doc(
+            summary="Import a folder into the library",
+            description="Imports the specified folder into the media library. Required parameter: folder (filesystem path).",
+            params={
+                "folder": "Folder to import, for example /mnt/media/Music/Jazz"
+            }
+        )
         def get(self):
             return Library_import()
 
     @ns.route("/Library/Reimport")
     @ns.route("/Library/Scan/Reimport")
     class LibraryReimportResource(Resource):
-        @ns.doc(summary="Reimport a library subset", description="Reimports the selected library subset or updated media collection.")
+        @ns.doc(
+            summary="Reimport a library subset",
+            description="Reimports the selected library subset or updated media collection. The query must be URL-encoded MongoDB JSON, for example %7B%22%24and%22%3A%5B%7B%22dirhash%22%3A12345%7D%5D%7D.",
+            params={
+                "query": "URL-encoded MongoDB query. Example: %7B%22%24and%22%3A%5B%7B%22dirhash%22%3A12345%7D%5D%7D"
+            }
+        )
         def get(self):
             return Library_Reimport()
 
@@ -377,43 +418,105 @@ def register_swagger_routes(api, ns):
 
     @ns.route("/Library/SetTag")
     class LibrarySetTagResource(Resource):
-        @ns.doc(summary="Set a tag on library objects", description="Sets a tag value on the selected library objects.")
+        @ns.doc(
+            summary="Set a tag on library objects",
+            description="Updates one tag on all selected media files. The route expects ids, tag and value. The value is split by ';' and converted per tag type. Use EmptyValue semantics to unset a tag.",
+            params={
+                "ids": "Semicolon-separated Mongo ObjectIds. Example: 507f1f77bcf86cd799439011;507f1f77bcf86cd799439012",
+                "tag": "Tag name to update. Example: album, artist, genre, date, bpm",
+                "value": "Tag value to set. Multiple values can be passed with ';'. Example: Miles Davis or 1959;1960"
+            }
+        )
         def get(self):
             return Set_Tag()
 
     @ns.route("/Library/GetValues")
     class LibraryGetValuesResource(Resource):
-        @ns.doc(summary="Get all possible values for a set of tags", description="Returns all valid values available for the requested tag set.")
+        @ns.doc(
+            summary="Get all possible values for a set of tags",
+            description="Returns all valid values available for the requested tag set. Use either ids or query, and tags with a semicolon-separated list such as artist;album;genre.",
+            params={
+                "tags": "Semicolon-separated tag names. Example: artist;album;genre",
+                "ids": "Semicolon-separated Mongo ids. Example: 507f1f77bcf86cd799439011;507f1f77bcf86cd799439012",
+                "query": "URL-encoded MongoDB query. Example: %7B%22artist%22%3A%20%22Miles%20Davis%22%7D"
+            }
+        )
         def get(self):
             return GetAllValuesOfField()
 
     @ns.route("/Library/FindFiles")
     class LibraryFindFilesResource(Resource):
-        @ns.doc(summary="Find files by query", description="Finds files matching the requested query or filter.")
+        @ns.doc(
+            summary="Find files by query",
+            description="Finds files matching the requested query or filter. Use either query or ids. The query parameter is a URL-encoded MongoDB JSON expression.",
+            params={
+                "query": "URL-encoded MongoDB query. Example: %7B%22album%22%3A%20%22Kind%20of%20Blue%22%7D",
+                "ids": "Semicolon-separated Mongo ids. Example: 507f1f77bcf86cd799439011;507f1f77bcf86cd799439012",
+                "sorttags": "Sort tag selector, for example artist$ASCENDING or album$DESCENDING"
+            }
+        )
         def get(self):
             return findfiles()
 
     @ns.route("/Library/Find")
     class LibraryFindResource(Resource):
-        @ns.doc(summary="Find library entries by display query", description="Searches the library by display query and returns matching entries.")
+        @ns.doc(
+            summary="Find library entries by display query",
+            description="Searches the library by display query and returns matching entries. This route expects a Mongo query in the 'query' parameter, a grouping field in 'field', and optional sort/display settings. Typical defaults: page_nbr=0, response_count=1500, sort=ASCENDING, full=false.",
+            params={
+                "query": "URL-encoded Mongo query. Example: %7B%22%24and%22%3A%5B%7B%22artist%22%3A%20%22Miles%20Davis%22%7D%5D%7D",
+                "field": "Grouping field used for the aggregate result. Example: artist",
+                "sorttag": "Sort field used for ordering. Example: artist or album. If omitted, the field value is used.",
+                "sort": "Sort direction. Accepted values: ASCENDING or DESCENDING. Default: ASCENDING",
+                "display": "Display template to render each result. Example: $artist$ - $album$ ($files$)",
+                "page_nbr": "Page number for pagination. Default: 0",
+                "response_count": "Number of result rows to return per page. Default: 1500",
+                "full": "If true, returns full album/group results instead of the current page only. Default: false",
+                "_": "Optional placeholder for compatibility with some clients"
+            }
+        )
         def get(self):
             return find()
 
     @ns.route("/Display/Covers")
     class DisplayCoversResource(Resource):
-        @ns.doc(summary="Get cover display metadata", description="Builds the cover metadata used by the display layer.")
+        @ns.doc(
+            summary="Get cover display metadata",
+            description="Builds the cover metadata used by the display layer. Use either ids or query. Example query: %7B%22dirhash%22%3A12345%7D.",
+            params={
+                "ids": "Semicolon-separated Mongo ids. Example: 507f1f77bcf86cd799439011;507f1f77bcf86cd799439012",
+                "query": "URL-encoded MongoDB query. Example: %7B%22dirhash%22%3A12345%7D"
+            }
+        )
         def get(self):
             return Display_Covers()
 
     @ns.route("/Display/Group")
     class DisplayGroupResource(Resource):
-        @ns.doc(summary="Build grouped display metadata", description="Builds the grouped display metadata used by the UI.")
+        @ns.doc(
+            summary="Build grouped display metadata",
+            description="Builds the grouped display metadata used by the UI. Typical fields: displaystr, ids, query, separator. Example displaystr: $artist$ - $album$.",
+            params={
+                "displaystr": "Display template. Example: $artist$ - $album$ - $title$",
+                "ids": "Semicolon-separated Mongo ids. Example: 507f1f77bcf86cd799439011;507f1f77bcf86cd799439012",
+                "query": "URL-encoded MongoDB query. Example: %7B%22artist%22%3A%20%22Miles%20Davis%22%7D",
+                "separator": "Separator used between values. Example: , or json"
+            }
+        )
         def get(self):
             return Display_Group()
 
     @ns.route("/Display/Files")
     class DisplayFilesResource(Resource):
-        @ns.doc(summary="Build file displays", description="Creates the structured file metadata used for display rendering.")
+        @ns.doc(
+            summary="Build file displays",
+            description="Creates the structured file metadata used for display rendering. Provide either ids or query and a displaystr template. Example displaystr: $artist$ - $title$.",
+            params={
+                "displaystr": "Display template. Example: $artist$ - $title$",
+                "ids": "Semicolon-separated Mongo ids. Example: 507f1f77bcf86cd799439011;507f1f77bcf86cd799439012",
+                "query": "URL-encoded MongoDB query. Example: %7B%22artist%22%3A%20%22Miles%20Davis%22%7D"
+            }
+        )
         def get(self):
             return Display_Files()
 

@@ -104,7 +104,8 @@ function Fill_Queue() {
     title = track["display"];
 
     if ("dirhash" in track) {
-      if (updatedimages.indexOf(track["dirhash"]) >= 0) {
+      const hasUpdatedImage = Array.isArray(updatedimages) && updatedimages.includes(track["dirhash"]);
+      if (hasUpdatedImage) {
         imgurl = Server_Get_ThumbUrl(track["dirhash"]);
       }
       else {

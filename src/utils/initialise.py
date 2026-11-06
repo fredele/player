@@ -3,7 +3,8 @@
 
 import json
 import os
-import logging
+
+from utils.player_logging import log_debug
 
 class StoreDict():
 
@@ -27,7 +28,7 @@ class StoreDict():
         self._initdic.update({key:val})
 
     def save(self):
-        logging.debug("StoreDict|save|file saved!")
+        log_debug("StoreDict", "save", file_path=str(self._filepath))
         with open(self._filepath, 'w') as fp:
             json.dump(self._initdic, fp)
 

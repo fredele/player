@@ -19,6 +19,7 @@ from os import getpid
 from PIL import Image
 from utils.string import to_unicode , char_position , EmptyValue
 from utils.template import my_template
+from utils.player_logging import log_debug, log_warning
 from functools import wraps
 import threading
 import hashlib
@@ -160,8 +161,8 @@ def monitor_inactivity():
                 # shutdown
                 #os.system("sudo shutdown -h now")
 
-            except Exception:
-                pass
+            except Exception as e:
+                log_warning("main", "monitor_inactivity", error=str(e))
             break
 
 
@@ -214,7 +215,7 @@ def plugins_action(function_name, param='none',param2='none'):
                 exec(p)
 
             except Exception as e:
-                pass
+                log_warning("main", "plugins_action", function_name=function_name, param=param, param2=param2, error=str(e))
 
 def shutdown_server():
     if "player_id" in request.args:
@@ -297,8 +298,8 @@ def _writetag(i,field,value):
 
                 tags.save()
 
-    except:
-        logging.warning("Error in writetag : " + str(p))
+    except Exception as e:
+        log_warning("main", "_writetag", error=str(e), field=field, value=value, path=str(p) if 'p' in locals() else None)
 
 def _writetags(i,field,value,mode):
     """
@@ -341,11 +342,11 @@ def _writetags(i,field,value,mode):
                     if len(v) > 1:
                         tags[field] = v
                     tags.save()
-                except:
-                    pass
+                except Exception as e:
+                    log_warning("main", "_writetags", error=str(e), field=field, value=value, mode=mode, path=str(p) if 'p' in locals() else None)
 
-    except:
-        pass
+    except Exception as e:
+        log_warning("main", "_writetags_outer", error=str(e), field=field, value=value, mode=mode)
 
 def normalize_api_response(data):
     """Normalize all API responses to a single contract.
@@ -488,8 +489,8 @@ class WSServerProtocol(WebSocketServerProtocol):
     def onClose(self, wasClean, code, reason):
         try:
             self.connections.remove(self)
-        except:
-            pass
+        except Exception as e:
+            log_debug("main", "ws_close", code=code, reason=reason, error=str(e))
 
     def onOpen(self):
         self.connections.append(self)
@@ -982,7 +983,7 @@ def set_player(app,id):
             try:
                 player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
             except Exception as e:
-                logging.error(f"Error setting pipeline for player {id}: {e}")
+                log_warning("main", "set_player_pipeline", player_id=id, error=str(e), output=str(app.outputs[app.current_output].get('gstpipeline')))
                 player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
             app.player_id = id
         else:
@@ -1131,14 +1132,12 @@ def get_latest_log_path():
         from paths import logs_folder
         log_dir = logs_folder
 
-    log_path = Path(log_dir) / "log.txt"
-    if log_path.exists():
-        return log_path
-
-    candidates = sorted(Path(log_dir).glob("log.txt*"), key=lambda p: p.stat().st_mtime, reverse=True)
+    log_dir = Path(log_dir)
+    candidates = sorted(log_dir.glob("log.txt*"), key=lambda p: p.stat().st_mtime, reverse=True)
     if candidates:
         return candidates[0]
-    return log_path
+
+    return log_dir / "log.txt"
 
 
 @app.route("/logs")
@@ -1154,6 +1153,7 @@ def logs_content():
         lines = request.args.get("lines", default=200, type=int)
         lines = max(1, min(lines, 10000))
         log_path = get_latest_log_path()
+        #log_debug("main", "logs_content_fetch", path=str(log_path), lines=str(lines))
 
         if not log_path.exists():
             return json_error(f"Log file not found: {log_path}", 404)
@@ -1162,6 +1162,7 @@ def logs_content():
             all_lines = log_file.readlines()
 
         tail = all_lines[-lines:] if lines else all_lines
+        tail = list(reversed(tail))
         return json_resp({
             "response": "OK",
             "path": str(log_path),
@@ -1169,6 +1170,7 @@ def logs_content():
             "log": "".join(tail),
         })
     except Exception as exc:
+        log_warning("main", "logs_content_failed", error=str(exc), lines=str(lines) if 'lines' in locals() else 'unknown')
         return json_error(f"Unable to read log file: {exc}", 500)
 
 
@@ -1485,6 +1487,7 @@ def save_players():
         return json_resp({"status": "OK", "saved_to": filepath})
 
     except Exception as e:
+        log_warning("main", "set_library_menu", error=str(e), filepath=str(filepath) if 'filepath' in locals() else None)
         return json_resp({"error": str(e)}), 500
 
 @app.route('/v1/Menu/Set', methods=['POST'])
@@ -1515,6 +1518,7 @@ def save_menu():
         return json_resp({"status": "OK", "saved_to": filepath})
 
     except Exception as e:
+        log_warning("main", "save_menu", error=str(e), filename=filename)
         return json_resp({"error": str(e)}), 500
 
 def AlbumStats(dirhash):
@@ -1544,6 +1548,7 @@ def LibrarySearch():
         return json_error("No search result available", status=404)
 
     except Exception as e:
+        log_warning("main", "library_search", error=str(e), args=str(request.args))
         return json_error(str(e), status=500)
 
 
@@ -2687,7 +2692,7 @@ def upload_cover():
     temp_path = npath + '.tmp'
 
     try:
-        logging.info(f'Saving temporary image to: {temp_path}')
+        log_debug("main", "upload_cover_tempfile", temp_path=str(temp_path), dirhash=str(dirhash))
 
         f.save(temp_path)
 
@@ -2720,9 +2725,7 @@ def upload_cover():
 
     except (OSError, Image.UnidentifiedImageError) as e:
 
-        logging.warning(
-            f'Invalid image uploaded: {e}'
-        )
+        log_warning("main", "upload_cover_invalid_image", error=str(e), temp_path=str(temp_path))
 
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -2732,10 +2735,8 @@ def upload_cover():
             'message': 'Invalid image'
         }), 400
 
-    except Exception:
-        logging.exception(
-            'Error while processing uploaded cover'
-        )
+    except Exception as e:
+        log_warning("main", "upload_cover_processing_error", error=str(e), temp_path=str(temp_path))
 
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -2811,7 +2812,7 @@ def upload_infos():
             'infos.md'
         )
 
-        logging.info(f'Saving Infos to: {npath}')
+        log_debug("main", "upload_infos", path=str(npath), dirhash=str(dirhash))
 
         f.save(npath)
 
@@ -2945,6 +2946,7 @@ def Set_Tag():
 
         res['result'] = 'OK'
     except Exception as e:
+        log_warning("main", "library_set_tag", error=str(e), tag=tag, ids=str(ids), dirhashs=str(dirhashs))
         res['result'] = 'Error'
 
     update_playlist()
@@ -3386,10 +3388,11 @@ def Output_Get():
     with open(output, 'r') as j:
         try:
             contents = json.loads(j.read())
-        except:
+        except Exception as e:
+            log_warning("main", "output_get", error=str(e), output=str(output))
             return abort(404)
     app.outputs = contents["outputs"]
-    logging.debug("current_output : " + str(app.current_output))
+    log_debug("main", "output_get_current", current_output=str(app.current_output))
     return json_resp({'response': 'OK', 'outputs': app.outputs, "current" :  app.current_output})
 
 
@@ -3422,6 +3425,7 @@ def save_outputs():
         return json_resp({"status": "OK", "saved_to": filepath})
 
     except Exception as e:
+        log_warning("main", "save_outputs", error=str(e), filename=filename)
         return json_resp({"error": str(e)}), 500
 
 
@@ -3441,14 +3445,14 @@ def Output_Set():
         with open(cf, 'w') as configfile:
             parser.write(configfile)
         app.current_output = int(request.args['nbr'])
-        logging.debug("current_output : " + str(app.current_output))
+        log_debug("main", "output_set", current_output=str(app.current_output), player_id=player_id)
         output = app.outputs[app.current_output]["gstpipeline"]
         icon = app.config_folder  / "player.xpm"
         output = output.replace("$icon$",str(icon ))
         try:
             GetPlayer(player_id).set_pipeline(output)
-        except:
-            pass
+        except Exception as e:
+            log_warning("main", "output_set_pipeline", player_id=player_id, output=output, error=str(e))
         dsp_changed(player_id)
 
 
@@ -3464,7 +3468,8 @@ def Lang_Get():
             try:
                 contents = json.loads(l.read())
                 return json_resp({'response': 'OK', 'lang': contents})
-            except:
+            except Exception as e:
+                log_warning("main", "lang_get", path=str(p), error=str(e))
                 return abort(404)
     else:
         return abort(404)
@@ -3626,99 +3631,139 @@ def create_self_signed_cert(certfile, keyfile, certargs, cert_dir="."):
         open(K_F, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
 if __name__ == '__main__':
-    
 
-    with app.app_context():
-        Initialize()
-        from streamer3 import send_audio_file
-    
-    logfile = app.logs_folder / 'log.txt'
-    logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[
-        RotatingFileHandler(logfile, maxBytes=10_000_000, backupCount=1),
-        logging.StreamHandler()   # stdout/stderr
-        ]
-    )
+    try:
+        with app.app_context():
+            Initialize()
+            from streamer3 import send_audio_file
+        log_debug("main", "startup_initialize", step="app_context_initialized")
+    except Exception as e:
+        log_warning("main", "startup_initialize_failed", error=str(e))
+
+    try:
+        logfile = app.logs_folder / 'log.txt'
+        logfile.parent.mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(message)s",
+        force=True,
+        handlers=[
+            RotatingFileHandler(logfile, maxBytes=10_000_000, backupCount=1),
+            logging.StreamHandler()   # stdout/stderr
+            ]
+        )
+        log_debug("main", "startup_logging_ready", log_file=str(logfile))
+    except Exception as e:
+        log_warning("main", "startup_logging_failed", error=str(e), log_file=str(getattr(app, 'logs_folder', 'unknown')))
 
     app.player = None
     app.savedqueries = []
-   
-    app.pid = getpid()
-    set_proc_name('Player')
-    DirectoryLister.template = my_template
-    #TODO : a enlever
-    app.main_folder = os.path.abspath(os.path.join(app.root_path, ".."))
-   
-    parser = optparse.OptionParser()
-    parser.add_option("-d", "--debug",help="set debug flag",default="no")
-    parser.add_option("-c", "--config", help="set config file", default="config.ini")
 
-    options, _ = parser.parse_args()
-    app.debug = options.debug
-    app.send_message_value = send_message_value
+    try:
+        app.pid = getpid()
+        set_proc_name('Player')
+        DirectoryLister.template = my_template
+        app.main_folder = os.path.abspath(os.path.join(app.root_path, ".."))
+        log_debug("main", "startup_process_ready", pid=str(app.pid), main_folder=str(app.main_folder))
+    except Exception as e:
+        log_warning("main", "startup_process_init_failed", error=str(e))
 
+    try:
+        parser = optparse.OptionParser()
+        parser.add_option("-d", "--debug",help="set debug flag",default="no")
+        parser.add_option("-c", "--config", help="set config file", default="config.ini")
 
+        options, _ = parser.parse_args()
+        app.debug = options.debug
+        app.send_message_value = send_message_value
+        log_debug("main", "startup_cli_loaded", debug=str(app.debug), config=str(options.config))
+    except Exception as e:
+        log_warning("main", "startup_cli_failed", error=str(e))
 
-    os.chdir(app.root_path)
-    app._config = configparser.ConfigParser()
-    chemin = app.config_folder  / options.config
+    try:
+        os.chdir(app.root_path)
+        app._config = configparser.ConfigParser()
+        chemin = app.config_folder  / options.config
 
-    if os.path.isfile(chemin):
-        app._config.read(chemin)
-        app.config_file = options.config
-    else :
-        app._config.read( app.config_folder /  'config.ini')
-        app.config_file = 'config.ini'
+        if os.path.isfile(chemin):
+            app._config.read(chemin)
+            app.config_file = options.config
+        else :
+            app._config.read(app.config_folder / 'config.ini')
+            app.config_file = 'config.ini'
+        log_debug("main", "startup_config_loaded", config_file=str(app.config_file), config_path=str(chemin))
+    except Exception as e:
+        log_warning("main", "startup_config_load_failed", error=str(e), config_path=str(chemin) if 'chemin' in locals() else 'unknown')
 
-    plugins_dir = app.plugins_folder
-    sys.path.insert(1, plugins_dir )
+    try:
+        plugins_dir = app.plugins_folder
+        sys.path.insert(1, plugins_dir )
+        for _filename_ in sorted([f for f in listdir(plugins_dir) if isfile(join(plugins_dir, f)) and f.rsplit('.', 1)[1] =='py']):
+            plugin_path = os.path.join(os.path.join(os.getenv("HOME"), '.Player', 'plugins'), _filename_)
+            if os.path.isfile(plugin_path):
+                try:
+                    exec('import ' +_filename_.split('.')[0])
+                except Exception as e:
+                    log_warning("main", "startup_plugin_import_failed", plugin=str(_filename_), error=str(e))
+        log_debug("main", "startup_plugins_loaded", plugin_dir=str(plugins_dir))
+    except Exception as e:
+        log_warning("main", "startup_plugins_scan_failed", error=str(e), plugin_dir=str(app.plugins_folder))
 
-    for _filename_ in sorted([f for f in listdir(plugins_dir) if isfile(join(plugins_dir, f)) and f.rsplit('.', 1)[1] =='py']):
-        if os.path.isfile(os.path.join(os.path.join(os.getenv("HOME"), '.Player', 'plugins'), _filename_)):
-            try:
-                exec('import ' +_filename_.split('.')[0])
-            except:
-                pass
+    try:
+        app.plugins_action = plugins_action
+        plugins_action('server_start')
+    except Exception as e:
+        log_warning("main", "startup_plugins_action_failed", error=str(e))
 
-    app.plugins_action = plugins_action
-    plugins_action('server_start')
-    output = app.config_folder / "outputs.json"
-
-    with open(output , 'r') as j:
-        try:
+    try:
+        output = app.config_folder / "outputs.json"
+        with open(output , 'r') as j:
             contents = json.loads(j.read())
-        except:
-            print("Error while reading outputs file")
         app.outputs = contents["outputs"]
-    app.output_last= app._config['Output']['last']
-    logging.debug("output_last : " + app.output_last)
+        log_debug("main", "startup_outputs_loaded", output_file=str(output), outputs_count=str(len(app.outputs)))
+    except Exception as e:
+        log_warning("main", "startup_outputs_failed", error=str(e), output_file=str(output) if 'output' in locals() else 'unknown')
+        app.outputs = []
+
+    try:
+        app.output_last = app._config['Output']['last']
+        log_debug("main", "output_last", output_last=str(app.output_last))
+    except Exception as e:
+        app.output_last = 0
+        log_warning("main", "output_last_missing", error=str(e), fallback=str(app.output_last))
+
     try:
         app.current_output = int(app.output_last)
-        logging.debug("current_output : " + str(app.current_output))
-    except:
-        app.output_last= 0
+    except Exception as e:
+        app.output_last = 0
         app.current_output = int(app.output_last)
-        logging.debug("current_output : " + str(app.current_output))
+        log_warning("main", "current_output_fallback", error=str(e), output_last=str(app.output_last))
 
     app.users = []
     try:
         users_file = app.config_folder / "users.json"
         with open(users_file, "r", encoding="utf-8") as f:
             app.users = json.load(f)
-    except:
-        logging.warning("users file not valid !")
+    except Exception as e:
+        log_warning("main", "users_file_invalid", error=str(e), users_file=str(users_file) if 'users_file' in locals() else None)
 
+    try:
+        app.ssl = app._config['Server']['ssl']
+        if app.ssl ==  'True':
+            context = ('cert.crt', 'cert.key')
+            contextFactory = ssl.DefaultOpenSSLContextFactory('mydomain.com.key', 'mydomain.com.crt')
+            log_debug("main", "startup_ssl_enabled", ssl=str(app.ssl))
+    except Exception as e:
+        log_warning("main", "startup_ssl_config_failed", error=str(e), ssl_value=str(app._config.get('Server', 'ssl', fallback='unknown')) if 'app' in globals() and hasattr(app, '_config') else 'unknown')
 
-    app.ssl = app._config['Server']['ssl']
-    if app.ssl ==  'True':
-        context = ('cert.crt', 'cert.key')  # certificate and key files
-        contextFactory = ssl.DefaultOpenSSLContextFactory('mydomain.com.key', 'mydomain.com.crt')
-    app.audioextension = app._config['Tags']['audioextension'].split(',')
-    app.videoextension = app._config['Tags']['videoextension'].split(',')
-    app.imageextension = app._config['Tags']['imageextension'].split(',')
-    app.image_names = app._config['Tags']['image_names'].split(',')
+    try:
+        app.audioextension = app._config['Tags']['audioextension'].split(',')
+        app.videoextension = app._config['Tags']['videoextension'].split(',')
+        app.imageextension = app._config['Tags']['imageextension'].split(',')
+        app.image_names = app._config['Tags']['image_names'].split(',')
+        log_debug("main", "startup_tags_loaded", audio_exts=str(app.audioextension), image_exts=str(app.imageextension))
+    except Exception as e:
+        log_warning("main", "startup_tags_config_failed", error=str(e))
 
     def get_cover_names(image_names, imageextension):
         n = []
@@ -3965,4 +4010,5 @@ if __name__ == '__main__':
     from swagger import register_swagger_routes
     register_swagger_routes(api, ns)
 
+    log_debug("main", "software_started", message="MyPlayer application started")
     reactor.run()

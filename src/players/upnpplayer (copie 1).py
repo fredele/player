@@ -6,8 +6,8 @@ import threading
 import queue
 import os
 import urllib.parse
-import logging
 from upnpclient.didl import set_TrackMetaData
+from utils.player_logging import log_debug, log_warning
 from upnpclient.upnp import Device
 from html.parser import HTMLParser
 from lxml import etree
@@ -69,36 +69,35 @@ class UpnpPlayer:
             self.Has_Next_AVTransport = True
         else:
             self.Has_Next_AVTransport = False
-        logging.info(f"Setting renderer to : {device_xml_url}")
-        logging.info(f"Is this player gapless ? {self.Has_Next_AVTransport}" )
+        log_debug("UpnpPlayer", "set_device", device_xml_url=str(device_xml_url), has_next_avtransport=self.Has_Next_AVTransport)
         # init volume
         try:
             self.default_volume = self.app.defaultvolume
             self.set_volume(self.default_volume)
             self.volume_restore = self.default_volume
             self.app.volumelevel = self.default_volume
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "set_device_volume_error", error=str(exc), device_xml_url=str(device_xml_url))
 
         self.device_xml_url = device_xml_url
         self.subscription_callback = subscription_callback + "/" +str(self.id)
-        logging.info(f"subscription callback is {subscription_callback}")
+        log_debug("UpnpPlayer", "subscription_callback", callback=str(self.subscription_callback))
         # Subscribe to events ..
         try:
             self.RenderingControl_sub = self.RenderingControl.subscribe(self.subscription_callback)  # GetMute,GetVolume
-            logging.info("RenderingControl Subscription OK")
-        except:
-            logging.info("ERROR in RenderingControl subscribe")
+            log_debug("UpnpPlayer", "rendering_control_subscription_ok")
+        except Exception as exc:
+            log_warning("UpnpPlayer", "rendering_control_subscribe_error", error=str(exc), callback=str(self.subscription_callback))
         try:
             self.AVTransport_sub = self.AVTransport.subscribe(self.subscription_callback)  # GetPositionInfo
-            logging.info("AVTransport Subscription OK")
-        except:
-            logging.info("ERROR in AVTransport subscribe")
+            log_debug("UpnpPlayer", "avtransport_subscription_ok")
+        except Exception as exc:
+            log_warning("UpnpPlayer", "avtransport_subscribe_error", error=str(exc), callback=str(self.subscription_callback))
         try:
             self.ConnectionManager_sub = self.ConnectionManager.subscribe(self.subscription_callback)
-            logging.info("ConnectionManager Subscription OK")
-        except:
-            logging.info("ERROR in AVTransport subscribe")
+            log_debug("UpnpPlayer", "connectionmanager_subscription_ok")
+        except Exception as exc:
+            log_warning("UpnpPlayer", "connectionmanager_subscribe_error", error=str(exc), callback=str(self.subscription_callback))
 
         threading.Thread(target=self.upnp_message_worker, daemon=True).start()
 
@@ -108,18 +107,18 @@ class UpnpPlayer:
         self.ask_transport_task = task.LoopingCall(self.ask_transport)
         try:
             self.ask_transport_task.start(10)
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "ask_transport_start_error", error=str(exc))
 
         self.set_stop() # Arrêter la lecture si on passe à ce player ...
         try:
             self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=None, CurrentURIMetaData=None)
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "clear_avtransport_uri_error", error=str(exc))
         try:
             self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "clear_next_avtransport_uri_error", error=str(exc))
         self.app.set_device = False
         return True
 
@@ -129,14 +128,14 @@ class UpnpPlayer:
         CurrentURI =GetMediaInfo['CurrentURI']
         NextURI = GetMediaInfo['NextURI']
         if  self.oldCurrentURI != CurrentURI:
-            logging.info(f"CurrentURI is : {CurrentURI}")
+            log_debug("UpnpPlayer", "current_uri", current_uri=str(CurrentURI))
             self.oldCurrentURI = CurrentURI
         if  self.oldNextURI != NextURI:
-            logging.info(f"NextURI is : {NextURI}")
+            log_debug("UpnpPlayer", "next_uri", next_uri=str(NextURI))
             self.oldNextURI = NextURI
 
         if CurrentURI != "" and NextURI in [None,""] and self.Has_Next_AVTransport == True:
-            logging.info(f"No Next URI, setting it ...")
+            log_debug("UpnpPlayer", "missing_next_uri_set", current_uri=str(CurrentURI))
             self.on_AVTransportURI_Has_Next( CurrentURI)
 
 
@@ -149,7 +148,7 @@ class UpnpPlayer:
             if not self.Has_Next_AVTransport:
                 if self.previous_state == "playing" and not self.is_changing_track and not self.bock_task:
                     if self.queue_position < len(self.queue) - 1:
-                        logging.info("Piste terminée naturellement (non-gapless). Passage à la suivante...")
+                        log_debug("UpnpPlayer", "natural_track_end_next")
                         self.set_next()
 
         if TransportInfo['CurrentTransportState'] == "PLAYING":
@@ -238,7 +237,7 @@ class UpnpPlayer:
 
         if 'TransportState' in parsed_message:
             if self.upnp_state['TransportState']['val'] != parsed_message['TransportState']['val']:
-                logging.info(f"TransportState changed to : {parsed_message['TransportState']['val']}")
+                log_debug("UpnpPlayer", "transport_state_changed", transport_state=str(parsed_message['TransportState']['val']))
                 state = None
                 if parsed_message['TransportState']['val'] == "OK":
                     state = None
@@ -274,31 +273,30 @@ class UpnpPlayer:
         if position is not None:
             try:
                 self.ask_transport_task.stop()
-            except:
-                pass
+            except Exception as exc:
+                log_warning("UpnpPlayer", "set_uri_stop_task_error", error=str(exc))
             # Ne passe pas par ici lors du changement de piste suivante automatique ... mais en manuel
             self.queue_position = position
             try:
                 self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
-            except:
-                pass
+            except Exception as exc:
+                log_warning("UpnpPlayer", "set_avtransport_uri_error", error=str(exc), uri=str(dic.get('uri')), meta=str(meta))
             time.sleep(0.8)
             try:
                 self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
-            except:
-                pass
+            except Exception as exc:
+                log_warning("UpnpPlayer", "clear_next_avtransport_uri_error", error=str(exc))
 
 
             time.sleep(0.8)
-            logging.info(f"Set meta : {meta}")
-            logging.info(f"Set AVTransport : {dic['uri']}")
+            log_debug("UpnpPlayer", "set_uri_meta", meta=str(meta), uri=str(dic.get('uri')))
             self.audio_changed(self.id)
             self.next_position = position
             time.sleep(0.8)
             try:
                 self.ask_transport_task.start(10)
-            except:
-                pass
+            except Exception as exc:
+                log_warning("UpnpPlayer", "set_uri_start_task_error", error=str(exc))
             return
         else:
             self.bock_task = True
@@ -307,25 +305,25 @@ class UpnpPlayer:
             self.next_position = 0
             try:
                 self.ask_transport_task.stop()
-            except:
-                pass
+            except Exception as exc:
+                log_warning("UpnpPlayer", "set_path_stop_task_error", error=str(exc))
             try:
                 self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
-            except:
-                pass
+            except Exception as exc:
+                log_warning("UpnpPlayer", "set_path_avtransport_uri_error", error=str(exc), uri=str(dic.get('uri')))
             time.sleep(0.8)
             try:
                 self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI="", NextURIMetaData="")
-                logging.info(f"Set NextAVTransport to ''")
-            except:
-                pass
+                log_debug("UpnpPlayer", "clear_next_avtransport_uri")
+            except Exception as exc:
+                log_warning("UpnpPlayer", "clear_next_avtransport_uri_error", error=str(exc))
             time.sleep(0.2)
-            logging.info(f"Set meta : {meta}")
-            logging.info(f"Set AVTransport : {dic['uri']}")
+            log_debug("UpnpPlayer", "set_path_meta", meta=str(meta), uri=str(dic.get('uri')))
             self.audio_changed(self.id)
             try:
                 self.ask_transport_task.start(10)
-            except:
+            except Exception as exc:
+                log_warning("UpnpPlayer", "set_path_start_task_error", error=str(exc))
                 self.bock_task = False
             self.bock_task = False
 
@@ -394,8 +392,8 @@ class UpnpPlayer:
     def set_play_uri(self):
         try:
             self.AVTransport.Play(InstanceID=0, Speed="1")
-        except:
-            logging.info(f"Error in AVTransport.Play")
+        except Exception as exc:
+            log_warning("UpnpPlayer", "avtransport_play_error", error=str(exc))
         time.sleep(0.5)
         self.state_changed(self.id,self.state)
 
@@ -432,13 +430,13 @@ class UpnpPlayer:
         try:
             self.set_stop()
             self.old_message = None
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "quit_stop_error", error=str(exc))
         self.renew_subscriptions_task.stop()
         try:
             self.ask_transport_task.stop()
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "quit_ask_transport_stop_error", error=str(exc))
 
         self.RenderingControl.unsubscribe(self.subscription_callback)
         self.AVTransport_sub.unsubscribe(self.subscription_callback)
@@ -473,8 +471,9 @@ class UpnpPlayer:
         try:
             dic = self.queue[self.queue_position+1]
             self.audio_changed(self.id) # seulement s'il y a une prochaine piste ...
-            logging.info(f"Audio changed to: {dic}")
-        except:
+            log_debug("UpnpPlayer", "audio_changed_next", track=str(dic))
+        except Exception as exc:
+            log_warning("UpnpPlayer", "next_track_lookup_error", error=str(exc))
             return # out of range
         if 'file' in dic and (self.Has_Next_AVTransport == True):
 
@@ -490,11 +489,11 @@ class UpnpPlayer:
         try:
             self.AVTransport.SetNextAVTransportURI(InstanceID=0, NextURI=dic['uri'], NextURIMetaData=meta)
             time.sleep(0.8)
-            logging.info(f"Set Next AVTransport : {dic['uri']}")
+            log_debug("UpnpPlayer", "set_next_avtransport", uri=str(dic.get('uri')))
             if self.queue_position == self.next_position:  # Do NOT increment more than One ...
                 self.next_position = self.next_position + 1
-        except:
-            pass
+        except Exception as exc:
+            log_warning("UpnpPlayer", "set_next_avtransport_error", error=str(exc), uri=str(dic.get('uri')))
 
     def set_queue(self,list):
         self.queue = []

@@ -31,7 +31,8 @@ async function fetchLog() {
       throw new Error(payload.message || 'Unable to read the log file');
     }
 
-    logOutput.textContent = payload.log || 'No log output to display.';
+    const logText = payload.log || 'No log output to display.';
+    logOutput.textContent = logText.split('\n').reverse().join('\n');
     setStatus(`Loaded ${payload.lines || 0} lines from ${payload.path || 'log file'}`);
   } catch (error) {
     logOutput.textContent = error.message || 'Unable to load the log.';

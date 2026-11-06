@@ -5,7 +5,6 @@ import gc
 import argparse
 import base64
 import binascii
-import logging
 import math
 import os
 import queue
@@ -28,6 +27,7 @@ from mutagen.mp3 import EasyMP3
 from pathlib import Path
 from utils.exceldate import Excel_Now, Timestamp_Now, Timestamp_modified, convert
 from utils.fileos import isfile_insensitive
+from utils.player_logging import log_debug, log_warning
 from utils.string import ReprInt
 from paths import config_folder,mediafiles_folder,plugins_folder,runtime_folder
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -283,7 +283,7 @@ class LibraryScannerService:
 
     @staticmethod
     def _default_notifier(event, **payload):
-        logging.info("Library scanner event %s payload=%s", event, payload)
+        log_debug("LibraryScannerService", "event", event=event, payload=str(payload))
 
     def emit(self, event, **payload):
         self.notifier(event, **payload)
@@ -354,8 +354,8 @@ class LibraryScannerService:
                 self.current_scan = item
                 try:
                     self._run_scan(item)
-                except Exception:
-                    logging.exception("Library scan failed")
+                except Exception as exc:
+                    log_warning("LibraryScannerService", "library_scan_failed", error=str(exc), request=str(item))
                     self.emit("library_scan_error", message="Scan failed")
                 finally:
                     self.current_scan = None
@@ -432,10 +432,9 @@ class LibraryScannerService:
                         break
                     try:
                         future.result()
-                    except Exception:
-                        logging.exception("Error while importing music file")
-                        
-                        
+                    except Exception as exc:
+                        log_warning("LibraryScannerService", "import_audio_file_failed", error=str(exc), file_name=str(root), file_path=str(os.path.join(root, filename)))
+
                     completed_files += 1
                     progress = (
                         completed_files * 100
@@ -475,8 +474,8 @@ class LibraryScannerService:
                 candidate = os.path.join(self.media_root, dirname, f"{filename}.{extension}")
                 if not os.path.exists(candidate):
                     self.db.mediafiles.delete_one({"_id": document.get("_id")})
-        except Exception:
-            logging.exception("Cleanup of missing files failed")
+        except Exception as exc:
+            log_warning("LibraryScannerService", "cleanup_missing_files_failed", error=str(exc))
 
     def _register_txxx_key(self, tag, shared_state_lock=None):
         if tag in self.custom_txxx:
@@ -512,8 +511,8 @@ class LibraryScannerService:
                 upsert=True,
             )
             self.emit("cover_changed", dirhash=str(dirhash))
-        except Exception:
-            logging.exception("Thumbnail generation failed for %s", img_path)
+        except Exception as exc:
+            log_warning("LibraryScannerService", "thumbnail_generation_failed", error=str(exc), img_path=str(img_path))
 
     def _import_audio_file(self, root, file_name, overwrite):
 
@@ -629,10 +628,7 @@ class LibraryScannerService:
         # Si Mutagen ne peut pas lire le fichier, ou ne fournit pas
         # d'informations de flux audio, le fichier est considéré comme illisible.
         if media_file is None or getattr(media_file, "info", None) is None:
-            logging.warning(
-                "Skipping unreadable media file: %s",
-                full_path
-            )
+            log_warning("LibraryScannerService", "skip_unreadable_media", file_path=str(full_path))
             return
 
         # Construit les informations générales qui seront enregistrées
@@ -762,14 +758,11 @@ class LibraryScannerService:
             else:
                 tags = mutagen.File(full_path) or {}
 
-        except Exception:
+        except Exception as exc:
 
             # Une erreur de lecture des tags empêche l'importation
             # de ce fichier.
-            logging.exception(
-                "Error reading tags for %s",
-                full_path
-            )
+            log_warning("LibraryScannerService", "read_tags_failed", error=str(exc), file_path=str(full_path))
             return
 
         # Fusionne les métadonnées musicales ("tags") et les informations
@@ -951,8 +944,8 @@ def Update_Music_Folders(dirnames, mongo_uri: Optional[str] = None, db=None, med
             req = ScanRequest(operation="incremental", folder=folder, overwrite=overwrite, rebuild=rebuild, scanfolder=False)
             # Appel synchrone du scan pour ce dossier
             scanner._run_scan(req)
-        except Exception:
-            logging.exception("Update_Music_Folders: failed importing %s", folder)
+        except Exception as exc:
+            log_warning("LibraryScannerService", "update_music_folders_failed", error=str(exc), folder=str(folder))
 
     # No refresh queries here ...
     try:

@@ -2634,8 +2634,8 @@ document.getElementById("activate_streaming").checked = localStorage.getItem("we
 
   
   window.outputmodal.style.display = "block";
-  document.getElementById("output_label").classList.add("disabled");
-  document.getElementById("output_label").innerHTML = translate("searching players");
+  document.getElementById("player_label").classList.add("disabled");
+  document.getElementById("player_label").innerHTML = translate("searching players");
   if (window.current_player !== undefined) {
 
     if (window.current_player["type"] == "gstreamer") {
@@ -2773,16 +2773,16 @@ function after_Get_Players_Detect() {
     Server_Player_CurrentTrack(current_track_info, "json", after_CurrentTrack, null);
   }
   after_Get_Players(this.response);
-  document.getElementById("output_label").classList.remove("disabled");
-  document.getElementById("output_label").innerHTML = translate("choose a player");
+  document.getElementById("player_label").classList.remove("disabled");
+  document.getElementById("player_label").innerHTML = translate("choose a player");
 
 }
 
 
 function after_Get_Players_Detected() {
   after_Get_Players(this.response);
-  document.getElementById("output_label").classList.remove("disabled");
-  document.getElementById("output_label").innerHTML = translate("choose a player");
+  document.getElementById("player_label").classList.remove("disabled");
+  document.getElementById("player_label").innerHTML = translate("choose a player");
   //TODO: detect upnp players
   //Server_Get_Players_Detect(after_Get_Players_Detect)
 }

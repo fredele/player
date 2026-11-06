@@ -799,7 +799,7 @@ class LibraryScannerService:
                 
         # Même principe pour le nombre total de pistes.
         if "totaltracks" in materialized and materialized["totaltracks"]:
-            if len(dic["totaltracks"]) > 0:
+            if len(materialized["totaltracks"]) > 0:
                 try:
                     materialized["totaltracks"] = int(re.split(r'[\s,.|/|\|-|_]+', materialized["totaltracks"][0])[0])
                 except:

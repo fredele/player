@@ -57,15 +57,13 @@ RUN chown -R player:player /home/player/.config/player \
                            /home/player/.cache/player \
                            /home/player/.local/state/player
 
-
-
+# Préparation du répertoire d'exécution et création du Pipe pour CamillaDSP
 RUN mkdir -p /run/user/1000/player \
+    && mkfifo /run/user/1000/player/camilla_pipe \
     && chown -R player:player /run/user/1000 \
     && chmod 700 /run/user/1000
 
 USER player
-
-
 
 ###############################################################################
 # Production Image
@@ -77,7 +75,6 @@ COPY player/src/ /home/player/MyPlayer/src/
 
 CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/src/main.py"]
 
-
 ###############################################################################
 # Dev. Image
 ###############################################################################
@@ -85,3 +82,4 @@ CMD ["/opt/venv/bin/python3","/home/player/MyPlayer/src/main.py"]
 FROM base AS debug
 
 CMD ["/opt/venv/bin/python3","-m","debugpy","--listen","0.0.0.0:5678","--wait-for-client","/home/player/MyPlayer/src/main.py","-c","/home/player/.Player/config/config-docker.ini"]
+

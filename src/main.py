@@ -949,7 +949,11 @@ def set_player(app,id):
         if 'player' not in player:
             player["player"] = GPlayer(app, state_changed, audio_changed, spectrum)
             player["player"].id = id
-            player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
+            try:
+                player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
+            except Exception as e:
+                logging.error(f"Error setting pipeline for player {id}: {e}")
+                player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
             app.player_id = id
         else:
             pass

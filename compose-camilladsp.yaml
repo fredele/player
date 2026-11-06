@@ -1,0 +1,34 @@
+services:
+
+  camilladsp:
+    user: "${HOST_UID}:${HOST_GID}"
+    build: 
+      context: ./camilladsp
+    restart: unless-stopped
+    network_mode: host
+    mem_limit: 512m
+    memswap_limit: 512m
+    volumes:
+      - ${HOME}/.config/camilladsp:/config
+      - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
+      - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie
+    environment:
+      - PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native
+    # Commande double : Lance le moteur (port 1234) ET l'interface web (port 5005)
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /config/configs /config/coeffs
+        touch /config/camilladsp.log
+        camilladsp -p 1234 -s /config/statefile.yml -o /config/camilladsp.log /config/configs/camilladsp.yaml &
+        exec /opt/camillagui_backend/camillagui_backend -c /config/gui-config.yaml
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - "${AUDIO_GID}"
+    ulimits:
+      rtprio: 95
+      memlock: -1
+
+

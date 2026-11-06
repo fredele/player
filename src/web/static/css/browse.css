@@ -1096,6 +1096,7 @@ select {
 
 
 .cls_query_text{
+  line-height: 1.6;
   position:relative;
   margin-left:15px;
   margin-right:15px;

@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Player logs</title>
+  <link rel="stylesheet" href="/css/normalize.min.css">
+  <link rel="stylesheet" href="/css/nav.css">
+  <link rel="stylesheet" href="/css/style.css">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #111111;
+      --bg: #000000;
       --panel: #1b1b1b;
       --muted: #bfc6d0;
       --text: #f3f3f3;
@@ -26,13 +29,16 @@
       background: var(--bg);
       color: var(--text);
       font-family: Arial, Helvetica, sans-serif;
+      font-size: 18px;
     }
 
     body {
       display: flex;
       flex-direction: column;
-      padding: 16px;
+      padding: 0;
       gap: 12px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 18px;
     }
 
     .toolbar {
@@ -40,33 +46,22 @@
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
+      padding: 0 16px;
     }
 
     button, input {
       font: inherit;
     }
 
-    button {
-      background: var(--button);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 14px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    button:hover {
-      background: var(--button-hover);
-    }
-
     #log-lines {
       width: 90px;
+      height: 30px;
       padding: 7px 8px;
       border-radius: 6px;
       border: 1px solid var(--border);
       background: #0f0f0f;
       color: var(--text);
+      box-sizing: border-box;
     }
 
     .status {
@@ -78,7 +73,7 @@
     pre {
       flex: 1;
       overflow: auto;
-      margin: 0;
+      margin: 0 16px 16px;
       padding: 16px;
       background: #090909;
       border: 1px solid var(--border);
@@ -90,10 +85,22 @@
     }
   </style>
 </head>
-<body>
+<body onload="onload_log_view()">
+  <ul class="nav nav-pills justify-content-center">
+    <li><a id="browse_btn" class="to_translate" href="../">Browse</a></li>
+    <li><a class="to_translate" href="config.html">Login</a></li>
+    <li><a class="to_translate" href="database.html">Database</a></li>
+    <li><a class="to_translate" href="menu.html">Menu</a></li>
+    <li><a class="to_translate" href="players.html">Players</a></li>
+    <li><a class="to_translate" href="editvars.html">Display</a></li>
+    <li><a class="to_translate" href="editsettings.html">Settings</a></li>
+    <li><a class="to_translate" href="control.html">Control</a></li>
+    <li class="active"><a class="to_translate" href="log_view.html">log</a></li>
+  </ul>
+
   <div class="toolbar">
-    <button id="refresh-log" type="button">Refresh</button>
-    <button id="download-log" type="button">Download</button>
+    <button id="refresh-log" class="btn to_translate" type="button">Refresh</button>
+    <button id="download-log" class="btn to_translate" type="button">Download</button>
     <label for="log-lines">Lines</label>
     <input id="log-lines" type="number" min="50" max="10000" value="200">
     <div id="status" class="status"></div>
@@ -101,6 +108,10 @@
 
   <pre id="log-output">Loading log…</pre>
 
+  <script src="/js/vars.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/resizer.js"></script>
+  <script src="/js/log_view_page.js"></script>
   <script src="/js/log_view.js"></script>
 </body>
 </html>

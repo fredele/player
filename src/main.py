@@ -1180,12 +1180,20 @@ def download_log():
         if not log_path.exists():
             return json_error(f"Log file not found: {log_path}", 404)
 
-        return send_file(
-            str(log_path),
-            as_attachment=True,
-            download_name="log.txt",
-            mimetype="text/plain"
-        )
+        try:
+            return send_file(
+                str(log_path),
+                as_attachment=True,
+                download_name="log.txt",
+                mimetype="text/plain"
+            )
+        except TypeError:
+            return send_file(
+                str(log_path),
+                as_attachment=True,
+                attachment_filename="log.txt",
+                mimetype="text/plain"
+            )
     except Exception as exc:
         return json_error(f"Unable to download log file: {exc}", 500)
 

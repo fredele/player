@@ -18,6 +18,9 @@ function initDropdown(dropdownId, buttonId, menuId) {
   // Fermer si on clique ailleurs
   document.addEventListener('click', function () {
     menu.classList.remove('show');
+    menu.querySelectorAll('.dropdown-item').forEach(function (item) {
+      item.classList.remove('tv-nav-selected');
+    });
   });
 
   // Empêcher la fermeture quand on clique dans le menu + fermer après clic sur un item
@@ -25,6 +28,9 @@ function initDropdown(dropdownId, buttonId, menuId) {
     // Si on clique sur un item (a, button, ou élément avec classe dropdown-item)
     if (e.target.closest('a, button, .dropdown-item')) {
       menu.classList.remove('show');
+      menu.querySelectorAll('.dropdown-item').forEach(function (item) {
+        item.classList.remove('tv-nav-selected');
+      });
     }
     e.stopPropagation(); // empêche la fermeture immédiate par le document
   });

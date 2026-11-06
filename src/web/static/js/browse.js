@@ -137,6 +137,8 @@ function ScanMusicFolders() {
 }
 
 function move_panels() {
+  resetPlaylistTvNavSelection();
+
   if (document.getElementById("menu_all").style.width == "80px") {
     menu_hide();
     return;
@@ -167,6 +169,7 @@ function move_panels() {
     } else {
       playlist.style.left = "-150%";
       thumbs.style.left = "0%";
+      resetPlaylistTvNavSelection();
     }
   }
 
@@ -241,16 +244,709 @@ setkeydownhandler();
 
 
 
+function activateTvNavSelection() {
+    const thumbsBox = document.getElementById("thumbs_box");
+    if (!thumbsBox || thumbsBox.classList.contains("tv-nav")) {
+        return;
+    }
+
+    thumbsBox.classList.add("tv-nav");
+    const firstThumb = thumbsBox.querySelector(".thumb");
+    if (firstThumb) {
+        thumbsBox.querySelectorAll(".thumb").forEach(function (thumb) {
+            thumb.classList.remove("tv-nav-selected");
+        });
+        firstThumb.classList.add("tv-nav-selected");
+        firstThumb.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+}
+
+function getTvNavSelectionCandidates() {
+    const thumbsBox = document.getElementById("thumbs_box");
+    if (!thumbsBox) {
+        return [];
+    }
+    return Array.from(thumbsBox.querySelectorAll(".thumb"));
+}
+
+function selectTvNavThumb(nextThumb) {
+    if (!nextThumb) {
+        return;
+    }
+
+    const thumbsBox = document.getElementById("thumbs_box");
+    if (!thumbsBox) {
+        return;
+    }
+
+    thumbsBox.querySelectorAll(".thumb").forEach(function (thumb) {
+        thumb.classList.remove("tv-nav-selected");
+    });
+    nextThumb.classList.add("tv-nav-selected");
+    nextThumb.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function setQueryButtonSelection(buttonId) {
+    const queryPlayBtn = document.getElementById("query_play_btn");
+    const queryQueueBtn = document.getElementById("query_queue_btn");
+    const thumbsBox = document.getElementById("thumbs_box");
+
+    [queryPlayBtn, queryQueueBtn].forEach(function (button) {
+        if (button) {
+            button.classList.remove("tv-nav-selected");
+        }
+    });
+
+    if (thumbsBox) {
+        thumbsBox.querySelectorAll(".thumb").forEach(function (thumb) {
+            thumb.classList.remove("tv-nav-selected");
+        });
+    }
+
+    const activeButton = document.getElementById(buttonId);
+    if (activeButton) {
+        activeButton.classList.add("tv-nav-selected");
+        activeButton.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+}
+
+function selectQueryPlayBtn() {
+    setQueryButtonSelection("query_play_btn");
+}
+
+function resetQueryButtonsSelection() {
+    ["query_play_btn", "query_queue_btn"].forEach(function (id) {
+        const button = document.getElementById(id);
+        if (button) {
+            button.classList.remove("tv-nav-selected");
+        }
+    });
+}
+
+function activateMenuTvNavSelection() {
+    const menuItems = document.getElementById("menu_items");
+    if (!menuItems) {
+        return;
+    }
+
+    menuItems.classList.add("tv-nav");
+    const selectedItem = menuItems.querySelector(".menu_item_selected") || menuItems.querySelector(".menu_item");
+    menuItems.querySelectorAll(".menu_item").forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+    });
+
+    if (selectedItem) {
+        selectedItem.classList.add("tv-nav-selected");
+        selectedItem.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+}
+
+function getMenuTvNavSelectionCandidates() {
+    const menuItems = document.getElementById("menu_items");
+    if (!menuItems) {
+        return [];
+    }
+    return Array.from(menuItems.querySelectorAll(".menu_item"));
+}
+
+function selectMenuTvNavItem(nextItem) {
+    const menuItems = document.getElementById("menu_items");
+    if (!menuItems || !nextItem) {
+        return;
+    }
+
+    menuItems.querySelectorAll(".menu_item").forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+    });
+    nextItem.classList.add("tv-nav-selected");
+    nextItem.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function getFooterTvNavSelectionCandidates() {
+    return ["previous_btn", "play_btn", "next_btn"]
+        .map(function (id) {
+            return document.getElementById(id);
+        })
+        .filter(Boolean);
+}
+
+function activateFooterTvNavSelection() {
+    const footerButtons = getFooterTvNavSelectionCandidates();
+    if (!footerButtons.length) {
+        return;
+    }
+
+    footerButtons.forEach(function (button) {
+        button.classList.remove("tv-nav-selected");
+    });
+
+    const playBtn = document.getElementById("play_btn");
+    if (playBtn) {
+        playBtn.classList.add("tv-nav-selected");
+        playBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+
+    document.body.dataset.footerNav = "true";
+}
+
+function isPanelVisible(element) {
+    if (!element) {
+        return false;
+    }
+
+    const computedLeft = window.getComputedStyle ? window.getComputedStyle(element).left : element.style.left;
+    const inlineLeft = element.style.left || "";
+    const leftValue = computedLeft || inlineLeft;
+
+    return leftValue === "0%" || leftValue === "0px" || leftValue === "0";
+}
+
+function resetPlaylistTvNavSelection() {
+    const playlist = document.getElementById("playlist");
+    if (!playlist) {
+        return;
+    }
+
+    playlist.classList.remove("tv-nav");
+    playlist.querySelectorAll(".playlist_item").forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+    });
+}
+
+function activatePlaylistTvNavSelection() {
+    const playlistContainer = document.getElementById("playlist_container");
+    const playlist = document.getElementById("playlist");
+    if (!playlist || !playlistContainer || playlistContainer.style.left !== "0%") {
+        return;
+    }
+
+    const items = Array.from(playlist.querySelectorAll(".playlist_item"));
+    if (!items.length) {
+        return;
+    }
+
+    const currentPos = Number(window.current_playing_position ?? 0);
+    const current = items.find(function (item) {
+        return Number(item.getAttribute("nbr")) === currentPos;
+    }) || items[0];
+
+    items.forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+    });
+    current.classList.add("tv-nav-selected");
+    current.scrollIntoView({ block: "nearest", inline: "nearest" });
+    playlist.classList.add("tv-nav");
+}
+
+function getPlaylistTvNavSelectionCandidates() {
+    const playlist = document.getElementById("playlist");
+    if (!playlist) {
+        return [];
+    }
+    return Array.from(playlist.querySelectorAll(".playlist_item"));
+}
+
+function selectPlaylistTvNavItem(nextItem) {
+    const playlist = document.getElementById("playlist");
+    if (!playlist || !nextItem) {
+        return;
+    }
+
+    playlist.querySelectorAll(".playlist_item").forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+    });
+    nextItem.classList.add("tv-nav-selected");
+    nextItem.scrollIntoView({ block: "nearest", inline: "nearest" });
+    playlist.classList.add("tv-nav");
+}
+
+function selectFooterTvNavButton(nextButton) {
+    const footerButtons = getFooterTvNavSelectionCandidates();
+    if (!footerButtons.length || !nextButton) {
+        return;
+    }
+
+    footerButtons.forEach(function (button) {
+        button.classList.remove("tv-nav-selected");
+    });
+    nextButton.classList.add("tv-nav-selected");
+    nextButton.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function activateOutputModalTvNav() {
+    const outputModal = document.getElementById("OutputModal");
+    if (!outputModal || outputModal.style.display !== "block") {
+        return;
+    }
+
+    const playerButton = document.getElementById("playerdropbtn");
+    const outputButton = document.getElementById("outputgstdropbtn");
+    const buttons = [playerButton, outputButton].filter(Boolean);
+
+    buttons.forEach(function (button) {
+        button.classList.remove("tv-nav-selected");
+    });
+    document.querySelectorAll("#OutputModal .dropdown-item").forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+    });
+
+    if (buttons.length) {
+        buttons[0].classList.add("tv-nav-selected");
+        buttons[0].focus();
+    }
+}
+
+function moveTvNavSelection(direction) {
+    const thumbs = getTvNavSelectionCandidates();
+    if (!thumbs.length) {
+        return;
+    }
+
+    const currentIndex = thumbs.findIndex(function (thumb) {
+        return thumb.classList.contains("tv-nav-selected");
+    });
+    const currentPos = currentIndex >= 0 ? currentIndex : 0;
+
+    let nextIndex = currentPos;
+
+    if (direction === "ArrowRight") {
+        nextIndex = currentPos + 1;
+        if (nextIndex >= thumbs.length) {
+            nextIndex = 0;
+        }
+    }
+
+    if (direction === "ArrowLeft") {
+        nextIndex = currentPos - 1;
+        if (nextIndex < 0) {
+            nextIndex = thumbs.length - 1;
+        }
+    }
+
+    selectTvNavThumb(thumbs[nextIndex]);
+}
+
 function setkeydownhandler() {
     window.addEventListener("keydown", function (inEvent) {
 
         const el = document.activeElement;
+
+        const outputModal = document.getElementById("OutputModal");
+        if (outputModal && outputModal.style.display === "block") {
+            const playerButton = document.getElementById("playerdropbtn");
+            const outputButton = document.getElementById("outputgstdropbtn");
+            const buttons = [playerButton, outputButton].filter(Boolean);
+            const openMenu = document.querySelector("#OutputModal .dropdown-menu.show");
+
+            if (inEvent.key === "ArrowDown" || inEvent.key === "ArrowUp") {
+                if (openMenu) {
+                    const items = Array.from(openMenu.querySelectorAll(".dropdown-item"));
+                    if (items.length) {
+                        const current = items.find(function (item) {
+                            return item.classList.contains("tv-nav-selected");
+                        }) || items[0];
+                        let index = items.indexOf(current);
+                        index += inEvent.key === "ArrowDown" ? 1 : -1;
+                        index = (index + items.length) % items.length;
+                        items.forEach(function (item) {
+                            item.classList.remove("tv-nav-selected");
+                        });
+                        const nextItem = items[index];
+                        nextItem.classList.add("tv-nav-selected");
+                        nextItem.focus();
+                    }
+                } else if (buttons.length) {
+                    const current = buttons.find(function (button) {
+                        return button.classList.contains("tv-nav-selected");
+                    }) || buttons[0];
+                    let index = buttons.indexOf(current);
+                    index += inEvent.key === "ArrowDown" ? 1 : -1;
+                    index = (index + buttons.length) % buttons.length;
+                    buttons.forEach(function (button) {
+                        button.classList.remove("tv-nav-selected");
+                    });
+                    const nextButton = buttons[index];
+                    nextButton.classList.add("tv-nav-selected");
+                    nextButton.focus();
+                }
+                inEvent.preventDefault();
+                return;
+            }
+
+            if (inEvent.key === "Enter") {
+                const visibleMenu = document.querySelector("#OutputModal .dropdown-menu.show");
+                const selectedItem = visibleMenu ? visibleMenu.querySelector(".dropdown-item.tv-nav-selected") : null;
+                const selectedButton = document.querySelector("#OutputModal .tv-nav-selected");
+                if (visibleMenu && selectedItem) {
+                    selectedItem.click();
+                    inEvent.preventDefault();
+                    return;
+                }
+                if (selectedButton && !visibleMenu) {
+                    selectedButton.click();
+                    inEvent.preventDefault();
+                    return;
+                }
+                if (selectedButton && visibleMenu) {
+                    selectedButton.click();
+                    inEvent.preventDefault();
+                    return;
+                }
+            }
+
+            if (inEvent.key === "Backspace" || inEvent.key === "Escape") {
+                outputModal.style.display = "none";
+                inEvent.preventDefault();
+                return;
+            }
+        }
 
         if (
             el.matches("input, textarea, select") ||
             el.isContentEditable
         ) {
             return;
+        }
+
+        const menuItems = document.getElementById("menu_items");
+        const menuVisible = menuItems && menuItems.style.width && menuItems.style.width !== "0px" && menuItems.style.width !== "";
+        if (menuVisible && (inEvent.key === "ArrowUp" || inEvent.key === "ArrowDown")) {
+            if (!menuItems.classList.contains("tv-nav")) {
+                activateMenuTvNavSelection();
+            }
+
+            const menuCandidates = getMenuTvNavSelectionCandidates();
+            if (menuCandidates.length) {
+                const current = menuCandidates.find(function (item) {
+                    return item.classList.contains("tv-nav-selected");
+                }) || menuCandidates[0];
+                let nextIndex = menuCandidates.indexOf(current);
+                if (inEvent.key === "ArrowDown") {
+                    nextIndex += 1;
+                    if (nextIndex >= menuCandidates.length) {
+                        nextIndex = 0;
+                    }
+                } else {
+                    nextIndex -= 1;
+                    if (nextIndex < 0) {
+                        nextIndex = menuCandidates.length - 1;
+                    }
+                }
+                selectMenuTvNavItem(menuCandidates[nextIndex]);
+            }
+            inEvent.preventDefault();
+            return;
+        }
+
+        const playlistContainer = document.getElementById("playlist_container");
+        const playlist = document.getElementById("playlist");
+        if (playlistContainer && isPanelVisible(playlistContainer) && playlist) {
+            const playlistItems = getPlaylistTvNavSelectionCandidates();
+            if (playlistItems.length) {
+                if (inEvent.key === "ArrowDown" || inEvent.key === "ArrowUp") {
+                    if (!playlist.classList.contains("tv-nav")) {
+                        activatePlaylistTvNavSelection();
+                    }
+
+                    const current = playlistItems.find(function (item) {
+                        return item.classList.contains("tv-nav-selected");
+                    }) || playlistItems.find(function (item) {
+                        return Number(item.getAttribute("nbr")) === Number(window.current_playing_position ?? 0);
+                    }) || playlistItems[0];
+                    let nextIndex = playlistItems.indexOf(current);
+                    if (inEvent.key === "ArrowDown") {
+                        nextIndex += 1;
+                        if (nextIndex >= playlistItems.length) {
+                            nextIndex = 0;
+                        }
+                    } else {
+                        nextIndex -= 1;
+                        if (nextIndex < 0) {
+                            nextIndex = playlistItems.length - 1;
+                        }
+                    }
+                    selectPlaylistTvNavItem(playlistItems[nextIndex]);
+                    inEvent.preventDefault();
+                    return;
+                }
+
+                if (inEvent.key === "Enter") {
+                    const selected = playlist.querySelector(".playlist_item.tv-nav-selected");
+                    if (selected) {
+                        change_track(Number(selected.getAttribute("nbr")));
+                        inEvent.preventDefault();
+                        return;
+                    }
+                }
+            }
+        }
+
+        const footerNavEnabled = document.body.dataset.footerNav === "true";
+        if (footerNavEnabled) {
+            const footerButtons = getFooterTvNavSelectionCandidates();
+            if (!footerButtons.length) {
+                document.body.dataset.footerNav = "false";
+            } else {
+                if (inEvent.key === "ArrowLeft" || inEvent.key === "ArrowRight") {
+                    const current = footerButtons.find(function (button) {
+                        return button.classList.contains("tv-nav-selected");
+                    }) || footerButtons[0];
+                    const currentIndex = footerButtons.indexOf(current);
+                    let nextIndex = currentIndex;
+                    if (inEvent.key === "ArrowRight") {
+                        nextIndex += 1;
+                        if (nextIndex >= footerButtons.length) {
+                            nextIndex = 0;
+                        }
+                    } else {
+                        nextIndex -= 1;
+                        if (nextIndex < 0) {
+                            nextIndex = footerButtons.length - 1;
+                        }
+                    }
+                    selectFooterTvNavButton(footerButtons[nextIndex]);
+                    inEvent.preventDefault();
+                    return;
+                }
+
+                if (inEvent.key === "ArrowDown") {
+                    const thumbsBox = document.getElementById("thumbs_box");
+                    if (thumbsBox) {
+                        document.body.dataset.footerNav = "false";
+                        getFooterTvNavSelectionCandidates().forEach(function (button) {
+                            button.classList.remove("tv-nav-selected");
+                        });
+                        thumbsBox.classList.add("tv-nav");
+                        const selectedThumb = thumbsBox.querySelector(".thumb.tv-nav-selected") || thumbsBox.querySelector(".thumb");
+                        if (selectedThumb) {
+                            thumbsBox.querySelectorAll(".thumb").forEach(function (thumb) {
+                                thumb.classList.remove("tv-nav-selected");
+                            });
+                            selectedThumb.classList.add("tv-nav-selected");
+                            selectedThumb.scrollIntoView({ block: "nearest", inline: "nearest" });
+                        }
+                    }
+                    inEvent.preventDefault();
+                    return;
+                }
+
+                if (inEvent.key === "Enter") {
+                    const selectedButton = footerButtons.find(function (button) {
+                        return button.classList.contains("tv-nav-selected");
+                    }) || footerButtons[0];
+                    if (selectedButton) {
+                        selectedButton.click();
+                        inEvent.preventDefault();
+                        return;
+                    }
+                }
+            }
+        }
+
+        const queryContainer = document.getElementById("query_container");
+        if (queryContainer && isPanelVisible(queryContainer)) {
+            const queryPlayBtn = document.getElementById("query_play_btn");
+            const queryQueueBtn = document.getElementById("query_queue_btn");
+            if (queryPlayBtn && queryQueueBtn && (inEvent.key === "ArrowLeft" || inEvent.key === "ArrowRight")) {
+                const selected = document.querySelector("#query_play_btn.tv-nav-selected, #query_queue_btn.tv-nav-selected") || queryPlayBtn;
+                const next = inEvent.key === "ArrowRight"
+                    ? (selected === queryPlayBtn ? queryQueueBtn : queryPlayBtn)
+                    : (selected === queryQueueBtn ? queryPlayBtn : queryQueueBtn);
+
+                resetQueryButtonsSelection();
+                next.classList.add("tv-nav-selected");
+                next.scrollIntoView({ block: "nearest", inline: "nearest" });
+                inEvent.preventDefault();
+                return;
+            }
+        }
+
+        if (inEvent.key === "ArrowLeft" || inEvent.key === "ArrowRight") {
+            const thumbsBox = document.getElementById("thumbs_box");
+            if (thumbsBox && !thumbsBox.classList.contains("tv-nav")) {
+                activateTvNavSelection();
+            }
+
+            const selectedThumb = thumbsBox ? thumbsBox.querySelector(".thumb.tv-nav-selected") : null;
+            if (selectedThumb || thumbsBox) {
+                moveTvNavSelection(inEvent.key);
+            }
+
+            inEvent.preventDefault();
+            return;
+        }
+
+        if (inEvent.key === "ArrowDown") {
+            const thumbsBox = document.getElementById("thumbs_box");
+            if (thumbsBox && !thumbsBox.classList.contains("tv-nav")) {
+                activateTvNavSelection();
+            }
+
+            if (thumbsBox) {
+                const thumbs = getTvNavSelectionCandidates();
+                const current = thumbs.find(function (thumb) {
+                    return thumb.classList.contains("tv-nav-selected");
+                }) || thumbs[0];
+
+                if (!current) {
+                    inEvent.preventDefault();
+                    return;
+                }
+
+                const currentRect = current.getBoundingClientRect();
+                const currentCenterX = currentRect.left + currentRect.width / 2;
+                let target = null;
+                let bestGap = Infinity;
+                let bestHorizontal = Infinity;
+
+                thumbs.forEach(function (thumb) {
+                    if (thumb === current) {
+                        return;
+                    }
+
+                    const rect = thumb.getBoundingClientRect();
+                    const verticalGap = rect.top - currentRect.bottom;
+                    if (verticalGap <= 0) {
+                        return;
+                    }
+
+                    const centerX = rect.left + rect.width / 2;
+                    const horizontalGap = Math.abs(centerX - currentCenterX);
+
+                    if (verticalGap < bestGap || (Math.abs(verticalGap - bestGap) < 1 && horizontalGap < bestHorizontal)) {
+                        bestGap = verticalGap;
+                        bestHorizontal = horizontalGap;
+                        target = thumb;
+                    }
+                });
+
+                if (target) {
+                    selectTvNavThumb(target);
+                }
+            }
+
+            inEvent.preventDefault();
+            return;
+        }
+
+        if (inEvent.key === "ArrowUp") {
+            const thumbsBox = document.getElementById("thumbs_box");
+            if (thumbsBox) {
+                const thumbs = getTvNavSelectionCandidates();
+                const current = thumbs.find(function (thumb) {
+                    return thumb.classList.contains("tv-nav-selected");
+                }) || thumbs[0];
+                const firstThumb = thumbs[0];
+
+                if (current && firstThumb) {
+                    const currentRect = current.getBoundingClientRect();
+                    const firstRect = firstThumb.getBoundingClientRect();
+                    if (currentRect.top <= firstRect.top + 10) {
+                        activateFooterTvNavSelection();
+                        inEvent.preventDefault();
+                        return;
+                    }
+                }
+            }
+
+            if (thumbsBox && !thumbsBox.classList.contains("tv-nav")) {
+                activateTvNavSelection();
+            }
+
+            if (thumbsBox) {
+                const thumbs = getTvNavSelectionCandidates();
+                const current = thumbs.find(function (thumb) {
+                    return thumb.classList.contains("tv-nav-selected");
+                }) || thumbs[0];
+
+                if (!current) {
+                    inEvent.preventDefault();
+                    return;
+                }
+
+                const currentRect = current.getBoundingClientRect();
+                const currentCenterX = currentRect.left + currentRect.width / 2;
+                let target = null;
+                let bestGap = Infinity;
+                let bestHorizontal = Infinity;
+
+                thumbs.forEach(function (thumb) {
+                    if (thumb === current) {
+                        return;
+                    }
+
+                    const rect = thumb.getBoundingClientRect();
+                    const verticalGap = currentRect.top - rect.bottom;
+                    if (verticalGap <= 0) {
+                        return;
+                    }
+
+                    const centerX = rect.left + rect.width / 2;
+                    const horizontalGap = Math.abs(centerX - currentCenterX);
+
+                    if (verticalGap < bestGap || (Math.abs(verticalGap - bestGap) < 1 && horizontalGap < bestHorizontal)) {
+                        bestGap = verticalGap;
+                        bestHorizontal = horizontalGap;
+                        target = thumb;
+                    }
+                });
+
+                if (target) {
+                    selectTvNavThumb(target);
+                }
+            }
+
+            inEvent.preventDefault();
+            return;
+        }
+
+        if (inEvent.key === "Enter") {
+            const menuItems = document.getElementById("menu_items");
+            if (menuItems && menuItems.style.width && menuItems.style.width !== "0px" && menuItems.style.width !== "") {
+                const selectedMenuItem = menuItems.querySelector(".menu_item.tv-nav-selected") || menuItems.querySelector(".menu_item_selected") || menuItems.querySelector(".menu_item");
+                if (selectedMenuItem) {
+                    selectedMenuItem.click();
+                    inEvent.preventDefault();
+                    return;
+                }
+            }
+
+            const queryContainer = document.getElementById("query_container");
+            const queryPlayBtn = document.getElementById("query_play_btn");
+            const queryQueueBtn = document.getElementById("query_queue_btn");
+            if (queryContainer && queryContainer.style.left === "0%") {
+                const selectedQueryBtn = document.querySelector("#query_play_btn.tv-nav-selected, #query_queue_btn.tv-nav-selected") || queryPlayBtn;
+                if (selectedQueryBtn) {
+                    selectedQueryBtn.focus();
+                    selectedQueryBtn.click();
+                    inEvent.preventDefault();
+                    return;
+                }
+            }
+
+            const thumbsBox = document.getElementById("thumbs_box");
+            if (thumbsBox && thumbsBox.classList.contains("tv-nav")) {
+                const selectedThumb = thumbsBox.querySelector(".thumb.tv-nav-selected");
+                if (selectedThumb) {
+                    selectedThumb.click();
+                    inEvent.preventDefault();
+                    return;
+                }
+            }
+        }
+
+        if (inEvent.key === "Backspace") {
+            const queryContainer = document.getElementById("query_container");
+            if (queryContainer && queryContainer.style.left === "0%") {
+                inEvent.preventDefault();
+                Goto_Browse();
+                return;
+            }
+            if (typeof level !== "undefined" && level > 0) {
+                inEvent.preventDefault();
+                browse_to_level(level - 1);
+                return;
+            }
         }
 
         switch (inEvent.key) {
@@ -742,6 +1438,11 @@ function Goto_Browse() {
   window.files_queried = [];
   current_selected_ids = [];
 
+  resetPlaylistTvNavSelection();
+  document.querySelectorAll('#query_play_btn, #query_queue_btn').forEach(function (button) {
+    button.classList.remove('tv-nav-selected');
+  });
+  resetQueryButtonsSelection();
   document.getElementById('query_all').scrollTop = 0;
   document.getElementById('thumbs_container').style.left = "0%";
   document.getElementById('playlist_container').style.left = "-150%";
@@ -1735,6 +2436,8 @@ function on_thumb_click_Library(thumb) {
     window.queryview_last_query = q
     lastqueryview = q
     document.getElementById('thumbs_container').style.left = "-150%";
+    resetQueryButtonsSelection();
+    document.getElementById('query_container').style.left = "0%";
     Server_Get_Covers(q, after_Server_Get_Covers, null)
     Server_Get_Group_Query(q, query_album_info, "json", after_Server_Get_Group_Query, null)
     Server_Get_GetValues(q, query_tags, after_Server_Get_Query_Overview, null);
@@ -1750,6 +2453,7 @@ function on_thumb_click_Library(thumb) {
 
 function on_thumb_click_Search(thumb) {
   document.getElementById('thumbs_container').style.left = "-150%";
+  resetQueryButtonsSelection();
   document.getElementById('query_container').style.left = "0%";
   q = thumb.getAttribute("query")
   window.queryview_last_query = q
@@ -1981,6 +2685,7 @@ function reset_query_container() {
   for (var i = 0; i < tracklist.childElementCount; i++) {
     tracklist.children[i].classList.remove("query_track_item_selected")
   }
+  resetQueryButtonsSelection();
   try {
     document.getElementById('query_tracklist').innerHTML = "";
     document.getElementById('query_text').innerHTML = "";
@@ -2044,6 +2749,14 @@ function menu_display() {
     document.getElementById("menu_items").style.width = "100%";
     document.getElementById("menu_all").style.width = "80px";
 
+    const menuItems = document.getElementById("menu_items");
+    if (menuItems) {
+      menuItems.classList.remove("tv-nav");
+      menuItems.querySelectorAll(".menu_item").forEach(function (item) {
+        item.classList.remove("tv-nav-selected");
+      });
+    }
+
   }
   if (left == "0%") {
 
@@ -2061,6 +2774,13 @@ function menu_hide() {
   document.getElementById("menu_items").style.width = 0;
   document.getElementById("menu_all").style.width = 0;
   document.getElementById("menu_hide").style.width = 0;
+  const menuItems = document.getElementById("menu_items");
+  if (menuItems) {
+    menuItems.classList.remove("tv-nav");
+    menuItems.querySelectorAll(".menu_item").forEach(function (item) {
+      item.classList.remove("tv-nav-selected");
+    });
+  }
 }
 
 function setVolume() {
@@ -2619,6 +3339,8 @@ function show_outputs() {
     return;
   }  
 
+  activateOutputModalTvNav();
+
   if (localStorage.hasOwnProperty('web_transcode_active')) {
   } else {
     localStorage.setItem('web_transcode_active', false);
@@ -2818,6 +3540,10 @@ function after_Get_Players(response) {
     document.getElementById("chooseoutput").style.display = "block";
   }
 
+  playerdrop.querySelectorAll(".dropdown-item").forEach(function (item) {
+    item.setAttribute("tabindex", "0");
+  });
+
   if (localStorage.getItem("current_player") !== null) {
 
     c = localStorage.getItem("current_player")
@@ -2876,6 +3602,9 @@ function after_Get_Players(response) {
   }
 
   playerdrop.innerHTML = html
+  playerdrop.querySelectorAll(".dropdown-item").forEach(function (item) {
+    item.setAttribute("tabindex", "0");
+  });
   try {
     var foundPlayer = res["players"].find(p => p.id === player.id);
   } catch (error) {
@@ -3157,7 +3886,7 @@ function after_Get_Output() {
   for (var i = 0; i < outputsgst.length; i++) {
     title = outputsgst[i]["name"];
     outputgstdrop.innerHTML = outputgstdrop.innerHTML +
-      `<a class="dropdown-item" nbr=${i} onclick= outputgstchange(this)>${title}</a>`;
+      `<a class="dropdown-item" tabindex="0" nbr=${i} onclick= outputgstchange(this)>${title}</a>`;
   }
   outputgstdropbtn.innerHTML = res["outputs"][res["current"]]["name"]
 

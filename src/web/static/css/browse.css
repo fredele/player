@@ -323,6 +323,15 @@ color:#ffffff;
   display: flex
 
  }
+
+.playlist_item.tv-nav-selected {
+  outline: 3px solid #1b54af;
+  outline-offset: 0px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(27, 84, 175, 0.35);
+  /* transform: scale(1.02); */
+}
+
 .item_query_cover{
   margin-left:10px;
   margin-top:6px;
@@ -390,6 +399,27 @@ color:#ffffff;
     margin-bottom: 25px;
     /* Pour la tablette : 136,152*/
     /* Pour l'ordi      : 100,112*/
+}
+
+div#thumbs_box.tv-nav .thumb {
+    transition: outline-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+div#thumbs_box.tv-nav .thumb.tv-nav-selected {
+    outline: 3px solid #1b54af;
+    outline-offset: 4px;
+    border-radius: 8px;
+    box-shadow: 0 0 0 3px rgba(27, 84, 175, 0.35);
+    transform: scale(1.02);
+}
+
+#query_play_btn.tv-nav-selected,
+#query_queue_btn.tv-nav-selected {
+    outline: 3px solid #1b54af;
+    outline-offset: -7px;
+    border-radius: 16px;
+    box-shadow: -5 -5 -5 3px rgba(27, 84, 175, 0.35);
+    /* transform: scale(1.02); */
 }
 
 
@@ -785,6 +815,7 @@ select {
 
 
 .menu_item {
+	padding-left:7px;
     margin-left: 5px;
     display: flex;
     align-items: center;
@@ -804,6 +835,11 @@ select {
     background-color: #04030391;
 }
 
+#menu_items.tv-nav .menu_item.tv-nav-selected {
+    background-color: #1b54af;
+    color: #ffffff;
+    border-radius: 8px;
+}
 
 
 #display_strs {
@@ -1789,6 +1825,26 @@ body {font-family: Arial, Helvetica, sans-serif;}
   text-align:center;
   padding-top: 5px;
   padding-bottom: 5px;
+}
+
+#OutputModal .tv-nav-selected {
+  outline: 3px solid #1b54af;
+  outline-offset: 4px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(27, 84, 175, 0.35);
+  transform: scale(1.02);
+}
+
+#OutputModal .dropdown-item.tv-nav-selected {
+  background-color: rgba(27, 84, 175, 0.35);
+}
+
+#footer-div .tv-nav-selected {
+    outline: 3px solid #1b54af;
+    outline-offset: -8px;
+    border-radius: 16px;
+    /*box-shadow: 0 0 0 3px rgba(27, 84, 175, 0.35);
+    transform: scale(1.02);*/
 }
 
 #edit_text{

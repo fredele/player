@@ -82,7 +82,7 @@ function after_Player_CurrentPosition() {
 }
 
 function move_panels() {
-
+  resetPlaylistTvNavSelection();
 
   if (Array.from(document.getElementsByClassName('display_str'))[0].innerHTML == translate("No Connection")) {
     location.reload();

@@ -62,6 +62,19 @@
       "problemMatcher": []
     },
     {
+      "label": "push ghcr image",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "./push_ghcr.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
       "label": "Synchroniser MyPlayer avec rsync",
       "type": "shell",
       "command": "rsync",

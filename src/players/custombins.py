@@ -19,35 +19,62 @@ class GstBs2bCustom(Gst.Bin):
 
     def __init__(self):
         super(GstBs2bCustom, self).__init__()
-        
-        # a=<1.0,-0.9051> b=<0.0949>  -> 700 Hz ,  amplification=0.5012   ->  -6.0 dB (Chu Moy)
-        # a=<1.0,-0.9051> b=<0.0949>  -> 700 Hz ,  amplification=0.5957   ->  -4.5 dB (Default)
-        # a=<1.0,-0.9115> b=<0.0885>  -> 650 Hz ,  amplification=0.3350   ->  -9.5 dB (Jan Meier)
 
+        # FIX : Ajout de 'audioconvert' indispensables immédiatement après 'deinterleave'
+        # et nettoyage des queues pour garantir la synchronisation par les mixeurs
         description = """
         ( deinterleave name=d 
           audiomixer name=mix_L audiomixer name=mix_R 
           interleave name=i 
-          d.src_0 ! queue ! mix_L.sink_0 
-          d.src_0 ! queue ! audioiirfilter name=fl a=<1.0,-0.9051> b=<0.0949> ! audioamplify amplification=0.5012 ! mix_R.sink_1 
-          d.src_1 ! queue ! mix_R.sink_0 
-          d.src_1 ! queue ! audioiirfilter name=fr a=<1.0,-0.9051> b=<0.0949> ! audioamplify amplification=0.5012 ! mix_L.sink_1 
-          mix_L. ! i.sink_0 
-          mix_R. ! i.sink_1 )
+          
+          d.src_0 ! queue ! audioconvert ! mix_L.sink_0 
+          d.src_0 ! queue ! audioconvert ! audioiirfilter name=filt_L ! audioamplify amplification=0.5012 ! audioconvert ! mix_R.sink_1 
+          
+          d.src_1 ! queue ! audioconvert ! mix_R.sink_0 
+          d.src_1 ! queue ! audioconvert ! audioiirfilter name=filt_R ! audioamplify amplification=0.5012 ! audioconvert ! mix_L.sink_1 
+          
+          mix_L. ! audioconvert ! i.sink_0 
+          mix_R. ! audioconvert ! i.sink_1 )
         """
         inner_bin = Gst.parse_launch(description)
         self.add(inner_bin)
 
-        # Récupération des éléments pour les Ghost Pads
+        # Récupération des deux filtres physiques
+        filt_L = inner_bin.get_by_name("filt_L")
+        filt_R = inner_bin.get_by_name("filt_R")
+
+        # =========================================================================
+        # LE FIX EXCLUSIF POUR GValueArray EN PYTHON :
+        # =========================================================================
+        type_a = filt_L.find_property("a").value_type
+        type_b = filt_L.find_property("b").value_type
+
+        gval_a = GObject.Value(type_a)
+        gval_b = GObject.Value(type_b)
+
+        gval_a.set_boxed([1.0, -0.9051])
+        gval_b.set_boxed([0.0949])
+
+        filt_L.set_property("a", gval_a.get_boxed())
+        filt_L.set_property("b", gval_b.get_boxed())
+        filt_R.set_property("a", gval_a.get_boxed())
+        filt_R.set_property("b", gval_b.get_boxed())
+
+        # Raccordement classique des Ghost Pads de surface
         inner_d = inner_bin.get_by_name("d")
         inner_i = inner_bin.get_by_name("i")
 
-        # Raccordement des entrées/sorties aux parois extérieures
         sink_pad = inner_d.get_static_pad("sink")
         self.add_pad(Gst.GhostPad.new("sink", sink_pad))
 
         src_pad = inner_i.get_static_pad("src")
         self.add_pad(Gst.GhostPad.new("src", src_pad))
+
+
+
+
+
+
 
 
 

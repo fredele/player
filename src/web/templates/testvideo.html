@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Diagnostic codecs vidéo</title>
+<style>
+body { font: 16px sans-serif; margin: 30px; }
+table { border-collapse: collapse; width: 100%; }
+td, th { border: 1px solid #ccc; padding: 9px; text-align: left; }
+pre { background: #eee; padding: 12px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h2>Diagnostic des codecs</h2>
+<p id="browser"></p>
+<table>
+<thead>
+<tr><th>Format</th><th>canPlayType</th><th>MediaCapabilities</th></tr>
+</thead>
+<tbody id="results"></tbody>
+</table>
+
+<script>
+document.getElementById("browser").textContent =
+    navigator.userAgent;
+
+
+
+const tests = [
+  ["H.264", 'video/mp4; codecs="avc1.640028"'],
+  ["AAC", 'audio/mp4; codecs="mp4a.40.2"'],
+  ["HEVC", 'video/mp4; codecs="hvc1"'],
+  ["AC3", 'audio/mp4; codecs="ac-3"'],
+  ["E-AC3", 'audio/mp4; codecs="ec-3"'],
+  ["VP9", 'video/webm; codecs="vp9"'],
+  ["Opus", 'audio/webm; codecs="opus"']
+];
+
+async function testCodecs() {
+  const video = document.createElement("video");
+  const audio = document.createElement("audio");
+  const tbody = document.getElementById("results");
+
+  tbody.innerHTML = "";
+
+  for (const [name, mime] of tests) {
+    const isAudio = mime.startsWith("audio/");
+    const element = isAudio ? audio : video;
+
+    const basic = element.canPlayType(mime) || "Non";
+
+    let mc = "API indisponible";
+
+    if (navigator.mediaCapabilities) {
+      const config = {
+        type: "file",
+        [isAudio ? "audio" : "video"]: {
+          contentType: mime,
+          ...(isAudio ? {
+            channels: "2",
+            bitrate: 192000,
+            samplerate: 48000
+          } : {
+            width: 1920,
+            height: 1080,
+            bitrate: 8000000,
+            framerate: 25
+          })
+        }
+      };
+
+      try {
+        const r = await navigator.mediaCapabilities
+          .decodingInfo(config);
+
+        mc = `Supporté: ${r.supported},
+              fluide: ${r.smooth},
+              économe: ${r.powerEfficient}`;
+      } catch(e) {
+        mc = "Erreur: " + e.message;
+      }
+    }
+
+    const tr = document.createElement("tr");
+
+    for (const value of [name, basic, mc]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  }
+}
+
+testCodecs();
+
+
+</script>
+</body>
+</html>
+

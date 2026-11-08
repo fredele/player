@@ -10,6 +10,7 @@ import os
 import datetime
 
 from utils.player_logging import log_debug, log_warning
+from players.custombins import GstBs2bCustom, GstLoudnessCustom , GstLoudnessCustomAdaptive
 
 class GPlayer():
 
@@ -57,7 +58,18 @@ class GPlayer():
         bus.connect("message::buffering", self.on_buffering)
         bus.connect("message::state-changed", self.on_state_changed)
         bus.connect("message", self.handle_message)
+        
+      
+        # Enregistrement du type de la classe dans PyGObject
+        bs2b_custom_type = GObject.type_register(GstBs2bCustom)
+        Gst.Element.register(None, "bs2b_custom", Gst.Rank.NONE, bs2b_custom_type)
 
+        loudness_custom_type = GObject.type_register(GstLoudnessCustom)
+        Gst.Element.register(None, "loudness_custom", Gst.Rank.NONE, loudness_custom_type)  
+
+        loudness_adapative_custom_type = GObject.type_register(GstLoudnessCustomAdaptive)
+        Gst.Element.register(None, "loudness_adaptative_custom", Gst.Rank.NONE, loudness_adapative_custom_type) 
+        
         _thread.start_new_thread(self.Loop, ())
 
         # init volume
@@ -158,19 +170,33 @@ class GPlayer():
             bus.connect("message::buffering", self.on_buffering)
             bus.connect("message::error", self.on_error)
             bus.connect("message::state-changed", self.on_state_changed)
+            bus.connect("message::element", self.on_element_message)
         except Exception:
             self._warning("set_pipeline|bus_connections_failed", player_id=getattr(self, 'id', 'unknown'))
+        try:
+            self.loudness = self.playbin.get_by_name("mon_loudness")
+        except Exception:
+            pass
+            
+    def on_element_message(self, bus, message):
+        if message.has_name("level"):
+            if hasattr(self, 'loudness') and self.loudness is not None:
+                self.loudness.analyser_message_bus(message)
+
 
     def on_eos(self, bus, msg):
         self._debug("on_eos|end_of_stream", player_id=getattr(self, 'id', 'unknown'), queue_position=self.queue_position)
         self.eof()
 
     def on_buffering(self, bus, msg):
+        pass
+        '''
         try:
             buffer_percent = Gst.Message.get_structure(msg).get_value("buffer-percent")
             self._debug("on_buffering", player_id=getattr(self, 'id', 'unknown'), buffer_percent=buffer_percent)
         except Exception:
             self._debug("on_buffering|no_buffer_info", player_id=getattr(self, 'id', 'unknown'))
+        '''
 
     def eof(self):
         if self.app.restartqueue == True and int(self.queue_position) == int(len(self.queue) - 1):

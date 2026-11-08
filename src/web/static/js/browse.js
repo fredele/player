@@ -529,6 +529,14 @@ function moveTvNavSelection(direction) {
 function setkeydownhandler() {
     window.addEventListener("keydown", function (inEvent) {
 
+        if (document.querySelector("#exit_span")) {
+         if (inEvent.key === "Backspace" || inEvent.key === "Escape") {
+                exit_search();
+                inEvent.preventDefault();
+                return;
+            }
+        }
+
         const el = document.activeElement;
 
         const outputModal = document.getElementById("OutputModal");
@@ -601,6 +609,45 @@ function setkeydownhandler() {
             }
         }
 
+        const searchModal = document.getElementById("SearchBoxModal");
+        const searchInput = document.getElementById("search_txt");
+        const searchButton = document.getElementById("search_btn");
+        if (searchModal && searchModal.style.display === "block") {
+            const isSearchFieldFocused = document.activeElement === searchInput;
+            const isSearchButtonFocused = document.activeElement === searchButton;
+
+            if (inEvent.key === "ArrowDown" || inEvent.key === "ArrowUp") {
+                if (isSearchFieldFocused || isSearchButtonFocused) {
+                    const target = isSearchFieldFocused ? searchButton : searchInput;
+                    target.focus();
+                    target.select?.();
+                    inEvent.preventDefault();
+                    return;
+                }
+            }
+
+            if (inEvent.key === "Enter") {
+                if (isSearchFieldFocused || isSearchButtonFocused) {
+                    Search_value();
+                    inEvent.preventDefault();
+                    return;
+                }
+            }
+
+            if ((inEvent.key === "Backspace" || inEvent.key === "Escape") && !(isSearchFieldFocused && searchInput.value.length > 0)) {
+                searchModal.style.display = "none";
+                if (typeof window !== "undefined") {
+                    try {
+                        window.searchmodal = searchModal;
+                    } catch (e) {
+                        // no-op
+                    }
+                }
+                inEvent.preventDefault();
+                return;
+            }
+        }
+
         if (
             el.matches("input, textarea, select") ||
             el.isContentEditable
@@ -643,6 +690,11 @@ function setkeydownhandler() {
         if (playlistContainer && isPanelVisible(playlistContainer) && playlist) {
             const playlistItems = getPlaylistTvNavSelectionCandidates();
             if (playlistItems.length) {
+
+                if (inEvent.key === "ArrowRight" || inEvent.key === "ArrowLeft") {
+                hiderightpanel();
+                }
+
                 if (inEvent.key === "ArrowDown" || inEvent.key === "ArrowUp") {
                     if (!playlist.classList.contains("tv-nav")) {
                         activatePlaylistTvNavSelection();

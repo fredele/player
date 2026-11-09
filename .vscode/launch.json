@@ -4,6 +4,7 @@
   // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+
     
 {
     "name": "Run local with mongodb docker image",
@@ -46,10 +47,10 @@
       
     },
         {
-      "name": "Debug estimate",
+      "name": "Debug a",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/help/snippets/estimatesize.py",
+      "program": "${workspaceFolder}/src/players/a.py",
       "console": "integratedTerminal",
       "python": "${workspaceFolder}/../venv/bin/python",
     },

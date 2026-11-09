@@ -938,6 +938,7 @@ def set__player(id):
 
     try:
         player.set_pipeline()
+        time.sleep(0.2)
         player.set_volume(app.volumelevel)
     except:
         pass
@@ -982,9 +983,11 @@ def set_player(app,id):
             player["player"].id = id
             try:
                 player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
+                time.sleep(0.5)
+                player.set_volume(app.volumelevel)
             except Exception as e:
                 log_warning("main", "set_player_pipeline", player_id=id, error=str(e), output=str(app.outputs[app.current_output].get('gstpipeline')))
-                player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
+                #player["player"].set_pipeline(app.outputs[app.current_output]['gstpipeline'])
             app.player_id = id
         else:
             pass
@@ -1071,6 +1074,8 @@ def init():
 
     try:
         app.player.set_pipeline()
+        time.sleep(0.5)
+        player.set_volume(app.volumelevel)
     except:
         pass
 
@@ -3451,6 +3456,8 @@ def Output_Set():
         output = output.replace("$icon$",str(icon ))
         try:
             GetPlayer(player_id).set_pipeline(output)
+            time.sleep(0.2)
+            player.set_volume(app.volumelevel)
         except Exception as e:
             log_warning("main", "output_set_pipeline", player_id=player_id, output=output, error=str(e))
         dsp_changed(player_id)
@@ -4011,4 +4018,6 @@ if __name__ == '__main__':
     register_swagger_routes(api, ns)
 
     log_debug("main", "software_started", message="MyPlayer application started")
+    GST_DEBUG="*:2,GST_STATES:5,GST_PADS:5,GST_CAPS:5,interleave:6,deinterleave:6" \
+
     reactor.run()

@@ -9,7 +9,7 @@ def log_debug(prefix, action, **details):
     caller_name = frame.f_code.co_name if frame is not None else "unknown"
 
     parts = [f"{key}={value}" for key, value in details.items() if value is not None]
-    message = f"{prefix}|{action}|caller={caller_name}:{caller_file}:{caller_line}|{' | '.join(parts)}" if parts else f"{prefix}|{action}|caller={caller_name}:{caller_file}:{caller_line}"
+    message = f"{prefix}|{action}|caller={caller_name}:{caller_file.rsplit('/')[-1]}:{caller_line}|{' | '.join(parts)}" if parts else f"{prefix}|{action}|caller={caller_name}:{caller_file}:{caller_line}"
     logging.debug(message)
 
 
@@ -20,5 +20,5 @@ def log_warning(prefix, action, **details):
     caller_name = frame.f_code.co_name if frame is not None else "unknown"
 
     parts = [f"{key}={value}" for key, value in details.items() if value is not None]
-    message = f"{prefix}|{action}|caller={caller_name}:{caller_file}:{caller_line}|{' | '.join(parts)}" if parts else f"{prefix}|{action}|caller={caller_name}:{caller_file}:{caller_line}"
+    message = f"{prefix}|{action}|caller={caller_name}:{caller_file.rsplit('/')[-1]}:{caller_line}|{' | '.join(parts)}" if parts else f"{prefix}|{action}|caller={caller_name}:{caller_file}:{caller_line}"
     logging.warning(message)

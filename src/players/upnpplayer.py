@@ -304,6 +304,10 @@ class UpnpPlayer:
             self.queue_position = position
             try:
                 self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
+                print('-----------------')
+                print("set uri : " +dic['filename'])
+                print(dic['uri'])
+                print('-----------------')
             except Exception as e:
                 self._warning("set_uri|set_avtransporturi_failed", player_id=self.id, uri=dic.get('uri'), error=str(e))
 
@@ -326,6 +330,10 @@ class UpnpPlayer:
 
             try:
                 self.AVTransport.SetAVTransportURI(InstanceID=0, CurrentURI=dic["uri"], CurrentURIMetaData=meta)
+                print('-----------------')
+                print("set uri : " +dic['filename'])
+                print(dic['uri'])
+                print('-----------------')
             except Exception as e:
                 self._warning("set_uri|set_avtransporturi_failed", player_id=self.id, uri=dic.get('uri'), error=str(e))
 
@@ -524,7 +532,7 @@ class UpnpPlayer:
                 self.ask_transport_task.stop()
 
             self.set_stop()
-            yield self.sleep_async(self.sleep_time)
+            yield self.sleep_async(1)
 
             self.queue_position += 1
             track = self.queue[self.queue_position]
@@ -534,7 +542,7 @@ class UpnpPlayer:
             elif 'uri' in track:
                 yield self.set_uri(track, self.queue_position)
 
-            yield self.sleep_async(self.sleep_time)
+            yield self.sleep_async(1)
 
             self.set_play()
 
@@ -555,7 +563,7 @@ class UpnpPlayer:
                 self.ask_transport_task.stop()
 
             self.set_stop()
-            yield self.sleep_async(self.sleep_time)
+            yield self.sleep_async(1)
 
             self.queue_position = int(self.queue_position) - 1
             track = self.queue[self.queue_position]
@@ -565,7 +573,7 @@ class UpnpPlayer:
             elif 'uri' in track:
                 yield self.set_uri(track, self.queue_position)
 
-            yield self.sleep_async(self.sleep_time)
+            yield self.sleep_async(1)
 
             self.set_play()
 

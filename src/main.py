@@ -634,7 +634,7 @@ def transcodedfile(player_id, filename):
     bitrate = request.args.get("bitrate", "128")
     
     if player_id == "web":
-        return send_audio_file(app, fileid, codec, bitrate, range_header)
+        return send_audio_file(app, player_id,fileid, codec, bitrate, range_header)
 
     if hasattr(app, 'players'):
         player = next((p for p in app.players if str(p.get('id')) == str(player_id)), None)
@@ -647,7 +647,7 @@ def transcodedfile(player_id, filename):
         codec = str(getattr(app.player, 'transcode_codec', 'mp3')).lower()
         bitrate = int(getattr(app.player, 'transcode_bitrate', 128))
 
-    return send_audio_file(app, fileid, codec, bitrate, range_header)
+    return send_audio_file(app,player_id, fileid, codec, bitrate, range_header)
 
 
 
@@ -658,7 +658,7 @@ def transcodedfile_query_legacy(fileid):
     codec = request.args.get('codec', 'mp3')
     bitrate = request.args.get('bitrate', '128')
     range_header = request.headers.get('Range', None)
-    return send_audio_file(app, fileid, codec, bitrate, range_header)
+    return send_audio_file(app,player_id, fileid, codec, bitrate, range_header)
 
 
 
@@ -3639,13 +3639,11 @@ def create_self_signed_cert(certfile, keyfile, certargs, cert_dir="."):
 
 if __name__ == '__main__':
 
-    try:
-        with app.app_context():
-            Initialize()
-            from streamer3 import send_audio_file
-        log_debug("main", "startup_initialize", step="app_context_initialized")
-    except Exception as e:
-        log_warning("main", "startup_initialize_failed", error=str(e))
+
+    with app.app_context():
+        Initialize()
+        from streamer import send_audio_file
+
 
     try:
         logfile = app.logs_folder / 'log.txt'
@@ -3824,7 +3822,7 @@ if __name__ == '__main__':
     listenWS(factory)
 
     # create thread pool used to serve WSGI requests
-    thread_pool = ThreadPool(maxthreads=10)
+    thread_pool = ThreadPool(maxthreads=100)
     thread_pool.start()
     reactor.addSystemEventTrigger('before', 'shutdown', thread_pool.stop)
     wsResource = WebSocketResource(factory)
